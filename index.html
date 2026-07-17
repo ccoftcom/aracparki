@@ -20,7 +20,7 @@
     <header class="site-header" id="top">
       <div class="header-top">
         <div class="container header-top-inner">
-          <a class="logo" href="#top" aria-label="Araç Parkı ana sayfa">
+          <a class="logo" href="index.html" aria-label="Araç Parkı ana sayfa">
             <span class="logo-arac">Araç</span><span class="logo-parki">Parkı</span>
           </a>
 
@@ -63,16 +63,14 @@
 
       <nav class="cat-bar" aria-label="Kategoriler">
         <div class="container cat-bar-inner">
-          <a href="#vitrin" data-category="Paletli Ekskavatör">Ekskavatör</a>
-          <a href="#vitrin" data-category="Beko Loder">Beko Loder</a>
-          <a href="#vitrin" data-category="Lastikli Yükleyici">Loader</a>
-          <a href="#vitrin" data-category="Forklift">Forklift</a>
-          <a href="#vitrin" data-category="Vinç">Vinç</a>
-          <a href="#vitrin" data-category="Dozer">Dozer</a>
-          <a href="#vitrin" data-category="Mini Ekskavatör">Mini Kepçe</a>
-          <a href="#vitrin" data-filter="kiralik">Kiralık</a>
-          <a href="#vitrin" data-filter="satilik">Satılık</a>
-          <a href="#sehirler">Şehirler</a>
+          <a href="ilanlar.html?kategori=Paletli%20Ekskavat%C3%B6r">Ekskavatör</a>
+          <a href="ilanlar.html?kategori=Beko%20Loder">Beko Loder</a>
+          <a href="ilanlar.html?kategori=Lastikli%20Y%C3%BCkleyici">Loader</a>
+          <a href="ilanlar.html?kategori=Forklift">Forklift</a>
+          <a href="ilanlar.html?kategori=Vin%C3%A7">Vinç</a>
+          <a href="ilanlar.html?tip=kiralik">Kiralık</a>
+          <a href="ilanlar.html?tip=satilik">Satılık</a>
+          <a href="ilanlar.html">Tüm İlanlar</a>
         </div>
       </nav>
 
@@ -170,11 +168,14 @@
                 Öne Çıkan İlanlar
                 <span class="result-count" id="result-count"></span>
               </h2>
-              <div class="filter-chips" role="group" aria-label="Vitrin filtresi">
-                <button type="button" class="chip" data-filter="all" aria-pressed="true">Tümü</button>
-                <button type="button" class="chip" data-filter="satilik" aria-pressed="false">Satılık</button>
-                <button type="button" class="chip" data-filter="kiralik" aria-pressed="false">Kiralık</button>
-                <button type="button" class="chip" data-filter="ikinci-el" aria-pressed="false">İkinci El</button>
+              <div class="vitrin-head-actions">
+                <div class="filter-chips" role="group" aria-label="Vitrin filtresi">
+                  <button type="button" class="chip" data-filter="all" aria-pressed="true">Tümü</button>
+                  <button type="button" class="chip" data-filter="satilik" aria-pressed="false">Satılık</button>
+                  <button type="button" class="chip" data-filter="kiralik" aria-pressed="false">Kiralık</button>
+                  <button type="button" class="chip" data-filter="ikinci-el" aria-pressed="false">İkinci El</button>
+                </div>
+                <a class="btn btn-ghost btn-sm" id="see-all-listings" href="ilanlar.html">Tüm ilanlar</a>
               </div>
             </div>
             <div class="listing-grid" id="listing-grid" aria-live="polite"></div>
@@ -278,6 +279,7 @@
       </div>
     </footer>
 
-    <script src="app.js" defer></script>
+    <script src="data.js"></script>
+    <script src="home.js"></script>
   </body>
 </html>

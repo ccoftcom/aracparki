@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="İş makinesi ilanları — Araç Parkı" />
+    <title>İş Makinesi İlanları | Araç Parkı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-top">
+        <div class="container header-top-inner">
+          <a class="logo" href="index.html" aria-label="Araç Parkı ana sayfa">
+            <span class="logo-arac">Araç</span><span class="logo-parki">Parkı</span>
+          </a>
+          <form class="header-search" id="search-form" role="search">
+            <label class="sr-only" for="search-query">Kelime ara</label>
+            <input id="search-query" name="q" type="search" placeholder="Marka, model veya ilan no ile ara" autocomplete="off" />
+            <button class="btn btn-machine" type="submit">Ara</button>
+          </form>
+          <div class="header-actions">
+            <a class="link-quiet" href="index.html#giris">Giriş Yap</a>
+            <a class="btn btn-machine" href="index.html#ilan-ver">Ücretsiz İlan Ver</a>
+          </div>
+        </div>
+      </div>
+      <nav class="cat-bar" aria-label="Kategoriler">
+        <div class="container cat-bar-inner">
+          <a href="ilanlar.html?kategori=Paletli%20Ekskavat%C3%B6r">Ekskavatör</a>
+          <a href="ilanlar.html?kategori=Beko%20Loder">Beko Loder</a>
+          <a href="ilanlar.html?kategori=Lastikli%20Y%C3%BCkleyici">Loader</a>
+          <a href="ilanlar.html?tip=kiralik">Kiralık</a>
+          <a href="ilanlar.html?tip=satilik">Satılık</a>
+          <a href="index.html">Anasayfa</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container page-list">
+      <nav class="breadcrumb" id="breadcrumb" aria-label="Sayfa yolu"></nav>
+
+      <div class="list-layout">
+        <aside class="list-aside" aria-label="Filtreler">
+          <form class="aside-card filter-box" id="list-filter-form">
+            <h2 class="aside-title">Filtrele</h2>
+            <div class="filter-field">
+              <label for="filter-tip">İlan tipi</label>
+              <select id="filter-tip" name="tip">
+                <option value="all">Tümü</option>
+                <option value="satilik">Satılık</option>
+                <option value="kiralik">Kiralık</option>
+                <option value="ikinci-el">İkinci El</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="filter-category">Kategori</label>
+              <select id="filter-category" name="kategori">
+                <option value="">Tüm kategoriler</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="filter-city">İl</label>
+              <select id="filter-city" name="il">
+                <option value="">Türkiye geneli</option>
+              </select>
+            </div>
+            <button class="btn btn-machine btn-block" type="submit">İlanları Göster</button>
+            <button class="btn btn-ghost btn-block" type="button" id="clear-filters">Filtreleri Temizle</button>
+          </form>
+        </aside>
+
+        <section class="list-main">
+          <div class="list-toolbar">
+            <h1 id="list-title">İş Makinesi İlanları <span id="result-count"></span></h1>
+            <label class="sort-field">
+              <span>Sırala</span>
+              <select id="sort-select">
+                <option value="yeni">En yeni</option>
+                <option value="fiyat-artan">Fiyat artan</option>
+                <option value="fiyat-azalan">Fiyat azalan</option>
+                <option value="saat">Saat artan</option>
+              </select>
+            </label>
+          </div>
+          <div id="list-results" class="classified-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-bottom" style="border:0;padding-top:0">
+        <span>© 2026 Araç Parkı · aracparki.com</span>
+        <a href="index.html" style="color:#fff">Anasayfa</a>
+      </div>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="liste.js"></script>
+  </body>
+</html>

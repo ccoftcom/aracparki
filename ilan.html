@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="İlan detayı — Araç Parkı" />
+    <title>İlan Detayı | Araç Parkı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-top">
+        <div class="container header-top-inner">
+          <a class="logo" href="index.html" aria-label="Araç Parkı ana sayfa">
+            <span class="logo-arac">Araç</span><span class="logo-parki">Parkı</span>
+          </a>
+          <form class="header-search" id="search-form" action="ilanlar.html" method="get" role="search">
+            <label class="sr-only" for="search-query">Kelime ara</label>
+            <input id="search-query" name="q" type="search" placeholder="Marka, model veya ilan no ile ara" autocomplete="off" />
+            <button class="btn btn-machine" type="submit">Ara</button>
+          </form>
+          <div class="header-actions">
+            <a class="link-quiet" href="index.html#giris">Giriş Yap</a>
+            <a class="btn btn-machine" href="index.html#ilan-ver">Ücretsiz İlan Ver</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container page-detail" id="detail-root">
+      <p class="listing-empty">İlan yükleniyor…</p>
+    </main>
+
+    <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
+    <footer class="site-footer">
+      <div class="container footer-bottom" style="border:0;padding-top:0">
+        <span>© 2026 Araç Parkı · aracparki.com</span>
+        <a href="ilanlar.html" style="color:#fff">Tüm ilanlar</a>
+      </div>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="detay.js"></script>
+  </body>
+</html>
