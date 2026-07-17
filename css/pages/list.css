@@ -36,7 +36,11 @@
 .filter-field {
   display: grid;
   gap: 6px;
-  padding: 0 var(--space-2) 12px;
+  padding: 12px var(--space-2) 0;
+}
+
+.filter-field:first-of-type {
+  padding-top: 14px;
 }
 
 .filter-field label {
@@ -45,15 +49,74 @@
   color: var(--muted);
 }
 
+/* List sidebar + toolbar selects — explicit so they never fall back to native */
+.filter-box select,
+.list-toolbar .sort-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 40px 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: pointer;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a5a5a' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    color 0.15s var(--ease),
+    background-color 0.15s var(--ease);
+}
+
+.filter-box select:hover,
+.list-toolbar .sort-field select:hover {
+  border-color: var(--muted-2);
+  background-color: var(--raised);
+}
+
+.filter-box select:focus,
+.list-toolbar .sort-field select:focus {
+  outline: none;
+  border-color: var(--machine-deep);
+  background-color: var(--raised);
+  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.35);
+}
+
+.filter-box select:has(> option[value=""]:checked),
+.filter-box select:has(> option[value="all"]:checked) {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.filter-box select:has(> option:checked:not([value=""]):not([value="all"])),
+.filter-box select.is-filled:has(> option:checked:not([value=""]):not([value="all"])) {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .filter-actions {
   display: grid;
-  gap: var(--space-1);
-  padding: 0 var(--space-2) var(--space-2);
+  gap: 10px;
+  padding: 14px var(--space-2) var(--space-2);
 }
 
 .filter-actions .btn-block {
   width: 100%;
   margin: 0;
+  min-height: 44px;
 }
 
 .list-toolbar {
@@ -82,10 +145,10 @@
   font-weight: 700;
 }
 
-.sort-field select {
+.list-toolbar .sort-field select {
   width: auto;
   min-width: 168px;
-  padding-inline: 12px 36px;
+  background-color: var(--raised);
 }
 
 .classified-list {

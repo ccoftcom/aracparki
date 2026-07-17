@@ -61,9 +61,10 @@
   }
 
   .header-search input,
-  .promo-filters select,
   .filter-field select,
-  .sort-field select {
+  .sort-field select,
+  .filter-box select,
+  .list-toolbar .sort-field select {
     font-size: 16px;
   }
 
@@ -191,8 +192,14 @@
   }
 
   .list-layout {
-    grid-template-columns: 248px 1fr;
+    grid-template-columns: 260px 1fr;
     align-items: start;
+    gap: var(--space-3);
+  }
+
+  .filter-box select,
+  .list-toolbar .sort-field select {
+    font-size: 14px;
   }
 
   .detail-layout {

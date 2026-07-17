@@ -42,7 +42,11 @@
 .chip:focus-visible,
 .nav-toggle:focus-visible,
 .search-toggle:focus-visible,
-.link-clear:focus-visible,
+.link-clear:focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+
 .btn-machine {
   background: var(--machine);
   color: var(--machine-ink);
