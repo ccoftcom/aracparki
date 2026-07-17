@@ -30,7 +30,7 @@
     });
   };
 
-  // Scroll: collapse main header; show Logo | categories | Giriş + İlan Ver. Back to top: restore.
+  // Compact sticky bar: pixel hysteresis avoids shake when header height changes.
   const initCompactHeader = () => {
     const header = document.querySelector(".site-header");
     const headerTop = header?.querySelector(".header-top");
@@ -40,7 +40,8 @@
     const toggle = header.querySelector(".nav-toggle");
     const mobile = header.querySelector(".nav-mobile");
     const brand = catBar.querySelector(".cat-bar-brand");
-    const THRESHOLD = 0.03;
+    const ENTER_Y = 100;
+    const EXIT_Y = 36;
 
     let compact = false;
     let ticking = false;
@@ -69,9 +70,9 @@
     const update = () => {
       ticking = false;
       const y = Math.max(0, window.scrollY);
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = max > 0 ? y / max : 0;
-      setCompact(progress >= THRESHOLD);
+
+      if (!compact && y >= ENTER_Y) setCompact(true);
+      else if (compact && y <= EXIT_Y) setCompact(false);
     };
 
     window.addEventListener(
