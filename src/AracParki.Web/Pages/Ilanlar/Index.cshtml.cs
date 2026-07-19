@@ -97,4 +97,49 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             return [];
         }
     }
+
+    public int TotalPages => Result.PageSize <= 0
+        ? 1
+        : Math.Max(1, (int)Math.Ceiling(Result.TotalCount / (double)Result.PageSize));
+
+    public string PageUrl(int page)
+    {
+        var q = new ListingSearchQuery
+        {
+            Intent = Filter.Intent,
+            CategoryId = Filter.CategoryId,
+            BrandId = Filter.BrandId,
+            ModelId = Filter.ModelId,
+            CityId = Filter.CityId,
+            DistrictId = Filter.DistrictId,
+            Category = Filter.Category,
+            City = Filter.City,
+            Condition = Filter.Condition,
+            SellerType = Filter.SellerType,
+            YearMin = Filter.YearMin,
+            YearMax = Filter.YearMax,
+            HoursMin = Filter.HoursMin,
+            HoursMax = Filter.HoursMax,
+            WeightMin = Filter.WeightMin,
+            WeightMax = Filter.WeightMax,
+            PriceMin = Filter.PriceMin,
+            PriceMax = Filter.PriceMax,
+            HorsepowerMin = Filter.HorsepowerMin,
+            HorsepowerMax = Filter.HorsepowerMax,
+            CapacityKgMin = Filter.CapacityKgMin,
+            CapacityKgMax = Filter.CapacityKgMax,
+            IncludesOperator = Filter.IncludesOperator,
+            PriceUnit = Filter.PriceUnit,
+            VerifiedOnly = Filter.VerifiedOnly,
+            AttachmentIds = Filter.AttachmentIds,
+            SpecValues = Filter.SpecValues,
+            SpecsFilterJson = Filter.SpecsFilterJson,
+            SpecMinJson = Filter.SpecMinJson,
+            Query = Filter.Query,
+            Sort = Filter.Sort,
+            Page = Math.Max(1, page),
+            PageSize = Filter.PageSize
+        };
+        return ListingRoutes.ListUrl(q);
+    }
 }

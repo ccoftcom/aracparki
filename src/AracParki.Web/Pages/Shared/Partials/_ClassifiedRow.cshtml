@@ -32,14 +32,7 @@
     </span>
     <span class="classified-price-col">
       <span class="classified-price">
-        @if (string.IsNullOrEmpty(Model.PriceUnit))
-        {
-          @Formatters.Price(Model.Price, null)
-        }
-        else
-        {
-          @Formatters.Price(Model.Price, null)<small>/ @Model.PriceUnit</small>
-        }
+        @Formatters.Price(Model.Price, Model.PriceUnit)
       </span>
     </span>
   </a>

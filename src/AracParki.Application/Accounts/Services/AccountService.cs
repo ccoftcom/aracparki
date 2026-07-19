@@ -237,9 +237,9 @@ public sealed class AccountService(
         CancellationToken cancellationToken)
     {
         var normalized = NormalizePhone(phone);
-        if (normalized is null || normalized.Length < 10)
+        if (normalized is null)
         {
-            return (false, "Geçerli bir telefon numarası gir.", null);
+            return (false, "Geçerli bir telefon numarası gir (10–15 rakam).", null);
         }
 
         var account = await store.FindByIdAsync(accountId, cancellationToken);
@@ -263,7 +263,12 @@ public sealed class AccountService(
         }
 
         var digits = new string(phone.Where(char.IsDigit).ToArray());
-        return digits.Length == 0 ? null : digits;
+        if (digits.Length is < 10 or > 15)
+        {
+            return null;
+        }
+
+        return digits;
     }
 
     private async Task SendVerificationSafeAsync(

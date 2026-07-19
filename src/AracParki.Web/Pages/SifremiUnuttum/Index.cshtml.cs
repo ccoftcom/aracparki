@@ -6,7 +6,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AracParki.Web.Pages.SifremiUnuttum;
 
-[EnableRateLimiting("auth-sensitive")]
 public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logger) : PageModel
 {
     [BindProperty]
@@ -23,6 +22,7 @@ public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logg
         return Page();
     }
 
+    [EnableRateLimiting("auth-sensitive")]
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         ViewData["PageKey"] = "auth";

@@ -101,6 +101,7 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
             Description = row.Description,
             Category = row.Category,
             CategorySlug = row.CategorySlug,
+            CategoryId = row.CategoryId,
             CapacityMetric = row.CapacityMetric,
             Brand = row.Brand,
             ModelName = row.ModelName,
@@ -195,6 +196,7 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
         public required string Description { get; init; }
         public required string Category { get; init; }
         public required string CategorySlug { get; init; }
+        public int CategoryId { get; init; }
         public required string CapacityMetric { get; init; }
         public required string Brand { get; init; }
         public required string ModelName { get; init; }

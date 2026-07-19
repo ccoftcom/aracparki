@@ -5,6 +5,7 @@ using AracParki.Application.Listings.Services;
 using AracParki.Infrastructure;
 using AracParki.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -17,9 +18,16 @@ try
 
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console());
+
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Reverse proxy (Cloudflare / nginx) sits in front in production.
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
@@ -61,7 +69,7 @@ try
                 httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 10,
+                    PermitLimit = 5,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0
                 }));
@@ -74,6 +82,17 @@ try
                     Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0
                 }));
+        options.AddPolicy("listing-publish", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.User.Identity?.Name
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromHours(1),
+                    QueueLimit = 0
+                }));
     });
 
     var pg = builder.Configuration.GetConnectionString("PostgreSQL")
@@ -84,6 +103,8 @@ try
 
     var app = builder.Build();
     Lucide.Configure(app.Environment);
+
+    app.UseForwardedHeaders();
 
     if (!app.Environment.IsDevelopment())
     {

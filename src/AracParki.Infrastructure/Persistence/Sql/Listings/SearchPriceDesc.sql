@@ -27,7 +27,7 @@ JOIN cities city ON city.id = l.city_id
 JOIN districts d ON d.id = l.district_id
 JOIN sellers s ON s.id = l.seller_id
 WHERE l.status = 'published'
-  AND (@Intent = 'all' OR @Intent = ANY (l.intents) OR l.primary_intent = @Intent)
+  AND (@Intent = 'all' OR l.intents @> ARRAY[@Intent]::text[])
   AND (@CategoryId IS NULL OR l.category_id = @CategoryId)
   AND (@Category IS NULL OR c.name = @Category OR c.slug = @Category)
   AND (@BrandId IS NULL OR l.brand_id = @BrandId)

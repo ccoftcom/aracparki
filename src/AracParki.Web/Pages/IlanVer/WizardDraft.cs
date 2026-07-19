@@ -1,4 +1,4 @@
-using System.Text.Json;
+using AracParki.Application.Accounts.Services;
 using AracParki.Domain.Listings;
 
 namespace AracParki.Web.Pages.IlanVer;
@@ -10,6 +10,8 @@ public sealed class WizardDraft
     public int CategoryId { get; set; }
     public string? CategoryName { get; set; }
     public string? CapacityMetric { get; set; }
+    public int GroupId { get; set; }
+    public string? GroupName { get; set; }
 
     public int BrandId { get; set; }
     public string? BrandName { get; set; }
@@ -24,6 +26,8 @@ public sealed class WizardDraft
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
     public Dictionary<string, string> Specs { get; set; } = new(StringComparer.Ordinal);
+    public string SpecsJson { get; set; } = "{}";
+    public List<int> AttachmentIds { get; set; } = [];
 
     public string PrimaryIntent { get; set; } = ListingIntent.Satilik;
     public List<string> Intents { get; set; } = [ListingIntent.Satilik];
@@ -37,17 +41,6 @@ public sealed class WizardDraft
     public string Phone { get; set; } = "";
 
     public List<string> ImageUrls { get; set; } = [];
-
-    public string SpecsJson
-    {
-        get
-        {
-            var clean = Specs
-                .Where(kv => !string.IsNullOrWhiteSpace(kv.Key) && !string.IsNullOrWhiteSpace(kv.Value))
-                .ToDictionary(kv => kv.Key.Trim(), kv => kv.Value.Trim(), StringComparer.Ordinal);
-            return JsonSerializer.Serialize(clean);
-        }
-    }
 
     public bool HasCategory => CategoryId > 0;
     public bool HasMachine => HasCategory
@@ -69,7 +62,7 @@ public sealed class WizardDraft
         var rentOk = !Intents.Contains(ListingIntent.Kiralik)
                      || (!string.IsNullOrWhiteSpace(PriceUnit)
                          && Domain.Listings.PriceUnit.Known.Contains(PriceUnit));
-        var phoneOk = !requirePhone || Phone.Trim().Length >= 10;
+        var phoneOk = !requirePhone || AccountService.NormalizePhone(Phone) is not null;
         return intentsOk && rentOk && phoneOk && Price > 0 && CityId > 0 && DistrictId > 0;
     }
 
@@ -77,10 +70,10 @@ public sealed class WizardDraft
     {
         get
         {
-            var urls = ImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)).ToArray();
+            var urls = ImageUrls.Where(u => !string.IsNullOrWhiteSpace(u)).Select(u => u.Trim()).ToArray();
             return urls.Length is >= 1 and <= 8
-                   && urls.All(u => Uri.TryCreate(u.Trim(), UriKind.Absolute, out var uri)
-                                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+                   && urls.All(u => Uri.TryCreate(u, UriKind.Absolute, out var uri)
+                                    && uri.Scheme == Uri.UriSchemeHttps);
         }
     }
 

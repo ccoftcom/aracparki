@@ -309,6 +309,28 @@
       <div id="list-results" class="classified-list" aria-live="polite">
         <partial name="Shared/Partials/_ListingResults" model="Model" />
       </div>
+      @if (Model.TotalPages > 1)
+      {
+        <nav class="list-pager" aria-label="Sayfalama">
+          @if (Model.Result.Page > 1)
+          {
+            <a class="btn btn-ghost" href="@Model.PageUrl(Model.Result.Page - 1)">← Önceki</a>
+          }
+          else
+          {
+            <span class="btn btn-ghost" aria-disabled="true">← Önceki</span>
+          }
+          <span class="list-pager-status">Sayfa @Model.Result.Page / @Model.TotalPages</span>
+          @if (Model.Result.HasMore)
+          {
+            <a class="btn btn-ghost" href="@Model.PageUrl(Model.Result.Page + 1)">Sonraki →</a>
+          }
+          else
+          {
+            <span class="btn btn-ghost" aria-disabled="true">Sonraki →</span>
+          }
+        </nav>
+      }
     </section>
   </div>
 </main>

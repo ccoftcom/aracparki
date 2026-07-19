@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.SifreSifirla;
 
-[EnableRateLimiting("auth-sensitive")]
 public sealed class IndexModel(AccountService accounts) : PageModel
 {
     [BindProperty(SupportsGet = true)]
@@ -33,6 +32,7 @@ public sealed class IndexModel(AccountService accounts) : PageModel
         return Page();
     }
 
+    [EnableRateLimiting("auth-sensitive")]
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         ViewData["PageKey"] = "auth";

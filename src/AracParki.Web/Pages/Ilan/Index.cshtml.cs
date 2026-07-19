@@ -1,3 +1,5 @@
+using AracParki.Application.Catalog.Services;
+using AracParki.Application.Listings;
 using AracParki.Application.Listings.Dtos;
 using AracParki.Application.Listings.Services;
 using AracParki.Domain.Listings;
@@ -7,12 +9,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AracParki.Web.Pages.Ilan;
 
-public sealed class IndexModel(ListingService listingService) : PageModel
+public sealed class IndexModel(ListingService listingService, CatalogService catalog) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string AdNo { get; set; } = string.Empty;
 
     public ListingDetailDto? Listing { get; private set; }
+    public IReadOnlyList<SpecDisplayRow> SpecRows { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
@@ -25,6 +28,12 @@ public sealed class IndexModel(ListingService listingService) : PageModel
         if (Listing is null)
         {
             return NotFound();
+        }
+
+        if (Listing.CategoryId > 0)
+        {
+            var attrs = await catalog.GetCategoryAttributesAsync(Listing.CategoryId, cancellationToken);
+            SpecRows = SpecsJsonBuilder.ToDisplayRows(Listing.SpecsJson, attrs);
         }
 
         ViewData["PageKey"] = "detail";

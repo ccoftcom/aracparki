@@ -8,6 +8,7 @@ public sealed class ListingDetailDto
     public required string Description { get; init; }
     public required string Category { get; init; }
     public required string CategorySlug { get; init; }
+    public int CategoryId { get; init; }
     public required string CapacityMetric { get; init; }
     public required string Brand { get; init; }
     public required string ModelName { get; init; }

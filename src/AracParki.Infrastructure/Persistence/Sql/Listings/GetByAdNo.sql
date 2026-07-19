@@ -5,6 +5,7 @@ SELECT
     l.description,
     c.name AS Category,
     c.slug AS CategorySlug,
+    c.id AS CategoryId,
     c.capacity_metric AS CapacityMetric,
     b.name AS Brand,
     l.model_name AS ModelName,

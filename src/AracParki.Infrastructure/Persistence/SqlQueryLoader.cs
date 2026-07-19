@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using AracParki.Application.Abstractions;
 
@@ -10,16 +11,21 @@ public sealed class SqlQueryLoader : ISqlQueryLoader
         "Persistence",
         "Sql");
 
+    private readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.Ordinal);
+
     public string Get(string relativePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
 
-        var fullPath = Path.Combine(_root, relativePath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(fullPath))
+        return _cache.GetOrAdd(relativePath, static (path, root) =>
         {
-            throw new FileNotFoundException($"SQL query not found: {relativePath}", fullPath);
-        }
+            var fullPath = Path.Combine(root, path.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"SQL query not found: {path}", fullPath);
+            }
 
-        return File.ReadAllText(fullPath);
+            return File.ReadAllText(fullPath);
+        }, _root);
     }
 }

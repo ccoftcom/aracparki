@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.Kayit;
 
-[EnableRateLimiting("auth-sensitive")]
 public sealed class IndexModel(AccountService accounts) : PageModel
 {
     [BindProperty]
@@ -26,6 +25,7 @@ public sealed class IndexModel(AccountService accounts) : PageModel
         return Page();
     }
 
+    [EnableRateLimiting("auth-sensitive")]
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         SetMeta();

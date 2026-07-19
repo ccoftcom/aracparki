@@ -11,7 +11,7 @@
         draft.ImageUrls.Count > 0 ? draft.ImageUrls : new List<string> { "" });
 }
 <main id="main" class="wizard-page">
-  <div class="container wizard-shell">
+  <div class="container wizard-shell @(step == 1 ? "wizard-shell--wide" : null)">
     <header class="wizard-header">
       <p class="wizard-kicker">Ücretsiz ilan ver</p>
       <h1 class="wizard-title">@Model.StepTitle</h1>
@@ -39,32 +39,189 @@
       <div class="wizard-alert" role="alert">@Model.FormError</div>
     }
 
-    <section class="wizard-card">
+    <section class="wizard-card @(step == 1 ? "wizard-card--cascade" : null)">
       @if (step == 1)
       {
-        <p class="wizard-lead">Makinenin kategorisini seç — ilan doğru alıcılara ulaşsın.</p>
-        @foreach (var group in Model.CategoryGroups)
-        {
-          <div class="wizard-group">
-            <h2 class="wizard-group-title">@group.Name</h2>
-            <div class="wizard-cat-grid">
-              @foreach (var cat in group.Categories)
-              {
-                <form method="post" asp-page-handler="Category" class="wizard-cat-form">
-                  @Html.AntiForgeryToken()
-                  <input type="hidden" name="categoryId" value="@cat.Id" />
-                  <button type="submit" class="wizard-cat-card @(draft.CategoryId == cat.Id ? "is-selected" : null)">
-                    <span class="wizard-cat-name">@cat.Name</span>
+        var groupsJson = System.Text.Json.JsonSerializer.Serialize(
+          Model.CategoryGroups.Select(g => new
+          {
+            id = g.Id,
+            name = g.Name,
+            categories = g.Categories.Select(c => new
+            {
+              id = c.Id,
+              name = c.Name,
+              capacityMetric = c.CapacityMetric
+            })
+          }));
+        <p class="wizard-lead">Grup → kategori → marka → model → yıl yolunu seç.</p>
+        <form method="post" asp-page-handler="Cascade" class="wizard-cascade"
+              id="wizard-form"
+              x-data="ilanVerCascader"
+              data-groups='@Html.Raw(groupsJson)'
+              data-group-id="@draft.GroupId"
+              data-category-id="@draft.CategoryId"
+              data-brand-id="@draft.BrandId"
+              data-model-id="@(draft.ModelId ?? 0)"
+              data-model-name="@draft.ModelName"
+              data-model-year="@draft.ModelYear"
+              data-group-name="@draft.GroupName"
+              data-category-name="@draft.CategoryName"
+              data-brand-name="@draft.BrandName">
+          @Html.AntiForgeryToken()
+          <input type="hidden" name="groupId" :value="groupId" />
+          <input type="hidden" name="groupName" :value="groupName" />
+          <input type="hidden" name="categoryId" :value="categoryId" />
+          <input type="hidden" name="brandId" :value="brandId" />
+          <input type="hidden" name="modelId" :value="modelId" />
+          <input type="hidden" name="modelName" :value="modelName" />
+          <input type="hidden" name="modelYear" :value="modelYear" />
+
+          <div class="cascade-path" x-show="hasPath" x-cloak>
+            <p class="cascade-path-text" x-text="pathText"></p>
+            <button type="button" class="cascade-edit" @@click="reset">Düzenle</button>
+          </div>
+
+          <div class="cascade-board" role="group" aria-label="Kategori seçici">
+            <div class="cascade-col">
+              <p class="cascade-col-title">Grup</p>
+              <ul class="cascade-list" role="listbox" aria-label="Grup">
+                <template x-for="g in groupsView" :key="g.id">
+                  <li>
+                    <button type="button"
+                            class="cascade-item"
+                            :class="g.itemClass"
+                            role="option"
+                            :aria-selected="g.ariaSelected"
+                            :data-id="g.id"
+                            @@click="pickGroup">
+                      <span x-text="g.name"></span>
+                      <span class="cascade-chevron" aria-hidden="true">›</span>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <div class="cascade-col" x-show="hasGroup" x-cloak>
+              <p class="cascade-col-title">Kategori</p>
+              <ul class="cascade-list" role="listbox" aria-label="Kategori">
+                <template x-for="c in categoriesView" :key="c.id">
+                  <li>
+                    <button type="button"
+                            class="cascade-item"
+                            :class="c.itemClass"
+                            role="option"
+                            :aria-selected="c.ariaSelected"
+                            :data-id="c.id"
+                            @@click="pickCategory">
+                      <span x-text="c.name"></span>
+                      <span class="cascade-chevron" aria-hidden="true">›</span>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <div class="cascade-col" x-show="hasCategory" x-cloak>
+              <p class="cascade-col-title">Marka</p>
+              <ul class="cascade-list" role="listbox" aria-label="Marka">
+                <li class="cascade-empty" x-show="brandsLoading" x-cloak>Yükleniyor…</li>
+                <li class="cascade-empty" x-show="brandsEmpty" x-cloak>Marka bulunamadı</li>
+                <template x-for="b in brandsView" :key="b.id">
+                  <li>
+                    <button type="button"
+                            class="cascade-item"
+                            :class="b.itemClass"
+                            role="option"
+                            :aria-selected="b.ariaSelected"
+                            :data-id="b.id"
+                            @@click="pickBrand">
+                      <span x-text="b.name"></span>
+                      <span class="cascade-chevron" aria-hidden="true">›</span>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <div class="cascade-col" x-show="hasBrand" x-cloak>
+              <p class="cascade-col-title">Model</p>
+              <ul class="cascade-list" role="listbox" aria-label="Model">
+                <li class="cascade-empty" x-show="modelsLoading" x-cloak>Yükleniyor…</li>
+                <template x-for="m in modelsView" :key="m.id">
+                  <li>
+                    <button type="button"
+                            class="cascade-item"
+                            :class="m.itemClass"
+                            role="option"
+                            :aria-selected="m.ariaSelected"
+                            :data-id="m.id"
+                            @@click="pickModel">
+                      <span x-text="m.name"></span>
+                      <span class="cascade-chevron" aria-hidden="true">›</span>
+                    </button>
+                  </li>
+                </template>
+                <li x-show="modelsReady">
+                  <button type="button"
+                          class="cascade-item"
+                          :class="customModelClass"
+                          role="option"
+                          @@click="selectCustomModel">
+                    <span>Listede yok / diğer</span>
+                    <span class="cascade-chevron" aria-hidden="true">›</span>
                   </button>
-                </form>
-              }
+                </li>
+              </ul>
+              <div class="cascade-custom" x-show="showCustomModel" x-cloak>
+                <label class="sr-only" for="cascade-model-custom">Model adı</label>
+                <input id="cascade-model-custom" type="text" maxlength="120"
+                       placeholder="Model adını yaz"
+                       x-model="modelName"
+                       @@input="onCustomModelInput" />
+              </div>
+            </div>
+
+            <div class="cascade-col" x-show="canPickYear" x-cloak>
+              <p class="cascade-col-title">Yıl</p>
+              <ul class="cascade-list" role="listbox" aria-label="Model yılı">
+                <template x-for="y in yearsView" :key="y.id">
+                  <li>
+                    <button type="button"
+                            class="cascade-item"
+                            :class="y.itemClass"
+                            role="option"
+                            :aria-selected="y.ariaSelected"
+                            :data-id="y.id"
+                            @@click="pickYear">
+                      <span x-text="y.label"></span>
+                    </button>
+                  </li>
+                </template>
+              </ul>
             </div>
           </div>
-        }
+
+          <div class="wizard-actions cascade-actions">
+            <button class="btn btn-ghost" type="button" disabled>← Önceki</button>
+            <button class="btn btn-machine" type="submit" :disabled="cannotContinue">
+              Devam Et →
+            </button>
+          </div>
+        </form>
       }
       else if (step == 2)
       {
-        <p class="wizard-lead"><strong>@draft.CategoryName</strong> için makine detaylarını gir.</p>
+        <p class="wizard-lead">
+          <strong>
+            @(string.Join(" › ", new[] { draft.GroupName, draft.CategoryName, draft.BrandName, draft.ModelName }
+              .Where(s => !string.IsNullOrWhiteSpace(s))))
+            @if (draft.ModelYear > 0) { <text> · @draft.ModelYear</text> }
+          </strong>
+          — makine detaylarını tamamla.
+          <a class="wizard-inline-link" href="/ilan-ver?adim=1">Kategoriyi değiştir</a>
+        </p>
         <form method="post" asp-page-handler="Machine" class="wizard-form" id="wizard-form"
               x-data="ilanVerMachine"
               data-category-id="@draft.CategoryId"
@@ -209,9 +366,27 @@
                     }
                     else
                     {
-                      <input id="spec-@attr.Key" name="@key" type="text" value="@val" />
+                      <input id="spec-@attr.Key" name="@key" type="@(attr.DataType == "number" ? "number" : "text")"
+                             step="any" value="@val" />
                     }
                   </div>
+                }
+              </div>
+            </fieldset>
+          }
+
+          @if (Model.Attachments.Count > 0)
+          {
+            <fieldset class="wizard-fieldset">
+              <legend>Ekipmanlar</legend>
+              <div class="wizard-check-row">
+                @foreach (var att in Model.Attachments)
+                {
+                  <label class="wizard-check">
+                    <input type="checkbox" name="attachmentIds" value="@att.Id"
+                           @(Model.HasAttachment(att.Id) ? "checked" : null) />
+                    @att.Name
+                  </label>
                 }
               </div>
             </fieldset>
@@ -362,21 +537,21 @@
           <div class="wizard-image-list">
             <template x-for="(url, index) in urls" :key="index">
               <div class="form-row wizard-image-row">
-                <label :for="'img-' + index">
-                  <span x-text="index === 0 ? 'Kapak görseli (URL)' : ('Görsel ' + (index + 1))"></span>
+                <label :for="inputId(index)">
+                  <span x-text="labelFor(index)"></span>
                 </label>
                 <div class="wizard-image-input">
-                  <input type="url" name="imageUrls" :id="'img-' + index" x-model="urls[index]"
-                         placeholder="https://…" required />
-                  <button type="button" class="link-quiet" x-show="urls.length > 1" @@click="removeAt(index)">Kaldır</button>
+                  <input type="url" name="imageUrls" :id="inputId(index)" x-model="urls[index]"
+                         placeholder="https://…" pattern="https://.*" required />
+                  <button type="button" class="link-quiet" x-show="canRemove" @@click="removeAt(index)">Kaldır</button>
                 </div>
-                <div class="wizard-image-preview" x-show="!!urls[index]">
+                <div class="wizard-image-preview" x-show="hasPreview(index)">
                   <img :src="urls[index]" alt="" loading="lazy" />
                 </div>
               </div>
             </template>
           </div>
-          <button type="button" class="btn btn-ghost" x-show="urls.length &lt; 8" @@click="add()">+ Görsel ekle</button>
+          <button type="button" class="btn btn-ghost" x-show="canAdd" @@click="add">+ Görsel ekle</button>
 
           <div class="wizard-actions">
             <a class="link-quiet" href="/ilan-ver?adim=3">← Geri</a>
@@ -412,7 +587,14 @@
               · @EquipmentCondition.Label(draft.Condition)
             </p>
             <p class="wizard-preview-desc">@draft.Description</p>
-            <p class="wizard-muted">Görsel: @draft.ImageUrls.Count · Telefon: @(Model.RequirePhone ? draft.Phone : Model.AccountPhone)</p>
+            <p class="wizard-muted">
+              Görsel: @draft.ImageUrls.Count
+              · Telefon: @(Model.RequirePhone ? draft.Phone : Model.AccountPhone)
+              @if (draft.AttachmentIds.Count > 0)
+              {
+                <text>· Ekipman: @draft.AttachmentIds.Count</text>
+              }
+            </p>
           </div>
         </article>
 

@@ -30,6 +30,12 @@ public sealed class ListingCommandService(
             .Take(8)
             .ToArray();
 
+        var attachmentIds = command.AttachmentIds
+            .Where(id => id > 0)
+            .Distinct()
+            .Take(20)
+            .ToArray();
+
         var priceUnit = string.IsNullOrWhiteSpace(command.PriceUnit) ? null : command.PriceUnit.Trim();
         if (!intents.Contains(Domain.Listings.ListingIntent.Kiralik, StringComparer.Ordinal))
         {
@@ -62,7 +68,8 @@ public sealed class ListingCommandService(
             Title = command.Title.Trim(),
             Description = command.Description.Trim(),
             SpecsJson = string.IsNullOrWhiteSpace(command.SpecsJson) ? "{}" : command.SpecsJson.Trim(),
-            ImageUrls = images
+            ImageUrls = images,
+            AttachmentIds = attachmentIds
         };
     }
 }

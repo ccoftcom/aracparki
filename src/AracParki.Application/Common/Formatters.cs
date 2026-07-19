@@ -1,4 +1,5 @@
 using System.Globalization;
+using AracParki.Domain.Listings;
 
 namespace AracParki.Application.Common;
 
@@ -9,7 +10,15 @@ public static class Formatters
     public static string Price(decimal price, string? priceUnit)
     {
         var formatted = price.ToString("N0", Tr) + " ₺";
-        return string.IsNullOrWhiteSpace(priceUnit) ? formatted : $"{formatted} / {priceUnit}";
+        if (string.IsNullOrWhiteSpace(priceUnit))
+        {
+            return formatted;
+        }
+
+        var unitLabel = PriceUnit.Known.Contains(priceUnit)
+            ? PriceUnit.Label(priceUnit)
+            : priceUnit;
+        return $"{formatted} / {unitLabel}";
     }
 
     public static string Hours(int hours) => $"{hours.ToString("N0", Tr)} saat";

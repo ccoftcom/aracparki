@@ -63,6 +63,10 @@
               <tr><th scope="row">Operatör</th><td>Dahil</td></tr>
             }
             <tr><th scope="row">Konum</th><td>@listing.City / @listing.District</td></tr>
+            @foreach (var row in Model.SpecRows)
+            {
+              <tr><th scope="row">@row.Label</th><td>@row.Value</td></tr>
+            }
             @if (listing.Attachments.Count > 0)
             {
               <tr><th scope="row">Ekipmanlar</th><td>@string.Join(", ", listing.Attachments.Select(a => a.Name))</td></tr>
@@ -80,14 +84,7 @@
     <aside class="detail-right" aria-label="Fiyat ve iletişim">
       <div class="detail-card detail-buybox sticky-box" id="buybox">
         <div class="detail-price">
-          @if (string.IsNullOrEmpty(listing.PriceUnit))
-          {
-            @Formatters.Price(listing.Price, null)
-          }
-          else
-          {
-            @Formatters.Price(listing.Price, null)<small>/ @listing.PriceUnit</small>
-          }
+          @Formatters.Price(listing.Price, listing.PriceUnit)
         </div>
         <div class="detail-loc">@listing.City / @listing.District</div>
 

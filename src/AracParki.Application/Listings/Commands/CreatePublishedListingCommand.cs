@@ -34,4 +34,6 @@ public sealed class CreatePublishedListingCommand
     public required string SpecsJson { get; init; }
 
     public required IReadOnlyList<string> ImageUrls { get; init; }
+
+    public IReadOnlyList<int> AttachmentIds { get; init; } = [];
 }

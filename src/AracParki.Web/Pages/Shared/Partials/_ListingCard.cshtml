@@ -37,14 +37,7 @@
       </div>
       <div class="listing-foot">
         <div class="listing-price">
-          @if (string.IsNullOrEmpty(Model.PriceUnit))
-          {
-            @Formatters.Price(Model.Price, null)
-          }
-          else
-          {
-            @Formatters.Price(Model.Price, null)<small>/ @Model.PriceUnit</small>
-          }
+          @Formatters.Price(Model.Price, Model.PriceUnit)
         </div>
         <span class="seller-tag@(Model.IsVerified ? " verified" : "")">@(Model.IsVerified ? "Doğrulanmış · " : "")@sellerLabel</span>
       </div>

@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.Giris;
 
-[EnableRateLimiting("auth-sensitive")]
 public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logger) : PageModel
 {
     [BindProperty]
@@ -31,6 +30,7 @@ public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logg
         return Page();
     }
 
+    [EnableRateLimiting("auth-sensitive")]
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null, CancellationToken cancellationToken = default)
     {
         ReturnUrl = returnUrl;

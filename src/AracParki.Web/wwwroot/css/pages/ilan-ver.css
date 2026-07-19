@@ -13,6 +13,194 @@
   gap: var(--space-3);
 }
 
+.wizard-shell--wide {
+  width: min(100%, 1100px);
+}
+
+.wizard-inline-link {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--link);
+}
+
+.wizard-card--cascade {
+  padding-bottom: var(--space-3);
+}
+
+/* —— Cascader (Sahibinden / Babuba tarzı) —— */
+.wizard-cascade {
+  display: grid;
+  gap: 14px;
+}
+
+.cascade-path {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.cascade-path-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.cascade-edit {
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 4px 2px;
+}
+
+.cascade-edit:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.cascade-board {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 2px);
+  overflow-x: auto;
+  background: var(--raised);
+  min-height: 320px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cascade-col {
+  flex: 1 0 min(180px, 72vw);
+  max-width: 240px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  scroll-snap-align: start;
+}
+
+.cascade-col:last-child {
+  border-right: 0;
+}
+
+.cascade-col-title {
+  margin: 0;
+  padding: 10px 12px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.cascade-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  max-height: 360px;
+  flex: 1;
+}
+
+.cascade-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.cascade-item:hover {
+  background: color-mix(in srgb, var(--machine) 22%, transparent);
+}
+
+.cascade-item.is-selected {
+  background: color-mix(in srgb, var(--machine) 55%, var(--raised));
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+
+.cascade-chevron {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cascade-item.is-selected .cascade-chevron {
+  color: var(--ink);
+}
+
+.cascade-empty {
+  padding: 14px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cascade-custom {
+  padding: 8px 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.cascade-custom input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+}
+
+.cascade-actions {
+  margin-top: 4px;
+}
+
+.cascade-actions .btn:disabled,
+.cascade-actions .btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .cascade-board {
+    min-height: 280px;
+  }
+
+  .cascade-list {
+    max-height: 280px;
+  }
+
+  .cascade-path {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .wizard-header {
   display: grid;
   gap: 10px;

@@ -94,6 +94,28 @@ public sealed class ListingWriteRepository(IDbConnectionFactory connectionFactor
                     transaction: tx,
                     cancellationToken: cancellationToken));
 
+            if (command.AttachmentIds.Count > 0)
+            {
+                var attachmentRows = command.AttachmentIds.Select(id => new
+                {
+                    ListingId = listingId,
+                    AttachmentId = id
+                });
+
+                await connection.ExecuteAsync(
+                    new CommandDefinition(
+                        """
+                        INSERT INTO listing_attachments (listing_id, attachment_id)
+                        SELECT @ListingId, a.id
+                        FROM attachments a
+                        WHERE a.id = @AttachmentId
+                        ON CONFLICT DO NOTHING
+                        """,
+                        attachmentRows,
+                        transaction: tx,
+                        cancellationToken: cancellationToken));
+            }
+
             await tx.CommitAsync(cancellationToken);
             return adNo;
         }
@@ -110,44 +132,17 @@ public sealed class ListingWriteRepository(IDbConnectionFactory connectionFactor
         CreatePublishedListingCommand command,
         CancellationToken cancellationToken)
     {
-        var existing = await connection.ExecuteScalarAsync<long?>(
-            new CommandDefinition(
-                """
-                SELECT id
-                FROM sellers
-                WHERE account_id = @AccountId
-                LIMIT 1
-                """,
-                new { command.AccountId },
-                transaction: tx,
-                cancellationToken: cancellationToken));
-
-        if (existing is > 0)
-        {
-            await connection.ExecuteAsync(
-                new CommandDefinition(
-                    """
-                    UPDATE sellers
-                    SET phone = @Phone,
-                        display_name = COALESCE(NULLIF(display_name, ''), @DisplayName)
-                    WHERE id = @Id
-                    """,
-                    new
-                    {
-                        Id = existing.Value,
-                        command.Phone,
-                        DisplayName = command.SellerDisplayName
-                    },
-                    transaction: tx,
-                    cancellationToken: cancellationToken));
-            return existing.Value;
-        }
-
         return await connection.ExecuteScalarAsync<long>(
             new CommandDefinition(
                 """
                 INSERT INTO sellers (display_name, seller_type, phone, account_id)
                 VALUES (@DisplayName, @SellerType, @Phone, @AccountId)
+                ON CONFLICT (account_id) DO UPDATE
+                SET phone = EXCLUDED.phone,
+                    display_name = CASE
+                        WHEN NULLIF(BTRIM(sellers.display_name), '') IS NULL THEN EXCLUDED.display_name
+                        ELSE sellers.display_name
+                    END
                 RETURNING id
                 """,
                 new

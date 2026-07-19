@@ -257,6 +257,327 @@
       }
     };
 
+    Alpine.data("ilanVerCascader", () => ({
+      groups: [],
+      categories: [],
+      brands: [],
+      models: [],
+      years: [],
+      groupId: 0,
+      groupName: "",
+      categoryId: 0,
+      categoryName: "",
+      brandId: 0,
+      brandName: "",
+      modelId: 0,
+      modelName: "",
+      modelYear: 0,
+      showCustomModel: false,
+      brandsLoading: false,
+      modelsLoading: false,
+
+      get hasPath() {
+        return this.pathText.length > 0;
+      },
+      get pathText() {
+        const parts = [];
+        if (this.groupName) parts.push(this.groupName);
+        if (this.categoryName) parts.push(this.categoryName);
+        if (this.brandName) parts.push(this.brandName);
+        if (this.modelName) parts.push(this.modelName);
+        if (this.modelYear) parts.push(String(this.modelYear));
+        return parts.join(" › ");
+      },
+      get hasGroup() {
+        return this.groupId > 0;
+      },
+      get hasCategory() {
+        return this.categoryId > 0;
+      },
+      get hasBrand() {
+        return this.brandId > 0;
+      },
+      get brandsEmpty() {
+        return !this.brandsLoading && this.brands.length === 0;
+      },
+      get modelsReady() {
+        return !this.modelsLoading;
+      },
+      get canPickYear() {
+        return this.brandId > 0 && String(this.modelName || "").trim().length > 0;
+      },
+      get canContinue() {
+        return (
+          this.categoryId > 0 &&
+          this.brandId > 0 &&
+          String(this.modelName || "").trim().length > 0 &&
+          this.modelYear >= 1950
+        );
+      },
+      get cannotContinue() {
+        return !this.canContinue;
+      },
+      get customModelClass() {
+        return this.showCustomModel ? "is-selected" : "";
+      },
+      get groupsView() {
+        const selected = this.groupId;
+        return this.groups.map(function (g) {
+          const on = Number(g.id) === selected;
+          return {
+            id: g.id,
+            name: g.name,
+            categories: g.categories || [],
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+      get categoriesView() {
+        const selected = this.categoryId;
+        return this.categories.map(function (c) {
+          const on = Number(c.id) === selected;
+          return {
+            id: c.id,
+            name: c.name,
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+      get brandsView() {
+        const selected = this.brandId;
+        return this.brands.map(function (b) {
+          const on = Number(b.id) === selected;
+          return {
+            id: b.id,
+            name: b.name,
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+      get modelsView() {
+        const selected = this.modelId;
+        return this.models.map(function (m) {
+          const on = Number(m.id) === selected;
+          return {
+            id: m.id,
+            name: m.name,
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+      get yearsView() {
+        const selected = this.modelYear;
+        return this.years.map(function (y) {
+          const id = Number(y.id);
+          const on = id === selected;
+          return {
+            id: id,
+            label: String(id),
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+
+      pickGroup(event) {
+        const id = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+        const g = this.groups.find(function (x) {
+          return Number(x.id) === id;
+        });
+        if (g) this.selectGroup(g);
+      },
+      pickCategory(event) {
+        const id = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+        const c = this.categories.find(function (x) {
+          return Number(x.id) === id;
+        });
+        if (c) this.selectCategory(c);
+      },
+      pickBrand(event) {
+        const id = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+        const b = this.brands.find(function (x) {
+          return Number(x.id) === id;
+        });
+        if (b) this.selectBrand(b);
+      },
+      pickModel(event) {
+        const id = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+        const m = this.models.find(function (x) {
+          return Number(x.id) === id;
+        });
+        if (m) this.selectModel(m);
+      },
+      pickYear(event) {
+        this.modelYear = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+      },
+
+      init() {
+        this.groups = parseJsonAttr(this.$el, "data-groups", []);
+        const yMax = new Date().getFullYear() + 1;
+        const list = [];
+        for (let y = yMax; y >= 1950; y -= 1) {
+          list.push({ id: y });
+        }
+        this.years = list;
+
+        this.groupId = Number(this.$el.dataset.groupId || 0);
+        this.groupName = this.$el.dataset.groupName || "";
+        this.categoryId = Number(this.$el.dataset.categoryId || 0);
+        this.categoryName = this.$el.dataset.categoryName || "";
+        this.brandId = Number(this.$el.dataset.brandId || 0);
+        this.brandName = this.$el.dataset.brandName || "";
+        this.modelId = Number(this.$el.dataset.modelId || 0);
+        this.modelName = this.$el.dataset.modelName || "";
+        this.modelYear = Number(this.$el.dataset.modelYear || 0);
+
+        if (this.groupId) {
+          const g = this.groups.find((x) => Number(x.id) === this.groupId);
+          this.categories = (g && g.categories) || [];
+          if (g && !this.groupName) this.groupName = g.name;
+        }
+        if (this.categoryId) {
+          this.loadBrands(true);
+        }
+      },
+      reset() {
+        this.groupId = 0;
+        this.groupName = "";
+        this.categoryId = 0;
+        this.categoryName = "";
+        this.brandId = 0;
+        this.brandName = "";
+        this.modelId = 0;
+        this.modelName = "";
+        this.modelYear = 0;
+        this.categories = [];
+        this.brands = [];
+        this.models = [];
+        this.showCustomModel = false;
+      },
+      selectGroup(g) {
+        this.groupId = Number(g.id);
+        this.groupName = g.name;
+        this.categories = g.categories || [];
+        this.categoryId = 0;
+        this.categoryName = "";
+        this.clearBrandDown();
+        this.scrollBoard();
+      },
+      selectCategory(c) {
+        this.categoryId = Number(c.id);
+        this.categoryName = c.name;
+        this.clearBrandDown();
+        const self = this;
+        this.loadBrands(false).then(function () {
+          self.scrollBoard();
+        });
+      },
+      async selectBrand(b) {
+        this.brandId = Number(b.id);
+        this.brandName = b.name;
+        this.modelId = 0;
+        this.modelName = "";
+        this.modelYear = 0;
+        this.showCustomModel = false;
+        this.models = [];
+        await this.loadModels(false);
+        this.scrollBoard();
+      },
+      selectModel(m) {
+        this.modelId = Number(m.id);
+        this.modelName = m.name;
+        this.showCustomModel = false;
+        this.modelYear = 0;
+        this.scrollBoard();
+      },
+      selectCustomModel() {
+        this.modelId = 0;
+        this.showCustomModel = true;
+        this.modelYear = 0;
+        this.$nextTick(function () {
+          const el = document.getElementById("cascade-model-custom");
+          if (el) el.focus();
+        });
+        this.scrollBoard();
+      },
+      onCustomModelInput() {
+        this.modelId = 0;
+        if (!String(this.modelName || "").trim()) this.modelYear = 0;
+      },
+      scrollBoard() {
+        const self = this;
+        this.$nextTick(function () {
+          const board = self.$el.querySelector(".cascade-board");
+          if (!board) return;
+          board.scrollTo({ left: board.scrollWidth, behavior: "smooth" });
+        });
+      },
+      clearBrandDown() {
+        this.brandId = 0;
+        this.brandName = "";
+        this.modelId = 0;
+        this.modelName = "";
+        this.modelYear = 0;
+        this.brands = [];
+        this.models = [];
+        this.showCustomModel = false;
+      },
+      async loadBrands(restore) {
+        if (!this.categoryId) return;
+        this.brandsLoading = true;
+        try {
+          const res = await fetch(`/api/catalog/categories/${this.categoryId}/brands`);
+          if (!res.ok) {
+            this.brands = [];
+            return;
+          }
+          const data = await res.json();
+          this.brands = (data || []).map(function (b) {
+            return { id: b.id ?? b.Id, name: b.name ?? b.Name };
+          });
+          if (restore && this.brandId) {
+            await this.loadModels(true);
+          }
+        } catch {
+          this.brands = [];
+        } finally {
+          this.brandsLoading = false;
+        }
+      },
+      async loadModels(restore) {
+        if (!this.categoryId || !this.brandId) return;
+        this.modelsLoading = true;
+        try {
+          const res = await fetch(
+            `/api/catalog/categories/${this.categoryId}/brands/${this.brandId}/models`
+          );
+          if (!res.ok) {
+            this.models = [];
+            return;
+          }
+          const data = await res.json();
+          this.models = (data || []).map(function (m) {
+            return { id: m.id ?? m.Id, name: m.name ?? m.Name };
+          });
+          if (restore && this.modelId === 0 && this.modelName) {
+            const name = this.modelName;
+            const known = this.models.some(function (m) {
+              return m.name === name;
+            });
+            this.showCustomModel = !known;
+          }
+        } catch {
+          this.models = [];
+        } finally {
+          this.modelsLoading = false;
+        }
+      },
+    }));
+
     Alpine.data("ilanVerMachine", () => ({
       categoryId: 0,
       brandId: 0,
@@ -327,6 +648,12 @@
 
     Alpine.data("ilanVerImages", () => ({
       urls: [""],
+      get canRemove() {
+        return this.urls.length > 1;
+      },
+      get canAdd() {
+        return this.urls.length < 8;
+      },
       init() {
         const parsed = parseJsonAttr(this.$el, "data-urls", [""]);
         this.urls = Array.isArray(parsed) && parsed.length ? parsed : [""];
@@ -337,6 +664,15 @@
       removeAt(index) {
         if (this.urls.length <= 1) return;
         this.urls.splice(index, 1);
+      },
+      labelFor(index) {
+        return Number(index) === 0 ? "Kapak görseli (URL)" : "Görsel " + (Number(index) + 1);
+      },
+      inputId(index) {
+        return "img-" + index;
+      },
+      hasPreview(index) {
+        return !!String(this.urls[index] || "").trim();
       },
     }));
   });
