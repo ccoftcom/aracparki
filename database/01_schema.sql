@@ -123,7 +123,9 @@ CREATE TABLE IF NOT EXISTS sellers (
     display_name  TEXT NOT NULL,
     seller_type   TEXT NOT NULL CHECK (seller_type IN ('dealer', 'owner')),
     is_verified   BOOLEAN NOT NULL DEFAULT FALSE,
-    phone         TEXT NOT NULL
+    phone         TEXT NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS listings (
@@ -139,27 +141,35 @@ CREATE TABLE IF NOT EXISTS listings (
     city_id           INT NOT NULL REFERENCES cities (id),
     district_id       INT NOT NULL REFERENCES districts (id),
     seller_id         BIGINT NOT NULL REFERENCES sellers (id),
-    -- sale | rent
+    -- URL/SEO locale: satilik | kiralik (labels stay Turkish in UI)
     primary_intent    TEXT NOT NULL CHECK (primary_intent IN ('satilik', 'kiralik')),
     intents           TEXT[] NOT NULL,
-    -- new | used
+    -- new | used (equipment condition codes — English for catalog interoperability)
     condition         TEXT NOT NULL DEFAULT 'used'
                       CHECK (condition IN ('new', 'used')),
-    model_year        INT NOT NULL,
-    hours             INT NOT NULL,
-    tons              NUMERIC(8, 2) NOT NULL,          -- operating weight (t) or capacity_t
-    capacity_kg       INT NULL,                       -- forklift primary capacity
-    horsepower        INT NOT NULL,
-    price             NUMERIC(14, 2) NOT NULL,
-    price_unit        TEXT NULL,                      -- day|week|month|hour for rent
+    model_year        INT NOT NULL
+                      CHECK (model_year >= 1950 AND model_year <= 2100),
+    hours             INT NOT NULL CHECK (hours >= 0),
+    tons              NUMERIC(8, 2) NOT NULL CHECK (tons > 0),
+    capacity_kg       INT NULL,
+    horsepower        INT NOT NULL CHECK (horsepower >= 0),
+    price             NUMERIC(14, 2) NOT NULL CHECK (price > 0),
+    price_unit        TEXT NULL
+                      CHECK (price_unit IS NULL OR price_unit IN ('day', 'week', 'month', 'hour')),
     includes_operator BOOLEAN NOT NULL DEFAULT FALSE,
-    specs             JSONB NOT NULL DEFAULT '{}'::jsonb,
+    specs             JSONB NOT NULL DEFAULT '{}'::jsonb
+                      CHECK (jsonb_typeof(specs) = 'object'),
     cover_image_url   TEXT NOT NULL,
     status            TEXT NOT NULL DEFAULT 'published'
                       CHECK (status IN ('draft', 'published', 'archived')),
     listed_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT listings_intents_consistent CHECK (
+        cardinality(intents) >= 1
+        AND intents <@ ARRAY['satilik', 'kiralik']::text[]
+        AND primary_intent = ANY (intents)
+    )
 );
 
 CREATE TABLE IF NOT EXISTS listing_images (
@@ -173,13 +183,6 @@ CREATE TABLE IF NOT EXISTS listing_attachments (
     listing_id     BIGINT NOT NULL REFERENCES listings (id) ON DELETE CASCADE,
     attachment_id  INT NOT NULL REFERENCES attachments (id) ON DELETE CASCADE,
     PRIMARY KEY (listing_id, attachment_id)
-);
-
-CREATE TABLE IF NOT EXISTS saved_searches (
-    id           BIGSERIAL PRIMARY KEY,
-    name         TEXT NOT NULL,
-    query_json   JSONB NOT NULL,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ---------------------------------------------------------------------------
@@ -196,6 +199,10 @@ CREATE INDEX IF NOT EXISTS ix_listings_brand_category
 
 CREATE INDEX IF NOT EXISTS ix_listings_city_status
     ON listings (city_id, status);
+
+CREATE INDEX IF NOT EXISTS ix_listings_seller ON listings (seller_id);
+CREATE INDEX IF NOT EXISTS ix_listings_model ON listings (model_id) WHERE model_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_listings_district ON listings (district_id);
 
 CREATE INDEX IF NOT EXISTS ix_listings_intents_gin
     ON listings USING GIN (intents);
@@ -237,6 +244,69 @@ CREATE INDEX IF NOT EXISTS ix_streets_neighborhood ON streets (neighborhood_id);
 CREATE INDEX IF NOT EXISTS ix_streets_district ON streets (district_id);
 CREATE INDEX IF NOT EXISTS ix_streets_name_trgm ON streets USING GIN (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS ix_listing_images_listing ON listing_images (listing_id, sort_order);
+
+-- updated_at + listing referential consistency
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at := NOW();
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sellers_updated_at ON sellers;
+CREATE TRIGGER trg_sellers_updated_at
+    BEFORE UPDATE ON sellers
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_listings_updated_at ON listings;
+CREATE TRIGGER trg_listings_updated_at
+    BEFORE UPDATE ON listings
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE OR REPLACE FUNCTION listings_validate_refs()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    dist_city INTEGER;
+    model_brand INTEGER;
+    model_category INTEGER;
+BEGIN
+    SELECT city_id INTO dist_city FROM districts WHERE id = NEW.district_id;
+    IF dist_city IS NULL OR dist_city <> NEW.city_id THEN
+        RAISE EXCEPTION 'listings.city_id (%) must match districts.city_id for district %',
+            NEW.city_id, NEW.district_id;
+    END IF;
+
+    IF NEW.model_id IS NOT NULL THEN
+        SELECT brand_id, category_id
+          INTO model_brand, model_category
+          FROM equipment_models
+         WHERE id = NEW.model_id;
+
+        IF model_brand IS NULL THEN
+            RAISE EXCEPTION 'listings.model_id % not found', NEW.model_id;
+        END IF;
+
+        IF model_brand <> NEW.brand_id OR model_category <> NEW.category_id THEN
+            RAISE EXCEPTION
+                'listings.model_id % does not match brand_id/category_id',
+                NEW.model_id;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_listings_validate_refs ON listings;
+CREATE TRIGGER trg_listings_validate_refs
+    BEFORE INSERT OR UPDATE OF city_id, district_id, model_id, brand_id, category_id
+    ON listings
+    FOR EACH ROW EXECUTE FUNCTION listings_validate_refs();
 
 INSERT INTO location_meta (key, value) VALUES
     ('source', 'adres.nvi.gov.tr via melihozkara/il-ilce-mahalle-sokak-veritabani'),

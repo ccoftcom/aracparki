@@ -29,6 +29,11 @@
   height: 22px;
 }
 
+.auth-status-mark .ap-icon,
+.auth-email-chip .ap-icon {
+  display: block;
+}
+
 .proof-item .ap-icon {
   width: 22px;
   height: 22px;

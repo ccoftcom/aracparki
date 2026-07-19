@@ -1,26 +1,22 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using AracParki.Application.Accounts.Services;
+using AracParki.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.EpostaDogrula;
 
-public sealed class IndexModel : PageModel
+[EnableRateLimiting("auth-sensitive")]
+public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logger) : PageModel
 {
-    private readonly AccountService _accounts;
-    private readonly IHostEnvironment _env;
-
-    public IndexModel(AccountService accounts, IHostEnvironment env)
-    {
-        _accounts = accounts;
-        _env = env;
-    }
-
     [BindProperty(SupportsGet = true)]
     public string? Token { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool Ok { get; set; }
 
     [BindProperty]
     public ResendInput Input { get; set; } = new();
@@ -28,39 +24,41 @@ public sealed class IndexModel : PageModel
     public bool Confirmed { get; private set; }
     public bool ResendSubmitted { get; private set; }
     public string? FormError { get; private set; }
-    public string? DevVerifyUrl { get; private set; }
 
-    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(string? email, CancellationToken cancellationToken)
     {
         SetMeta();
+
+        // PRG landing: token already consumed; avoid leaving it in the address bar.
+        if (Ok)
+        {
+            Confirmed = true;
+            return Page();
+        }
+
+        if (!string.IsNullOrWhiteSpace(email) && string.IsNullOrWhiteSpace(Token))
+        {
+            Input.Email = email.Trim();
+        }
 
         if (string.IsNullOrWhiteSpace(Token))
         {
             return Page();
         }
 
-        var (ok, error, account) = await _accounts.ConfirmEmailAsync(Token, cancellationToken);
+        var (ok, error, account, _) = await accounts.ConfirmEmailAsync(Token, cancellationToken);
         if (!ok || account is null)
         {
             FormError = error;
             return Page();
         }
 
-        Confirmed = true;
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, account.Id.ToString()),
-            new(ClaimTypes.Email, account.Email),
-            new(ClaimTypes.Name, account.DisplayName)
-        };
-
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
+            AuthCookie.CreatePrincipal(account),
             new AuthenticationProperties { IsPersistent = true, ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30) });
 
-        return Page();
+        return RedirectToPage(new { ok = true });
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -72,13 +70,18 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var token = await _accounts.RequestEmailVerificationAsync(Input.Email, cancellationToken);
-        ResendSubmitted = true;
-        if (_env.IsDevelopment() && !string.IsNullOrEmpty(token))
+        try
         {
-            DevVerifyUrl = $"/eposta-dogrula?token={Uri.EscapeDataString(token)}";
+            await accounts.ResendEmailVerificationAsync(Input.Email, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Resend verification failed");
+            FormError = "Doğrulama e-postası şu an gönderilemedi. Biraz sonra tekrar dene.";
+            return Page();
         }
 
+        ResendSubmitted = true;
         return Page();
     }
 

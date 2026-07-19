@@ -1,26 +1,19 @@
 using AracParki.Application.Accounts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.Kayit;
 
-public sealed class IndexModel : PageModel
+[EnableRateLimiting("auth-sensitive")]
+public sealed class IndexModel(AccountService accounts) : PageModel
 {
-    private readonly AccountService _accounts;
-    private readonly IHostEnvironment _env;
-
-    public IndexModel(AccountService accounts, IHostEnvironment env)
-    {
-        _accounts = accounts;
-        _env = env;
-    }
-
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
 
     public string? FormError { get; private set; }
     public bool Submitted { get; private set; }
-    public string? DevVerifyUrl { get; private set; }
+    public bool VerificationEmailSent { get; private set; } = true;
 
     public IActionResult OnGet()
     {
@@ -42,7 +35,7 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var (ok, error, _, verifyToken) = await _accounts.RegisterAsync(
+        var (ok, error, emailSent) = await accounts.RegisterAsync(
             Input.Email,
             Input.Password,
             Input.FirstName,
@@ -56,11 +49,9 @@ public sealed class IndexModel : PageModel
         }
 
         Submitted = true;
-        if (_env.IsDevelopment() && !string.IsNullOrEmpty(verifyToken))
-        {
-            DevVerifyUrl = $"/eposta-dogrula?token={Uri.EscapeDataString(verifyToken)}";
-        }
-
+        VerificationEmailSent = emailSent;
+        ViewData["Title"] = "E-postanı Kontrol Et | Araç Parkı";
+        ViewData["Description"] = "Araç Parkı hesap doğrulama e-postasını kontrol et.";
         return Page();
     }
 

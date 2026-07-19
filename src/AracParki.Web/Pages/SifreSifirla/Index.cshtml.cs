@@ -1,20 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using AracParki.Application.Accounts;
 using AracParki.Application.Accounts.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.SifreSifirla;
 
-public sealed class IndexModel : PageModel
+[EnableRateLimiting("auth-sensitive")]
+public sealed class IndexModel(AccountService accounts) : PageModel
 {
-    private readonly AccountService _accounts;
-
-    public IndexModel(AccountService accounts)
-    {
-        _accounts = accounts;
-    }
-
     [BindProperty(SupportsGet = true)]
     public string? Token { get; set; }
 
@@ -52,13 +49,15 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var (ok, error) = await _accounts.ResetPasswordAsync(Token, Input.Password, cancellationToken);
+        var (ok, error) = await accounts.ResetPasswordAsync(Token, Input.Password, cancellationToken);
         if (!ok)
         {
             FormError = error;
             return Page();
         }
 
+        // Invalidate current browser session; other devices drop via security_stamp.
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         Done = true;
         return Page();
     }

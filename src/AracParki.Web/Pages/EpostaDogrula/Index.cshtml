@@ -25,13 +25,8 @@
         <h1 class="auth-title" id="auth-title">E-postanı kontrol et</h1>
         <p class="auth-lead">
           Bu adresle onaylanmamış bir hesap varsa yeni doğrulama bağlantısı gönderdik.
+          Spam klasörünü de kontrol et.
         </p>
-        @if (!string.IsNullOrEmpty(Model.DevVerifyUrl))
-        {
-          <div class="auth-alert auth-alert-ok" role="status">
-            Geliştirme: <a href="@Model.DevVerifyUrl">şimdi doğrula</a>
-          </div>
-        }
         <a class="btn btn-machine btn-block auth-submit" href="/giris">Girişe dön</a>
       }
       else if (!string.IsNullOrEmpty(Model.Token) && !string.IsNullOrEmpty(Model.FormError))
@@ -51,6 +46,10 @@
       {
         <h1 class="auth-title" id="auth-title">E-posta doğrulama</h1>
         <p class="auth-lead">Onay maili gelmediyse e-posta adresini yaz — yeni bağlantı gönderelim.</p>
+        @if (!string.IsNullOrEmpty(Model.FormError))
+        {
+          <div class="auth-alert" role="alert">@Model.FormError</div>
+        }
         <form method="post" class="auth-form" novalidate>
           <div class="auth-field">
             <label asp-for="Input.Email"></label>

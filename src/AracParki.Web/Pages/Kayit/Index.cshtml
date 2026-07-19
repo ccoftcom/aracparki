@@ -10,36 +10,61 @@
       <p class="auth-kicker">Sat · kirala · bul</p>
     </header>
 
-    <section class="auth-card" aria-labelledby="auth-title" x-data="authForm">
-      @if (Model.Submitted)
-      {
-        <div class="auth-success-icon" aria-hidden="true">
-          <ap-icon name="circle-check" size="22" />
+    @if (Model.Submitted)
+    {
+      <section class="auth-card auth-card--status" aria-labelledby="auth-title">
+        <div class="auth-status-mark" aria-hidden="true">
+          <ap-icon name="mail" size="28" />
         </div>
+
         <h1 class="auth-title" id="auth-title">E-postanı kontrol et</h1>
-        <p class="auth-lead">
-          Hesabını oluşturduk. <strong>@Model.Input.Email</strong> adresine gönderdiğimiz
-          “Hesabımı onayla” bağlantısına tıklayarak üyeliğini tamamla.
-        </p>
-        @if (!string.IsNullOrEmpty(Model.DevVerifyUrl))
+        @if (!Model.VerificationEmailSent)
         {
-          <div class="auth-alert auth-alert-ok" role="status">
-            Geliştirme: <a href="@Model.DevVerifyUrl">e-postayı şimdi doğrula</a>
+          <div class="auth-alert" role="alert">
+            Hesabın oluştu ancak doğrulama e-postası şu an gönderilemedi.
+            Aşağıdan hemen yeni bağlantı iste.
           </div>
         }
-        <ul class="auth-steps">
-          <li>Gelen kutunu ve spam klasörünü kontrol et</li>
-          <li>Bağlantı 48 saat geçerli</li>
-          <li>Onaydan sonra giriş yapıp ilan verebilirsin</li>
-        </ul>
-        <a class="btn btn-machine btn-block auth-submit" href="/giris">Girişe git</a>
-        <p class="auth-switch">
-          Mail gelmedi mi?
-          <a href="/eposta-dogrula">Tekrar gönder</a>
+        else
+        {
+          <p class="auth-lead auth-lead--center">
+            Hesabın hazır. Onay bağlantısını şu adrese gönderdik:
+          </p>
+        }
+        <p class="auth-email-chip">
+          <ap-icon name="mail" size="16" />
+          <span>@Model.Input.Email</span>
         </p>
-      }
-      else
-      {
+
+        <ol class="auth-checklist">
+          <li>
+            <span class="auth-checklist-num" aria-hidden="true">1</span>
+            <span>Gelen kutunu ve spam klasörünü kontrol et</span>
+          </li>
+          <li>
+            <span class="auth-checklist-num" aria-hidden="true">2</span>
+            <span>Maildeki “Hesabımı onayla” bağlantısına tıkla</span>
+          </li>
+          <li>
+            <span class="auth-checklist-num" aria-hidden="true">3</span>
+            <span>Onaydan sonra giriş yapıp ilan verebilirsin</span>
+          </li>
+        </ol>
+
+        <div class="auth-actions">
+          <a class="btn btn-machine btn-block auth-submit"
+             href="/eposta-dogrula?email=@Uri.EscapeDataString(Model.Input.Email)">
+            Mail gelmedi — tekrar gönder
+          </a>
+          <a class="btn btn-ghost btn-block" href="/giris">Girişe git</a>
+        </div>
+
+        <p class="auth-trust">Spam klasörünü de kontrol et · Bağlantı 48 saat geçerli</p>
+      </section>
+    }
+    else
+    {
+      <section class="auth-card" aria-labelledby="auth-title" x-data="authForm">
         <h1 class="auth-title" id="auth-title">Hesap oluştur</h1>
         <p class="auth-lead">Adın, soyadın, e-postan ve şifren yeterli. Telefonu ilk ilanda doğrularsın.</p>
 
@@ -71,8 +96,9 @@
           <div class="auth-field">
             <label asp-for="Input.Password"></label>
             <div class="auth-password">
-              <input asp-for="Input.Password" autocomplete="new-password"
-                     x-model="password"
+              <input asp-for="Input.Password" id="Input_Password" autocomplete="new-password"
+                     data-password-rules="#password-rules"
+                     aria-describedby="password-hint password-rules"
                      :type="passwordType" />
               <button class="auth-password-toggle" type="button"
                       @@click="togglePassword"
@@ -81,11 +107,12 @@
                 <span x-show="showEyeOff" x-cloak><ap-icon name="eye-off" size="18" /></span>
               </button>
             </div>
-            <ul class="auth-rules" aria-label="Şifre kuralları">
-              <li :class="ruleClass('len')">En az 8 karakter</li>
-              <li :class="ruleClass('letter')">En az bir harf</li>
-              <li :class="ruleClass('digit')">En az bir rakam</li>
-              <li :class="ruleClass('noTriple')">Üç aynı karakter yan yana yok</li>
+            <p class="auth-hint" id="password-hint">En az 8 karakter · 1 harf · 1 rakam</p>
+            <ul class="auth-rules" id="password-rules" hidden aria-live="polite" aria-label="Şifre kuralları">
+              <li data-rule="len">En az 8 karakter</li>
+              <li data-rule="letter">En az bir harf</li>
+              <li data-rule="digit">En az bir rakam</li>
+              <li data-rule="noTriple">Üç aynı karakter yan yana yok</li>
             </ul>
             <span asp-validation-for="Input.Password" class="auth-error"></span>
           </div>
@@ -93,9 +120,16 @@
           <div class="auth-field">
             <label asp-for="Input.ConfirmPassword"></label>
             <div class="auth-password">
-              <input asp-for="Input.ConfirmPassword" autocomplete="new-password"
+              <input asp-for="Input.ConfirmPassword" id="Input_ConfirmPassword" autocomplete="new-password"
+                     data-password-match="#password-match"
+                     aria-describedby="password-match"
                      :type="passwordType" />
             </div>
+            <ul class="auth-rules" id="password-match" hidden aria-live="polite" aria-label="Şifre eşleşmesi">
+              <li data-rule="match"
+                  data-ok-text="Şifreler eşleşiyor"
+                  data-fail-text="Şifreler eşleşmiyor">Şifreler eşleşiyor</li>
+            </ul>
             <span asp-validation-for="Input.ConfirmPassword" class="auth-error"></span>
           </div>
 
@@ -111,14 +145,14 @@
           <button class="btn btn-machine btn-block auth-submit" type="submit">Hesabı oluştur</button>
         </form>
 
-        <p class="auth-trust">Ücretsiz üyelik · Telefon ilk ilanda · En az 8 karakter, 1 harf + 1 rakam</p>
+        <p class="auth-trust">Ücretsiz üyelik · Telefon ilk ilanda</p>
 
         <p class="auth-switch">
           Zaten üye misin?
           <a href="/giris">Giriş yap</a>
         </p>
-      }
-    </section>
+      </section>
+    }
 
     <p class="auth-footnote">
       <a href="/">← Anasayfa</a>

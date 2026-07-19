@@ -3,14 +3,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace AracParki.IntegrationTests;
 
-public sealed class SmokeTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class SmokeTests(WebApplicationFactory<Program> factory)
+    : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client;
-
-    public SmokeTests(WebApplicationFactory<Program> factory)
-    {
-        _client = factory.WithWebHostBuilder(_ => { }).CreateClient();
-    }
+    private readonly HttpClient _client = factory.WithWebHostBuilder(_ => { }).CreateClient();
 
     [Fact]
     public async Task Health_returns_success_or_degraded()

@@ -36,8 +36,9 @@
             <div class="auth-field">
               <label asp-for="Input.Password"></label>
               <div class="auth-password">
-                <input asp-for="Input.Password" autocomplete="new-password" autofocus
-                       x-model="password"
+                <input asp-for="Input.Password" id="Input_Password" autocomplete="new-password" autofocus
+                       data-password-rules="#password-rules"
+                       aria-describedby="password-hint password-rules"
                        :type="passwordType" />
                 <button class="auth-password-toggle" type="button"
                         @@click="togglePassword"
@@ -46,20 +47,28 @@
                   <span x-show="showEyeOff" x-cloak><ap-icon name="eye-off" size="18" /></span>
                 </button>
               </div>
-              <ul class="auth-rules" aria-label="Şifre kuralları">
-                <li :class="ruleClass('len')">En az 8 karakter</li>
-                <li :class="ruleClass('letter')">En az bir harf</li>
-                <li :class="ruleClass('digit')">En az bir rakam</li>
-                <li :class="ruleClass('noTriple')">Üç aynı karakter yan yana yok</li>
+              <p class="auth-hint" id="password-hint">En az 8 karakter · 1 harf · 1 rakam</p>
+              <ul class="auth-rules" id="password-rules" hidden aria-live="polite" aria-label="Şifre kuralları">
+                <li data-rule="len">En az 8 karakter</li>
+                <li data-rule="letter">En az bir harf</li>
+                <li data-rule="digit">En az bir rakam</li>
+                <li data-rule="noTriple">Üç aynı karakter yan yana yok</li>
               </ul>
               <span asp-validation-for="Input.Password" class="auth-error"></span>
             </div>
             <div class="auth-field">
               <label asp-for="Input.ConfirmPassword"></label>
               <div class="auth-password">
-                <input asp-for="Input.ConfirmPassword" autocomplete="new-password"
+                <input asp-for="Input.ConfirmPassword" id="Input_ConfirmPassword" autocomplete="new-password"
+                       data-password-match="#password-match"
+                       aria-describedby="password-match"
                        :type="passwordType" />
               </div>
+              <ul class="auth-rules" id="password-match" hidden aria-live="polite" aria-label="Şifre eşleşmesi">
+                <li data-rule="match"
+                    data-ok-text="Şifreler eşleşiyor"
+                    data-fail-text="Şifreler eşleşmiyor">Şifreler eşleşiyor</li>
+              </ul>
               <span asp-validation-for="Input.ConfirmPassword" class="auth-error"></span>
             </div>
             <button class="btn btn-machine btn-block auth-submit" type="submit">Şifreyi kaydet</button>

@@ -9,17 +9,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AracParki.Web.Pages.Ilanlar;
 
-public sealed class IndexModel : PageModel
+public sealed class IndexModel(ListingService listingService, CatalogService catalogService) : PageModel
 {
-    private readonly ListingService _listingService;
-    private readonly CatalogService _catalogService;
-
-    public IndexModel(ListingService listingService, CatalogService catalogService)
-    {
-        _listingService = listingService;
-        _catalogService = catalogService;
-    }
-
     public ListingSearchQuery Filter { get; private set; } = new();
     public ListingSearchResult Result { get; private set; } = new()
     {
@@ -42,27 +33,27 @@ public sealed class IndexModel : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         Filter = ListingRoutes.FromRequest(Request.Query);
-        Categories = await _catalogService.GetAllCategoriesAsync(cancellationToken);
-        Cities = await _catalogService.GetAllCitiesAsync(cancellationToken);
-        Attachments = await _catalogService.GetAttachmentsAsync(cancellationToken);
+        Categories = await catalogService.GetAllCategoriesAsync(cancellationToken);
+        Cities = await catalogService.GetAllCitiesAsync(cancellationToken);
+        Attachments = await catalogService.GetAttachmentsAsync(cancellationToken);
         Brands = Filter.CategoryId is > 0
-            ? await _catalogService.GetBrandsByCategoryAsync(Filter.CategoryId.Value, cancellationToken)
-            : await _catalogService.GetAllBrandsAsync(cancellationToken);
+            ? await catalogService.GetBrandsByCategoryAsync(Filter.CategoryId.Value, cancellationToken)
+            : await catalogService.GetAllBrandsAsync(cancellationToken);
 
         if (Filter.CategoryId is > 0 && Filter.BrandId is > 0)
         {
-            Models = await _catalogService.GetModelsByBrandCategoryAsync(
+            Models = await catalogService.GetModelsByBrandCategoryAsync(
                 Filter.BrandId.Value, Filter.CategoryId.Value, cancellationToken);
         }
 
         if (Filter.CityId is > 0)
         {
-            Districts = await _catalogService.GetDistrictsByCityAsync(Filter.CityId.Value, cancellationToken);
+            Districts = await catalogService.GetDistrictsByCityAsync(Filter.CityId.Value, cancellationToken);
         }
 
         if (Filter.CategoryId is > 0)
         {
-            var attrs = await _catalogService.GetCategoryAttributesAsync(Filter.CategoryId.Value, cancellationToken);
+            var attrs = await catalogService.GetCategoryAttributesAsync(Filter.CategoryId.Value, cancellationToken);
             FilterableAttributes = attrs.Where(a => a.IsFilterable).ToArray();
             var category = Categories.FirstOrDefault(c => c.Id == Filter.CategoryId);
             ShowCapacityKg = category?.CapacityMetric is "capacity_kg";
@@ -70,7 +61,7 @@ public sealed class IndexModel : PageModel
 
         ShowRentUnit = Filter.Intent == Domain.Listings.ListingIntent.Kiralik;
 
-        Result = await _listingService.SearchAsync(Filter, cancellationToken);
+        Result = await listingService.SearchAsync(Filter, cancellationToken);
 
         var categoryName = Categories.FirstOrDefault(c => c.Id == Filter.CategoryId)?.Name ?? Filter.Category;
         var heading = string.IsNullOrWhiteSpace(categoryName)

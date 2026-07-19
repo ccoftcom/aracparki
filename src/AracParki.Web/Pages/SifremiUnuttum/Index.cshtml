@@ -17,18 +17,17 @@
           Bu adresle bir hesap varsa, şifre sıfırlama bağlantısını gönderdik.
           Birkaç dakika içinde gelmezse spam klasörüne bak.
         </p>
-        @if (!string.IsNullOrEmpty(Model.DevResetUrl))
-        {
-          <div class="auth-alert auth-alert-ok" role="status">
-            Geliştirme: <a href="@Model.DevResetUrl">şifreyi şimdi sıfırla</a>
-          </div>
-        }
         <a class="btn btn-machine btn-block auth-submit" href="/giris">Girişe dön</a>
       }
       else
       {
         <h1 class="auth-title" id="auth-title">Şifremi unuttum</h1>
         <p class="auth-lead">E-posta adresini yaz — sıfırlama bağlantısı göndereceğiz.</p>
+
+        @if (!string.IsNullOrEmpty(Model.FormError))
+        {
+          <div class="auth-alert" role="alert">@Model.FormError</div>
+        }
 
         <form method="post" class="auth-form" novalidate>
           <div class="auth-field">

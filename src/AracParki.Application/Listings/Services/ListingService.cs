@@ -4,21 +4,14 @@ using FluentValidation;
 
 namespace AracParki.Application.Listings.Services;
 
-public sealed class ListingService
+public sealed class ListingService(
+    IListingQuery listingQuery,
+    IValidator<ListingSearchQuery> validator)
 {
-    private readonly IListingQuery _listingQuery;
-    private readonly IValidator<ListingSearchQuery> _validator;
-
-    public ListingService(IListingQuery listingQuery, IValidator<ListingSearchQuery> validator)
-    {
-        _listingQuery = listingQuery;
-        _validator = validator;
-    }
-
     public async Task<ListingSearchResult> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken)
     {
-        await _validator.ValidateAndThrowAsync(query, cancellationToken);
-        return await _listingQuery.SearchAsync(Normalize(query), cancellationToken);
+        await validator.ValidateAndThrowAsync(query, cancellationToken);
+        return await listingQuery.SearchAsync(Normalize(query), cancellationToken);
     }
 
     public async Task<IReadOnlyList<ListingCardDto>> GetFeaturedAsync(
@@ -26,20 +19,20 @@ public sealed class ListingService
         int take,
         CancellationToken cancellationToken)
     {
-        await _validator.ValidateAndThrowAsync(query, cancellationToken);
-        return await _listingQuery.GetFeaturedAsync(Normalize(query), take, cancellationToken);
+        await validator.ValidateAndThrowAsync(query, cancellationToken);
+        return await listingQuery.GetFeaturedAsync(Normalize(query), take, cancellationToken);
     }
 
     public Task<ListingDetailDto?> GetByAdNoAsync(string adNo, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(adNo);
-        return _listingQuery.GetByAdNoAsync(adNo.Trim(), cancellationToken);
+        return listingQuery.GetByAdNoAsync(adNo.Trim(), cancellationToken);
     }
 
     public Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(adNo);
-        return _listingQuery.GetPhoneByAdNoAsync(adNo.Trim(), cancellationToken);
+        return listingQuery.GetPhoneByAdNoAsync(adNo.Trim(), cancellationToken);
     }
 
     private static ListingSearchQuery Normalize(ListingSearchQuery query)

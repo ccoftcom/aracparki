@@ -2,21 +2,22 @@ using System.Security.Cryptography;
 using System.Text;
 using AracParki.Application.Accounts.Dtos;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace AracParki.Application.Accounts.Services;
 
-public sealed class AccountService
+public sealed class AccountService(
+    IAccountStore store,
+    AuthEmailService authEmail,
+    ILogger<AccountService> logger)
 {
-    private readonly IAccountStore _store;
     private readonly PasswordHasher<string> _hasher = new();
 
-    public AccountService(IAccountStore store)
-    {
-        _store = store;
-    }
-
-    /// <summary>Creates account + email verification token. Does not sign the user in.</summary>
-    public async Task<(bool Ok, string? Error, AccountDto? Account, string? VerifyToken)> RegisterAsync(
+    /// <summary>
+    /// Creates account and issues verification token.
+    /// <paramref name="VerificationEmailSent"/> is false when the account exists but SMTP failed.
+    /// </summary>
+    public async Task<(bool Ok, string? Error, bool VerificationEmailSent)> RegisterAsync(
         string email,
         string password,
         string firstName,
@@ -31,19 +32,43 @@ public sealed class AccountService
         var passwordErrors = PasswordRules.Validate(password, displayName, email);
         if (passwordErrors.Count > 0)
         {
-            return (false, passwordErrors[0], null, null);
+            return (false, passwordErrors[0], false);
         }
 
-        if (await _store.FindByEmailAsync(email, cancellationToken) is not null)
+        if (await store.FindByEmailAsync(email, cancellationToken) is not null)
         {
-            return (false, "Bu e-posta adresiyle bir hesap zaten var.", null, null);
+            return (false, "Bu e-posta adresiyle bir hesap zaten var.", false);
         }
 
         var hash = _hasher.HashPassword(email, password);
-        var id = await _store.CreateAsync(email, hash, firstName, lastName, phone: null, cancellationToken);
-        var account = await _store.FindByIdAsync(id, cancellationToken);
+        long id;
+        try
+        {
+            id = await store.CreateAsync(email, hash, firstName, lastName, phone: null, cancellationToken);
+        }
+        catch (Exception ex) when (IsUniqueViolation(ex))
+        {
+            return (false, "Bu e-posta adresiyle bir hesap zaten var.", false);
+        }
+
+        var account = await store.FindByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException("Account create failed.");
+
         var verifyToken = await IssueEmailVerificationTokenAsync(id, cancellationToken);
-        return (true, null, account, verifyToken);
+        try
+        {
+            await authEmail.SendEmailVerificationAsync(
+                account.Email,
+                account.FirstName,
+                verifyToken,
+                cancellationToken);
+            return (true, null, true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Verification email failed for {Email}", MaskEmail(account.Email));
+            return (true, null, false);
+        }
     }
 
     public async Task<(bool Ok, string? Error, AccountDto? Account)> LoginAsync(
@@ -52,7 +77,7 @@ public sealed class AccountService
         CancellationToken cancellationToken)
     {
         email = NormalizeEmail(email);
-        var account = await _store.FindByEmailAsync(email, cancellationToken);
+        var account = await store.FindByEmailAsync(email, cancellationToken);
         if (account is null)
         {
             return (false, "E-posta veya şifre hatalı.", null);
@@ -72,64 +97,81 @@ public sealed class AccountService
         if (result == PasswordVerificationResult.SuccessRehashNeeded)
         {
             var newHash = _hasher.HashPassword(email, password);
-            await _store.UpdatePasswordHashAsync(account.Id, newHash, cancellationToken);
+            await store.UpdatePasswordHashAsync(account.Id, newHash, cancellationToken);
         }
 
         return (true, null, account);
     }
 
-    /// <summary>Anti-enumeration: always appears successful to the caller.</summary>
-    public async Task<string?> RequestEmailVerificationAsync(string email, CancellationToken cancellationToken)
+    /// <summary>Anti-enumeration: always succeeds from the caller's perspective.</summary>
+    public async Task ResendEmailVerificationAsync(string email, CancellationToken cancellationToken)
     {
         email = NormalizeEmail(email);
-        var account = await _store.FindByEmailAsync(email, cancellationToken);
+        var account = await store.FindByEmailAsync(email, cancellationToken);
         if (account is null || account.EmailConfirmed)
         {
-            return null;
+            return;
         }
 
-        return await IssueEmailVerificationTokenAsync(account.Id, cancellationToken);
+        var token = await IssueEmailVerificationTokenAsync(account.Id, cancellationToken);
+        await SendVerificationSafeAsync(account.Email, account.FirstName, token, cancellationToken);
     }
 
-    public async Task<(bool Ok, string? Error, AccountDto? Account)> ConfirmEmailAsync(
+    public async Task<(bool Ok, string? Error, AccountDto? Account, bool AlreadyConfirmed)> ConfirmEmailAsync(
         string rawToken,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(rawToken))
         {
-            return (false, "Geçersiz veya süresi dolmuş bağlantı.", null);
+            return (false, "Geçersiz veya süresi dolmuş bağlantı.", null, false);
         }
 
         var hash = HashToken(rawToken.Trim());
-        var row = await _store.FindValidEmailVerificationTokenAsync(hash, cancellationToken);
-        if (row is null)
+        var accountId = await store.TryConfirmEmailWithTokenAsync(hash, cancellationToken);
+        if (accountId is not null)
         {
-            return (false, "Geçersiz veya süresi dolmuş bağlantı.", null);
+            var account = await store.FindByIdAsync(accountId.Value, cancellationToken);
+            return account is null
+                ? (false, "Geçersiz veya süresi dolmuş bağlantı.", null, false)
+                : (true, null, account, false);
         }
 
-        await _store.MarkEmailConfirmedAsync(row.Value.AccountId, cancellationToken);
-        await _store.MarkEmailVerificationTokenUsedAsync(hash, cancellationToken);
-        var account = await _store.FindByIdAsync(row.Value.AccountId, cancellationToken);
-        return (true, null, account);
+        // Same link clicked twice, or already confirmed via another tab.
+        var existing = await store.FindAccountByVerificationTokenHashAsync(hash, cancellationToken);
+        if (existing is { EmailConfirmed: true })
+        {
+            var account = await store.FindByIdAsync(existing.Value.AccountId, cancellationToken);
+            return account is null
+                ? (false, "Geçersiz veya süresi dolmuş bağlantı.", null, false)
+                : (true, null, account, true);
+        }
+
+        return (false, "Geçersiz veya süresi dolmuş bağlantı.", null, false);
     }
 
-    /// <summary>
-    /// Always succeeds from the caller's perspective (anti-enumeration).
-    /// Returns a raw token only when an account exists (for local/dev reset link).
-    /// </summary>
-    public async Task<string?> RequestPasswordResetAsync(string email, CancellationToken cancellationToken)
+    /// <summary>Anti-enumeration: always succeeds from the caller's perspective.</summary>
+    public async Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken)
     {
         email = NormalizeEmail(email);
-        var account = await _store.FindByEmailAsync(email, cancellationToken);
+        var account = await store.FindByEmailAsync(email, cancellationToken);
         if (account is null)
         {
-            return null;
+            return;
         }
 
         var raw = CreateRawToken();
         var hash = HashToken(raw);
-        await _store.SaveResetTokenAsync(account.Id, hash, DateTimeOffset.UtcNow.AddHours(1), cancellationToken);
-        return raw;
+        await store.SaveResetTokenAsync(account.Id, hash, DateTimeOffset.UtcNow.AddHours(1), cancellationToken);
+
+        try
+        {
+            await authEmail.SendPasswordResetAsync(account.Email, account.FirstName, raw, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Password reset email failed");
+            throw;
+        }
     }
 
     public async Task<(bool Ok, string? Error)> ResetPasswordAsync(
@@ -142,28 +184,47 @@ public sealed class AccountService
             return (false, "Geçersiz veya süresi dolmuş bağlantı.");
         }
 
-        var passwordErrors = PasswordRules.Validate(newPassword, displayName: null, email: null);
-        if (passwordErrors.Count > 0)
-        {
-            return (false, passwordErrors[0]);
-        }
-
-        var hash = HashToken(rawToken.Trim());
-        var row = await _store.FindValidResetTokenAsync(hash, cancellationToken);
-        if (row is null)
+        var tokenHash = HashToken(rawToken.Trim());
+        var accountId = await store.FindValidResetAccountIdAsync(tokenHash, cancellationToken);
+        if (accountId is null)
         {
             return (false, "Geçersiz veya süresi dolmuş bağlantı.");
         }
 
-        var account = await _store.FindByIdAsync(row.Value.AccountId, cancellationToken);
+        var account = await store.FindByIdAsync(accountId.Value, cancellationToken);
         if (account is null)
         {
             return (false, "Geçersiz veya süresi dolmuş bağlantı.");
         }
 
+        var passwordErrors = PasswordRules.Validate(newPassword, account.DisplayName, account.Email);
+        if (passwordErrors.Count > 0)
+        {
+            return (false, passwordErrors[0]);
+        }
+
         var passwordHash = _hasher.HashPassword(account.Email, newPassword);
-        await _store.UpdatePasswordHashAsync(account.Id, passwordHash, cancellationToken);
-        await _store.MarkResetTokenUsedAsync(hash, cancellationToken);
+        var stamp = Guid.NewGuid().ToString("N");
+        var reset = await store.TryResetPasswordWithTokenAsync(
+            tokenHash,
+            account.Id,
+            passwordHash,
+            stamp,
+            cancellationToken);
+        if (!reset)
+        {
+            return (false, "Geçersiz veya süresi dolmuş bağlantı.");
+        }
+
+        try
+        {
+            await authEmail.SendPasswordChangedAsync(account.Email, account.FirstName, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Password-changed notification failed");
+        }
+
         return (true, null);
     }
 
@@ -180,11 +241,28 @@ public sealed class AccountService
         return digits.Length == 0 ? null : digits;
     }
 
+    private async Task SendVerificationSafeAsync(
+        string email,
+        string firstName,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await authEmail.SendEmailVerificationAsync(email, firstName, token, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Verification email failed for {Email}", MaskEmail(email));
+            throw;
+        }
+    }
+
     private async Task<string> IssueEmailVerificationTokenAsync(long accountId, CancellationToken cancellationToken)
     {
         var raw = CreateRawToken();
         var hash = HashToken(raw);
-        await _store.SaveEmailVerificationTokenAsync(
+        await store.SaveEmailVerificationTokenAsync(
             accountId,
             hash,
             DateTimeOffset.UtcNow.AddDays(2),
@@ -198,5 +276,32 @@ public sealed class AccountService
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
         return Convert.ToHexString(bytes);
+    }
+
+    private static string MaskEmail(string email)
+    {
+        var at = email.IndexOf('@');
+        if (at <= 1)
+        {
+            return "***";
+        }
+
+        return string.Concat(email.AsSpan(0, 1), "***", email.AsSpan(at));
+    }
+
+    private static bool IsUniqueViolation(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            var message = current.Message;
+            if (message.Contains("ux_accounts_email_lower", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("unique", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("23505", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

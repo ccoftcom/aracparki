@@ -2,5 +2,16 @@
   "ConnectionStrings": {
     "PostgreSQL": "Host=CHANGE_ME;Port=5432;Database=aracparki;Username=CHANGE_ME;Password=CHANGE_ME"
   },
+  "App": {
+    "PublicBaseUrl": "https://www.aracparki.com"
+  },
+  "EmailSettings": {
+    "SmtpHost": "smtp-relay.brevo.com",
+    "SmtpPort": 587,
+    "SmtpUsername": "CHANGE_ME",
+    "SmtpPassword": "CHANGE_ME",
+    "FromEmail": "noreply@aracparki.com",
+    "FromName": "Araç Parkı"
+  },
   "AllowedHosts": "aracparki.com;www.aracparki.com"
 }

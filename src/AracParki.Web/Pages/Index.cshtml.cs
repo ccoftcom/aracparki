@@ -8,17 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AracParki.Web.Pages;
 
-public sealed class IndexModel : PageModel
+public sealed class IndexModel(ListingService listingService, CatalogService catalogService) : PageModel
 {
-    private readonly ListingService _listingService;
-    private readonly CatalogService _catalogService;
-
-    public IndexModel(ListingService listingService, CatalogService catalogService)
-    {
-        _listingService = listingService;
-        _catalogService = catalogService;
-    }
-
     public IReadOnlyList<CategorySummaryDto> Categories { get; private set; } = [];
     public IReadOnlyList<CitySummaryDto> PopularCities { get; private set; } = [];
     public IReadOnlyList<CategoryOptionDto> CategoryOptions { get; private set; } = [];
@@ -34,11 +25,11 @@ public sealed class IndexModel : PageModel
             Filter = new ListingSearchQuery();
         }
 
-        Categories = await _catalogService.GetCategoriesWithCountsAsync(cancellationToken);
-        PopularCities = await _catalogService.GetPopularCitiesAsync(cancellationToken);
-        CategoryOptions = await _catalogService.GetAllCategoriesAsync(cancellationToken);
-        CityOptions = await _catalogService.GetAllCitiesAsync(cancellationToken);
-        Featured = await _listingService.GetFeaturedAsync(Filter, 12, cancellationToken);
+        Categories = await catalogService.GetCategoriesWithCountsAsync(cancellationToken);
+        PopularCities = await catalogService.GetPopularCitiesAsync(cancellationToken);
+        CategoryOptions = await catalogService.GetAllCategoriesAsync(cancellationToken);
+        CityOptions = await catalogService.GetAllCitiesAsync(cancellationToken);
+        Featured = await listingService.GetFeaturedAsync(Filter, 12, cancellationToken);
 
         ViewData["PageKey"] = "home";
         ViewData["Title"] = "Araç Parkı | Türkiye İş Makinesi Satılık · Kiralık · İkinci El";

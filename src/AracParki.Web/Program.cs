@@ -22,7 +22,7 @@ try
         .WriteTo.Console());
 
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure();
+    builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddRazorPages();
     builder.Services.AddAntiforgery();
 
@@ -39,6 +39,7 @@ try
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
             options.Cookie.SameSite = SameSiteMode.Lax;
+            AuthCookie.ConfigureSecurityStampValidation(options);
         });
 
     builder.Services.AddAuthorization();
@@ -53,6 +54,15 @@ try
                 {
                     PermitLimit = 10,
                     Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                }));
+        options.AddPolicy("auth-sensitive", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0
                 }));
     });

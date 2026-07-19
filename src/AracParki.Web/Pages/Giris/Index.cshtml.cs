@@ -1,30 +1,23 @@
 using System.Security.Claims;
 using AracParki.Application.Accounts.Services;
+using AracParki.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AracParki.Web.Pages.Giris;
 
-public sealed class IndexModel : PageModel
+[EnableRateLimiting("auth-sensitive")]
+public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logger) : PageModel
 {
-    private readonly AccountService _accounts;
-    private readonly IHostEnvironment _env;
-
-    public IndexModel(AccountService accounts, IHostEnvironment env)
-    {
-        _accounts = accounts;
-        _env = env;
-    }
-
     [BindProperty]
     public LoginInput Input { get; set; } = new();
 
     public string? ReturnUrl { get; private set; }
     public string? FormError { get; private set; }
     public bool NeedsEmailConfirm { get; private set; }
-    public string? DevVerifyUrl { get; private set; }
 
     public IActionResult OnGet(string? returnUrl = null)
     {
@@ -48,15 +41,18 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var (ok, error, account) = await _accounts.LoginAsync(Input.Email, Input.Password, cancellationToken);
+        var (ok, error, account) = await accounts.LoginAsync(Input.Email, Input.Password, cancellationToken);
         if (error == "email_unconfirmed" && account is not null)
         {
             NeedsEmailConfirm = true;
             FormError = "E-posta adresini henüz onaylamadın. Gelen kutundaki bağlantıyı kullan veya yeniden gönder.";
-            var token = await _accounts.RequestEmailVerificationAsync(account.Email, cancellationToken);
-            if (_env.IsDevelopment() && !string.IsNullOrEmpty(token))
+            try
             {
-                DevVerifyUrl = $"/eposta-dogrula?token={Uri.EscapeDataString(token)}";
+                await accounts.ResendEmailVerificationAsync(account.Email, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Resend verification failed");
             }
 
             return Page();
@@ -68,19 +64,6 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, account.Id.ToString()),
-            new(ClaimTypes.Email, account.Email),
-            new(ClaimTypes.Name, account.DisplayName)
-        };
-
-        if (!string.IsNullOrWhiteSpace(account.Phone))
-        {
-            claims.Add(new Claim("phone", account.Phone));
-        }
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var props = new AuthenticationProperties
         {
             IsPersistent = Input.RememberMe,
@@ -89,7 +72,7 @@ public sealed class IndexModel : PageModel
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(identity),
+            AuthCookie.CreatePrincipal(account),
             props);
 
         return LocalRedirect(SafeReturn(returnUrl));

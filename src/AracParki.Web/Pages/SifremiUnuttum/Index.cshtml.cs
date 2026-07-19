@@ -1,26 +1,19 @@
 using AracParki.Application.Accounts.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 using System.ComponentModel.DataAnnotations;
 
 namespace AracParki.Web.Pages.SifremiUnuttum;
 
-public sealed class IndexModel : PageModel
+[EnableRateLimiting("auth-sensitive")]
+public sealed class IndexModel(AccountService accounts, ILogger<IndexModel> logger) : PageModel
 {
-    private readonly AccountService _accounts;
-    private readonly IHostEnvironment _env;
-
-    public IndexModel(AccountService accounts, IHostEnvironment env)
-    {
-        _accounts = accounts;
-        _env = env;
-    }
-
     [BindProperty]
     public ForgotInput Input { get; set; } = new();
 
     public bool Submitted { get; private set; }
-    public string? DevResetUrl { get; private set; }
+    public string? FormError { get; private set; }
 
     public IActionResult OnGet()
     {
@@ -40,16 +33,19 @@ public sealed class IndexModel : PageModel
             return Page();
         }
 
-        var token = await _accounts.RequestPasswordResetAsync(Input.Email, cancellationToken);
-        Submitted = true;
-
-        // No SMTP yet — in Development expose one-time link for QA.
-        if (_env.IsDevelopment() && !string.IsNullOrEmpty(token))
+        try
         {
-            DevResetUrl = $"/sifre-sifirla?token={Uri.EscapeDataString(token)}";
+            await accounts.RequestPasswordResetAsync(Input.Email, cancellationToken);
+            Submitted = true;
+            return Page();
         }
-
-        return Page();
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Password reset email failed for {Email}", Input.Email);
+            // Anti-enumeration: still show success copy when possible; only surface infra failure
+            FormError = "E-posta şu an gönderilemedi. Biraz sonra tekrar dene.";
+            return Page();
+        }
     }
 
     public sealed class ForgotInput

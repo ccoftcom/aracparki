@@ -14,11 +14,34 @@ public interface IAccountStore
         string? phone,
         CancellationToken cancellationToken);
     Task UpdatePasswordHashAsync(long accountId, string passwordHash, CancellationToken cancellationToken);
-    Task MarkEmailConfirmedAsync(long accountId, CancellationToken cancellationToken);
+
+    /// <summary>Invalidates prior unused reset tokens, then inserts the new hash.</summary>
     Task SaveResetTokenAsync(long accountId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken);
-    Task<(long AccountId, string TokenHash)?> FindValidResetTokenAsync(string tokenHash, CancellationToken cancellationToken);
-    Task MarkResetTokenUsedAsync(string tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>Returns account id for a still-valid unused reset token (does not consume).</summary>
+    Task<long?> FindValidResetAccountIdAsync(string tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically consumes the reset token, updates password, and rotates security stamp.
+    /// </summary>
+    Task<bool> TryResetPasswordWithTokenAsync(
+        string tokenHash,
+        long accountId,
+        string passwordHash,
+        string securityStamp,
+        CancellationToken cancellationToken);
+
+    /// <summary>Invalidates prior unused verification tokens, then inserts the new hash.</summary>
     Task SaveEmailVerificationTokenAsync(long accountId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken);
-    Task<(long AccountId, string TokenHash)?> FindValidEmailVerificationTokenAsync(string tokenHash, CancellationToken cancellationToken);
-    Task MarkEmailVerificationTokenUsedAsync(string tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically consumes a valid verification token and marks the account confirmed.
+    /// Returns account id or null.
+    /// </summary>
+    Task<long?> TryConfirmEmailWithTokenAsync(string tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>Looks up any verification token row (used or not) and its account confirmation state.</summary>
+    Task<(long AccountId, bool EmailConfirmed)?> FindAccountByVerificationTokenHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken);
 }

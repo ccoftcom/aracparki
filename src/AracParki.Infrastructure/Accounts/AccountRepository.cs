@@ -14,7 +14,8 @@ public sealed class AccountRepository(IDbConnectionFactory connectionFactory) : 
                first_name AS FirstName,
                last_name AS LastName,
                phone,
-               email_confirmed_at AS EmailConfirmedAt
+               email_confirmed_at AS EmailConfirmedAt,
+               security_stamp AS SecurityStamp
         FROM accounts
         """;
 
@@ -24,7 +25,7 @@ public sealed class AccountRepository(IDbConnectionFactory connectionFactory) : 
         return await connection.QuerySingleOrDefaultAsync<AccountDto>(
             new CommandDefinition(
                 AccountSelect + """
-                 WHERE email = @Email
+                 WHERE lower(email) = @Email
                 LIMIT 1
                 """,
                 new { Email = email },
@@ -78,47 +79,61 @@ public sealed class AccountRepository(IDbConnectionFactory connectionFactory) : 
             new CommandDefinition(
                 """
                 UPDATE accounts
-                SET password_hash = @PasswordHash, updated_at = NOW()
+                SET password_hash = @PasswordHash
                 WHERE id = @Id
                 """,
                 new { Id = accountId, PasswordHash = passwordHash },
                 cancellationToken: cancellationToken));
     }
 
-    public async Task MarkEmailConfirmedAsync(long accountId, CancellationToken cancellationToken)
+    public async Task SaveResetTokenAsync(
+        long accountId,
+        string tokenHash,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE accounts
-                SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()), updated_at = NOW()
-                WHERE id = @Id
-                """,
-                new { Id = accountId },
-                cancellationToken: cancellationToken));
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE password_reset_tokens
+                    SET used_at = COALESCE(used_at, NOW())
+                    WHERE account_id = @AccountId
+                      AND used_at IS NULL
+                    """,
+                    new { AccountId = accountId },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    INSERT INTO password_reset_tokens (account_id, token_hash, expires_at)
+                    VALUES (@AccountId, @TokenHash, @ExpiresAt)
+                    """,
+                    new { AccountId = accountId, TokenHash = tokenHash, ExpiresAt = expiresAt },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await tx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
-    public async Task SaveResetTokenAsync(long accountId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public async Task<long?> FindValidResetAccountIdAsync(string tokenHash, CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        await connection.ExecuteAsync(
+        return await connection.ExecuteScalarAsync<long?>(
             new CommandDefinition(
                 """
-                INSERT INTO password_reset_tokens (account_id, token_hash, expires_at)
-                VALUES (@AccountId, @TokenHash, @ExpiresAt)
-                """,
-                new { AccountId = accountId, TokenHash = tokenHash, ExpiresAt = expiresAt },
-                cancellationToken: cancellationToken));
-    }
-
-    public async Task<(long AccountId, string TokenHash)?> FindValidResetTokenAsync(string tokenHash, CancellationToken cancellationToken)
-    {
-        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var row = await connection.QuerySingleOrDefaultAsync<TokenRow>(
-            new CommandDefinition(
-                """
-                SELECT account_id AS AccountId, token_hash AS TokenHash
+                SELECT account_id
                 FROM password_reset_tokens
                 WHERE token_hash = @TokenHash
                   AND used_at IS NULL
@@ -127,75 +142,198 @@ public sealed class AccountRepository(IDbConnectionFactory connectionFactory) : 
                 """,
                 new { TokenHash = tokenHash },
                 cancellationToken: cancellationToken));
-
-        return row is null ? null : (row.AccountId, row.TokenHash);
     }
 
-    public async Task MarkResetTokenUsedAsync(string tokenHash, CancellationToken cancellationToken)
+    public async Task<bool> TryResetPasswordWithTokenAsync(
+        string tokenHash,
+        long accountId,
+        string passwordHash,
+        string securityStamp,
+        CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE password_reset_tokens
-                SET used_at = NOW()
-                WHERE token_hash = @TokenHash
-                """,
-                new { TokenHash = tokenHash },
-                cancellationToken: cancellationToken));
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var consumedId = await connection.ExecuteScalarAsync<long?>(
+                new CommandDefinition(
+                    """
+                    UPDATE password_reset_tokens
+                    SET used_at = NOW()
+                    WHERE token_hash = @TokenHash
+                      AND account_id = @AccountId
+                      AND used_at IS NULL
+                      AND expires_at > NOW()
+                    RETURNING account_id
+                    """,
+                    new { TokenHash = tokenHash, AccountId = accountId },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            if (consumedId is null)
+            {
+                await tx.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE accounts
+                    SET password_hash = @PasswordHash,
+                        security_stamp = @SecurityStamp
+                    WHERE id = @Id
+                    """,
+                    new { Id = accountId, PasswordHash = passwordHash, SecurityStamp = securityStamp },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE password_reset_tokens
+                    SET used_at = COALESCE(used_at, NOW())
+                    WHERE account_id = @Id
+                      AND used_at IS NULL
+                    """,
+                    new { Id = accountId },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await tx.CommitAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
-    public async Task SaveEmailVerificationTokenAsync(long accountId, string tokenHash, DateTimeOffset expiresAt, CancellationToken cancellationToken)
+    public async Task SaveEmailVerificationTokenAsync(
+        long accountId,
+        string tokenHash,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                INSERT INTO email_verification_tokens (account_id, token_hash, expires_at)
-                VALUES (@AccountId, @TokenHash, @ExpiresAt)
-                """,
-                new { AccountId = accountId, TokenHash = tokenHash, ExpiresAt = expiresAt },
-                cancellationToken: cancellationToken));
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE email_verification_tokens
+                    SET used_at = COALESCE(used_at, NOW())
+                    WHERE account_id = @AccountId
+                      AND used_at IS NULL
+                    """,
+                    new { AccountId = accountId },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    INSERT INTO email_verification_tokens (account_id, token_hash, expires_at)
+                    VALUES (@AccountId, @TokenHash, @ExpiresAt)
+                    """,
+                    new { AccountId = accountId, TokenHash = tokenHash, ExpiresAt = expiresAt },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await tx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
-    public async Task<(long AccountId, string TokenHash)?> FindValidEmailVerificationTokenAsync(
+    public async Task<long?> TryConfirmEmailWithTokenAsync(string tokenHash, CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var accountId = await connection.ExecuteScalarAsync<long?>(
+                new CommandDefinition(
+                    """
+                    UPDATE email_verification_tokens
+                    SET used_at = NOW()
+                    WHERE token_hash = @TokenHash
+                      AND used_at IS NULL
+                      AND expires_at > NOW()
+                    RETURNING account_id
+                    """,
+                    new { TokenHash = tokenHash },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            if (accountId is null)
+            {
+                await tx.RollbackAsync(cancellationToken);
+                return null;
+            }
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE accounts
+                    SET email_confirmed_at = COALESCE(email_confirmed_at, NOW())
+                    WHERE id = @Id
+                    """,
+                    new { Id = accountId.Value },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await connection.ExecuteAsync(
+                new CommandDefinition(
+                    """
+                    UPDATE email_verification_tokens
+                    SET used_at = COALESCE(used_at, NOW())
+                    WHERE account_id = @Id
+                      AND used_at IS NULL
+                    """,
+                    new { Id = accountId.Value },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await tx.CommitAsync(cancellationToken);
+            return accountId;
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<(long AccountId, bool EmailConfirmed)?> FindAccountByVerificationTokenHashAsync(
         string tokenHash,
         CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var row = await connection.QuerySingleOrDefaultAsync<TokenRow>(
+        var row = await connection.QuerySingleOrDefaultAsync<TokenAccountRow>(
             new CommandDefinition(
                 """
-                SELECT account_id AS AccountId, token_hash AS TokenHash
-                FROM email_verification_tokens
-                WHERE token_hash = @TokenHash
-                  AND used_at IS NULL
-                  AND expires_at > NOW()
+                SELECT a.id AS AccountId,
+                       (a.email_confirmed_at IS NOT NULL) AS EmailConfirmed
+                FROM email_verification_tokens t
+                JOIN accounts a ON a.id = t.account_id
+                WHERE t.token_hash = @TokenHash
                 LIMIT 1
                 """,
                 new { TokenHash = tokenHash },
                 cancellationToken: cancellationToken));
 
-        return row is null ? null : (row.AccountId, row.TokenHash);
+        return row is null ? null : (row.AccountId, row.EmailConfirmed);
     }
 
-    public async Task MarkEmailVerificationTokenUsedAsync(string tokenHash, CancellationToken cancellationToken)
-    {
-        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        await connection.ExecuteAsync(
-            new CommandDefinition(
-                """
-                UPDATE email_verification_tokens
-                SET used_at = NOW()
-                WHERE token_hash = @TokenHash
-                """,
-                new { TokenHash = tokenHash },
-                cancellationToken: cancellationToken));
-    }
-
-    private sealed class TokenRow
+    private sealed class TokenAccountRow
     {
         public long AccountId { get; init; }
-        public required string TokenHash { get; init; }
+        public bool EmailConfirmed { get; init; }
     }
 }

@@ -7,15 +7,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AracParki.Web.Pages.Ilan;
 
-public sealed class IndexModel : PageModel
+public sealed class IndexModel(ListingService listingService) : PageModel
 {
-    private readonly ListingService _listingService;
-
-    public IndexModel(ListingService listingService)
-    {
-        _listingService = listingService;
-    }
-
     [BindProperty(SupportsGet = true)]
     public string AdNo { get; set; } = string.Empty;
 
@@ -28,7 +21,7 @@ public sealed class IndexModel : PageModel
             return NotFound();
         }
 
-        Listing = await _listingService.GetByAdNoAsync(AdNo, cancellationToken);
+        Listing = await listingService.GetByAdNoAsync(AdNo, cancellationToken);
         if (Listing is null)
         {
             return NotFound();

@@ -22,11 +22,6 @@
           {
             <span class="auth-alert-actions">
               <a href="/eposta-dogrula">Doğrulama maili gönder</a>
-              @if (!string.IsNullOrEmpty(Model.DevVerifyUrl))
-              {
-                <text> · </text>
-                <a href="@Model.DevVerifyUrl">Geliştirme: doğrula</a>
-              }
             </span>
           }
         </div>

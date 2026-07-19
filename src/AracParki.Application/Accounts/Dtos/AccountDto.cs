@@ -9,6 +9,7 @@ public sealed class AccountDto
     public required string LastName { get; init; }
     public string? Phone { get; init; }
     public DateTimeOffset? EmailConfirmedAt { get; init; }
+    public required string SecurityStamp { get; init; }
 
     public bool EmailConfirmed => EmailConfirmedAt.HasValue;
 
