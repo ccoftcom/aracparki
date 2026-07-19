@@ -97,9 +97,12 @@
     align-items: center;
   }
 
-  .site-header.is-compact .cat-bar-actions .header-cta {
-    font-size: 10px;
-    padding-inline: 8px;
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .site-header:has(.cat-bar) .cat-bar-actions .header-cta {
+        animation-name: ap-cta-compact-sm;
+      }
+    }
   }
 
   .partner-banner {

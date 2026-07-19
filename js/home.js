@@ -7,7 +7,6 @@
     LISTINGS,
     escapeHtml,
     showToast,
-    syncSelectFilled,
     fillCategorySelect,
     fillCitySelect,
     matchesListing,
@@ -98,8 +97,6 @@
     if (q) q.value = state.query || "";
     if (cat) cat.value = state.category || "";
     if (city) city.value = state.city || "";
-    syncSelectFilled(cat);
-    syncSelectFilled(city);
     document.querySelectorAll(".chip").forEach((el) => {
       el.setAttribute("aria-pressed", el.dataset.filter === state.filter ? "true" : "false");
     });
@@ -116,13 +113,6 @@
   syncControls();
   renderListings();
   renderRecent();
-
-  document.getElementById("filter-category")?.addEventListener("change", (e) => {
-    syncSelectFilled(e.currentTarget);
-  });
-  document.getElementById("filter-city")?.addEventListener("change", (e) => {
-    syncSelectFilled(e.currentTarget);
-  });
 
   document.getElementById("search-form")?.addEventListener("submit", (e) => {
     e.preventDefault();

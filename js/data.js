@@ -429,11 +429,6 @@
     }, 2200);
   };
 
-  const syncSelectFilled = (el) => {
-    if (!el) return;
-    el.classList.toggle("is-filled", Boolean(el.value));
-  };
-
   const fillCategorySelect = (select, { includeEmpty = true } = {}) => {
     if (!select) return;
     if (includeEmpty && !select.querySelector('option[value=""]')) {
@@ -678,7 +673,6 @@
     escapeHtml,
     escapeAttr,
     showToast,
-    syncSelectFilled,
     fillCategorySelect,
     fillCitySelect,
     formatPrice,

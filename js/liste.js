@@ -3,7 +3,6 @@
 
   const {
     escapeHtml,
-    syncSelectFilled,
     fillCategorySelect,
     fillCitySelect,
     intentLabel,
@@ -35,8 +34,6 @@
     if (city) city.value = state.city;
     if (sort) sort.value = state.sort || "yeni";
     if (q) q.value = state.query;
-    [cat, city].forEach(syncSelectFilled);
-    tip?.classList.add("is-filled");
   };
 
   const writeUrl = () => {
@@ -97,12 +94,6 @@
   renderBreadcrumb();
   renderList();
 
-  ["filter-category", "filter-city"].forEach((id) => {
-    document.getElementById(id)?.addEventListener("change", (e) => {
-      syncSelectFilled(e.currentTarget);
-    });
-  });
-
   document.getElementById("list-filter-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
     state.filter = document.getElementById("filter-tip")?.value || "all";
@@ -123,8 +114,6 @@
     if (city) city.value = "";
     if (q) q.value = "";
     if (sort) sort.value = "yeni";
-    syncSelectFilled(cat);
-    syncSelectFilled(city);
     apply();
   });
 

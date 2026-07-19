@@ -23,7 +23,7 @@
     const href = escapeAttr(detailUrl(listing.id));
     const alt = escapeAttr(listing.title);
     return `
-      <article class="listing-card is-visible" data-id="${escapeAttr(listing.id)}">
+      <article class="listing-card" data-id="${escapeAttr(listing.id)}">
         <a class="listing-card-link" href="${href}">
           <div class="listing-media">
             <span class="${escapeAttr(badge.className)}">${escapeHtml(badge.text)}</span>

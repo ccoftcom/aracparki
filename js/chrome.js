@@ -40,7 +40,7 @@
       ? `
       <nav class="cat-bar" aria-label="Hızlı kategoriler">
         <div class="container cat-bar-row">
-          <a class="logo cat-bar-brand" href="index.html" aria-label="Araç Parkı ana sayfa" tabindex="-1">
+          <a class="logo cat-bar-brand" href="index.html" aria-label="Araç Parkı ana sayfa">
             <span class="logo-arac">Araç</span><span class="logo-parki">Parkı</span>
           </a>
           <div class="cat-bar-clip">

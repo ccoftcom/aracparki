@@ -63,9 +63,7 @@
 
 .promo-filters select:has(> option:checked:not([value=""])),
 .filter-field select:has(> option:checked:not([value=""])),
-.sort-field select,
-.promo-filters select.is-filled,
-.filter-field select.is-filled {
+.sort-field select {
   color: var(--ink);
   font-weight: 700;
 }

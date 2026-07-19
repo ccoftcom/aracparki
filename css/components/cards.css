@@ -96,8 +96,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(8px);
+  opacity: 1;
+  transform: none;
   transition:
     border-color 0.15s var(--ease),
     box-shadow 0.15s var(--ease),
@@ -105,9 +105,13 @@
     transform 0.25s var(--ease);
 }
 
-.listing-card.is-visible {
-  opacity: 1;
-  transform: none;
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    .listing-card {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
 }
 
 .listing-card:hover {
