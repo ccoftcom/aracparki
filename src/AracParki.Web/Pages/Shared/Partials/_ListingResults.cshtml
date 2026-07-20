@@ -34,10 +34,10 @@ else
     </table>
   </div>
 
-  <div class="classified-grid">
+  <div class="listing-grid">
     @foreach (var item in Model.Result.Items)
     {
-      @await Html.PartialAsync("Shared/Partials/_ClassifiedGridCard", item)
+      <partial name="Shared/Partials/_ListingCard" model="item" />
     }
   </div>
 }
