@@ -1,0 +1,157 @@
+@model AracParki.Web.Pages.Ilanlar.IndexModel
+@{
+    var hasIntent = Model.Filter.Intent is not ListingIntent.All;
+    var hasCategory = Model.Filter.CategoryId is > 0;
+    var hasBrand = Model.Filter.BrandId is > 0;
+    var intentUrl = hasIntent ? Model.IntentNavUrl(Model.Filter.Intent) : null;
+    var categoryUrl = hasCategory ? Model.CategoryNavUrl(Model.Filter.CategoryId!.Value) : null;
+}
+
+@if (!hasIntent && !hasCategory)
+{
+  <ul class="cat-tree-children">
+    <li class="cat-tree-node">
+      <a class="cat-tree-link cat-tree-link--choice"
+         href="@Model.IntentNavUrl(ListingIntent.Satilik)"
+         hx-get="@Model.IntentNavUrl(ListingIntent.Satilik)"
+         hx-select="#list-shell"
+         hx-target="#list-shell"
+         hx-swap="outerHTML"
+         hx-push-url="true">
+        <span class="cat-tree-label">@ListingIntent.Label(ListingIntent.Satilik)</span>
+      </a>
+    </li>
+    <li class="cat-tree-node">
+      <a class="cat-tree-link cat-tree-link--choice"
+         href="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+         hx-get="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+         hx-select="#list-shell"
+         hx-target="#list-shell"
+         hx-swap="outerHTML"
+         hx-push-url="true">
+        <span class="cat-tree-label">@ListingIntent.Label(ListingIntent.Kiralik)</span>
+      </a>
+    </li>
+  </ul>
+}
+else if (hasIntent)
+{
+  <ul class="cat-tree-children">
+    <li class="cat-tree-node">
+      <a class="cat-tree-link cat-tree-link--path@(!hasCategory ? " is-current" : "")"
+         href="@intentUrl"
+         aria-current="@(!hasCategory ? "page" : null)"
+         hx-get="@intentUrl"
+         hx-select="#list-shell"
+         hx-target="#list-shell"
+         hx-swap="outerHTML"
+         hx-push-url="true">
+        <span class="cat-tree-label">@ListingIntent.Label(Model.Filter.Intent)</span>
+      </a>
+
+      @if (!hasCategory)
+      {
+        <ul class="cat-tree-children">
+          @foreach (var cat in Model.CategoryNav.Where(c => c.ListingCount > 0))
+          {
+            var catUrl = Model.CategoryNavUrl(cat.Id);
+            <li class="cat-tree-node">
+              <a class="cat-tree-link cat-tree-link--choice"
+                 href="@catUrl"
+                 hx-get="@catUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true">
+                <span class="cat-tree-label">@cat.Name</span>
+                <span class="cat-tree-count">@Formatters.Count(cat.ListingCount)</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+      else
+      {
+        <ul class="cat-tree-children">
+          <li class="cat-tree-node">
+            <a class="cat-tree-link cat-tree-link--path@(!hasBrand ? " is-current" : "")"
+               href="@categoryUrl"
+               aria-current="@(!hasBrand ? "page" : null)"
+               hx-get="@categoryUrl"
+               hx-select="#list-shell"
+               hx-target="#list-shell"
+               hx-swap="outerHTML"
+               hx-push-url="true">
+              <span class="cat-tree-label">@Model.CurrentCategoryName</span>
+            </a>
+            <ul class="cat-tree-children">
+              @foreach (var brand in Model.BrandFacets.Where(b => b.Count > 0))
+              {
+                if (!int.TryParse(brand.Key, out var brandId))
+                {
+                  continue;
+                }
+                var brandUrl = Model.BrandNavUrl(brandId);
+                var isCurrent = Model.Filter.BrandId == brandId;
+                <li class="cat-tree-node">
+                  <a class="cat-tree-link cat-tree-link--choice@(isCurrent ? " is-current" : "")"
+                     href="@brandUrl"
+                     aria-current="@(isCurrent ? "page" : null)"
+                     hx-get="@brandUrl"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">
+                    <span class="cat-tree-label">@brand.Label</span>
+                    <span class="cat-tree-count">@Formatters.Count(brand.Count)</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </li>
+        </ul>
+      }
+    </li>
+  </ul>
+}
+else if (hasCategory)
+{
+  <ul class="cat-tree-children">
+    <li class="cat-tree-node">
+      <a class="cat-tree-link cat-tree-link--path@(!hasBrand ? " is-current" : "")"
+         href="@categoryUrl"
+         aria-current="@(!hasBrand ? "page" : null)"
+         hx-get="@categoryUrl"
+         hx-select="#list-shell"
+         hx-target="#list-shell"
+         hx-swap="outerHTML"
+         hx-push-url="true">
+        <span class="cat-tree-label">@Model.CurrentCategoryName</span>
+      </a>
+      <ul class="cat-tree-children">
+        @foreach (var brand in Model.BrandFacets.Where(b => b.Count > 0))
+        {
+          if (!int.TryParse(brand.Key, out var brandId))
+          {
+            continue;
+          }
+          var brandUrl = Model.BrandNavUrl(brandId);
+          var isCurrent = Model.Filter.BrandId == brandId;
+          <li class="cat-tree-node">
+            <a class="cat-tree-link cat-tree-link--choice@(isCurrent ? " is-current" : "")"
+               href="@brandUrl"
+               aria-current="@(isCurrent ? "page" : null)"
+               hx-get="@brandUrl"
+               hx-select="#list-shell"
+               hx-target="#list-shell"
+               hx-swap="outerHTML"
+               hx-push-url="true">
+              <span class="cat-tree-label">@brand.Label</span>
+              <span class="cat-tree-count">@Formatters.Count(brand.Count)</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </li>
+  </ul>
+}

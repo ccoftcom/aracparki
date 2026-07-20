@@ -1,6 +1,6 @@
 @model AracParki.Web.Pages.Ilanlar.IndexModel
 
-@if (Model.Result.Items.Count == 0)
+@if (Model.Result.TotalCount == 0)
 {
   <div class="listing-empty empty-state">
     <p>Bu kriterlere uygun ilan bulunamadı.</p>
@@ -10,8 +10,27 @@
 }
 else
 {
-  foreach (var item in Model.Result.Items)
-  {
-    @await Html.PartialAsync("Shared/Partials/_ClassifiedRow", item)
-  }
+  <div class="classified-table-wrap">
+    <table class="classified-table">
+      <thead>
+        <tr>
+          <th scope="col" class="col-thumb"><span class="sr-only">Fotoğraf</span></th>
+          <th scope="col" class="col-brand">Marka</th>
+          <th scope="col" class="col-model">Model</th>
+          <th scope="col" class="col-title">İlan Başlığı</th>
+          <th scope="col" class="col-year">Yıl</th>
+          <th scope="col" class="col-hours">Saat</th>
+          <th scope="col" class="col-price">Fiyat</th>
+          <th scope="col" class="col-date">İlan Tarihi</th>
+          <th scope="col" class="col-loc">İl / İlçe</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var item in Model.Result.Items)
+        {
+          @await Html.PartialAsync("Shared/Partials/_ClassifiedTableRow", item)
+        }
+      </tbody>
+    </table>
+  </div>
 }

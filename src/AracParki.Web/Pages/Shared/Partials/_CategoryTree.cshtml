@@ -1,0 +1,60 @@
+@model AracParki.Web.Pages.Ilanlar.IndexModel
+@{
+    var rootUrl = Model.RootNavUrl();
+    var groupLabel = Model.RootNavLabel;
+    var showGroup = !string.Equals(groupLabel, "İş Makineleri", StringComparison.Ordinal);
+    var atRoot = Model.Filter.Intent is ListingIntent.All
+                 && Model.Filter.CategoryId is null or <= 0
+                 && Model.Filter.BrandId is null or <= 0;
+}
+
+<nav class="aside-card list-cat-nav" aria-label="Kategoriler">
+  <p class="cat-tree-heading" id="cat-tree-heading">Kategoriler</p>
+  <ul class="cat-tree" aria-labelledby="cat-tree-heading">
+    @if (showGroup)
+    {
+      <li class="cat-tree-node">
+        <a class="cat-tree-link cat-tree-link--path@(atRoot ? " is-current" : "")"
+           href="@rootUrl"
+           aria-current="@(atRoot ? "page" : null)"
+           hx-get="@rootUrl"
+           hx-select="#list-shell"
+           hx-target="#list-shell"
+           hx-swap="outerHTML"
+           hx-push-url="true">
+          <span class="cat-tree-label">@groupLabel</span>
+        </a>
+        <ul class="cat-tree-children">
+          <li class="cat-tree-node">
+            <a class="cat-tree-link cat-tree-link--path"
+               href="@rootUrl"
+               hx-get="@rootUrl"
+               hx-select="#list-shell"
+               hx-target="#list-shell"
+               hx-swap="outerHTML"
+               hx-push-url="true">
+              <span class="cat-tree-label">İş Makineleri</span>
+            </a>
+            @await Html.PartialAsync("Shared/Partials/_CategoryTreeBranch", Model)
+          </li>
+        </ul>
+      </li>
+    }
+    else
+    {
+      <li class="cat-tree-node">
+        <a class="cat-tree-link cat-tree-link--path@(atRoot ? " is-current" : "")"
+           href="@rootUrl"
+           aria-current="@(atRoot ? "page" : null)"
+           hx-get="@rootUrl"
+           hx-select="#list-shell"
+           hx-target="#list-shell"
+           hx-swap="outerHTML"
+           hx-push-url="true">
+          <span class="cat-tree-label">İş Makineleri</span>
+        </a>
+        @await Html.PartialAsync("Shared/Partials/_CategoryTreeBranch", Model)
+      </li>
+    }
+  </ul>
+</nav>

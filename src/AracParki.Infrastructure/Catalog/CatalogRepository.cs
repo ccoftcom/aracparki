@@ -160,6 +160,25 @@ public sealed class CatalogRepository(IDbConnectionFactory connectionFactory, IS
         return rows.AsList();
     }
 
+    public async Task<IReadOnlyList<DistrictOptionDto>> GetDistrictsByCitiesAsync(
+        IReadOnlyList<int> cityIds,
+        CancellationToken cancellationToken)
+    {
+        var ids = cityIds.Where(id => id > 0).Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return [];
+        }
+
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await connection.QueryAsync<DistrictOptionDto>(
+            new CommandDefinition(
+                sql.Get("Catalog/GetDistrictsByCities.sql"),
+                new { CityIds = ids },
+                cancellationToken: cancellationToken));
+        return rows.AsList();
+    }
+
     public async Task<IReadOnlyList<NeighborhoodOptionDto>> GetNeighborhoodsByDistrictAsync(
         int districtId,
         int take,

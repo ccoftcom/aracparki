@@ -1090,6 +1090,234 @@
       },
     }));
 
+    // CSP-friendly shell for /ilanlar mobile filter drawer (no inline object/ternary expressions).
+    Alpine.data("listShell", () => ({
+      filtersOpen: false,
+      init() {
+        this.$watch("filtersOpen", (open) => {
+          document.body.classList.toggle("no-scroll", !!open);
+        });
+      },
+      destroy() {
+        document.body.classList.remove("no-scroll");
+      },
+      get layoutClass() {
+        return this.filtersOpen ? "filters-open" : "";
+      },
+      get filtersExpandedAria() {
+        return this.filtersOpen ? "true" : "false";
+      },
+      openFilters() {
+        this.filtersOpen = true;
+      },
+      closeFilters() {
+        this.filtersOpen = false;
+      },
+    }));
+
+    Alpine.data("listLocationFilter", () => ({
+      open: null,
+      citySearch: "",
+      districtSearch: "",
+      cities: [],
+      districts: [],
+      selectedCityIds: [],
+      selectedDistrictIds: [],
+      loadingDistricts: false,
+      init() {
+        this.cities = parseJsonAttr(this.$el, "data-cities", []);
+        this.districts = parseJsonAttr(this.$el, "data-districts", []);
+        this.selectedCityIds = (parseJsonAttr(this.$el, "data-selected-cities", []) || []).map(Number);
+        this.selectedDistrictIds = (parseJsonAttr(this.$el, "data-selected-districts", []) || []).map(Number);
+      },
+      get cityOpen() {
+        return this.open === "city";
+      },
+      get districtOpen() {
+        return this.open === "district";
+      },
+      get cityOpenAria() {
+        return this.cityOpen ? "true" : "false";
+      },
+      get districtOpenAria() {
+        return this.districtOpen ? "true" : "false";
+      },
+      get hasCitySearch() {
+        return this.citySearch.length > 0;
+      },
+      get hasDistrictSearch() {
+        return this.districtSearch.length > 0;
+      },
+      get hasSelectedCities() {
+        return this.selectedCityIds.length > 0;
+      },
+      get districtTriggerDisabled() {
+        return this.loadingDistricts || !this.hasSelectedCities;
+      },
+      get citiesView() {
+        const q = this.citySearch.trim().toLocaleLowerCase("tr");
+        const selected = new Set(this.selectedCityIds.map(Number));
+        const list = !q
+          ? this.cities
+          : this.cities.filter((c) => String(c.name || "").toLocaleLowerCase("tr").includes(q));
+        return list.map((c) => {
+          const id = Number(c.id);
+          const on = selected.has(id);
+          return {
+            id: c.id,
+            name: c.name,
+            selected: on,
+            itemClass: on ? "is-selected" : "",
+          };
+        });
+      },
+      get citiesEmpty() {
+        return this.citiesView.length === 0;
+      },
+      get districtsView() {
+        const q = this.districtSearch.trim().toLocaleLowerCase("tr");
+        const selected = new Set(this.selectedDistrictIds.map(Number));
+        const showCity = this.selectedCityIds.length > 1;
+        const list = !q
+          ? this.districts
+          : this.districts.filter((d) => {
+              const label = `${d.name || ""} ${d.cityName || ""}`;
+              return label.toLocaleLowerCase("tr").includes(q);
+            });
+        return list.map((d) => {
+          const id = Number(d.id);
+          const on = selected.has(id);
+          const cityName = d.cityName || "";
+          return {
+            id: d.id,
+            name: d.name,
+            selected: on,
+            itemClass: on ? "is-selected" : "",
+            showCity: showCity && !!cityName,
+            citySuffix: cityName ? ` (${cityName})` : "",
+          };
+        });
+      },
+      get districtsEmpty() {
+        return this.districtsView.length === 0;
+      },
+      get cityTriggerLabel() {
+        const n = this.selectedCityIds.length;
+        if (n === 0) return "Türkiye geneli";
+        const first = this.cities.find((c) => Number(c.id) === Number(this.selectedCityIds[0]));
+        const name = first?.name || "İl";
+        return n === 1 ? name : `${name} +${n - 1}`;
+      },
+      get districtTriggerLabel() {
+        const n = this.selectedDistrictIds.length;
+        if (n === 0) return "Tüm ilçeler";
+        const first = this.districts.find((d) => Number(d.id) === Number(this.selectedDistrictIds[0]));
+        const name = first?.name || "İlçe";
+        return n === 1 ? name : `${name} +${n - 1}`;
+      },
+      get districtButtonLabel() {
+        if (this.selectedCityIds.length === 0) return "Önce il seçin";
+        return this.loadingDistricts ? "Yükleniyor…" : this.districtTriggerLabel;
+      },
+      toggleCityOpen() {
+        this.open = this.open === "city" ? null : "city";
+        this.citySearch = "";
+        if (this.open === "city") {
+          this.$nextTick(() => this.$refs.citySearch?.focus());
+        }
+      },
+      toggleDistrictOpen() {
+        if (this.selectedCityIds.length === 0) return;
+        this.open = this.open === "district" ? null : "district";
+        this.districtSearch = "";
+        if (this.open === "district") {
+          this.$nextTick(() => this.$refs.districtSearch?.focus());
+        }
+      },
+      closeCityPanel() {
+        if (this.open === "city") this.open = null;
+      },
+      closeDistrictPanel() {
+        if (this.open === "district") this.open = null;
+      },
+      escapeCityPanel() {
+        this.closeCityPanel();
+        const trigger = this.$refs.cityTrigger;
+        if (trigger) trigger.focus();
+      },
+      escapeDistrictPanel() {
+        this.closeDistrictPanel();
+        const trigger = this.$refs.districtTrigger;
+        if (trigger) trigger.focus();
+      },
+      isCitySelected(id) {
+        return this.selectedCityIds.some((x) => Number(x) === Number(id));
+      },
+      isDistrictSelected(id) {
+        return this.selectedDistrictIds.some((x) => Number(x) === Number(id));
+      },
+      async toggleCity(event) {
+        const num = Number(
+          (event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0
+        );
+        if (!num) return;
+        if (this.isCitySelected(num)) {
+          this.selectedCityIds = this.selectedCityIds.filter((x) => Number(x) !== num);
+        } else {
+          this.selectedCityIds = [...this.selectedCityIds, num];
+        }
+        await this.reloadDistricts();
+      },
+      toggleDistrict(event) {
+        const num = Number(
+          (event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0
+        );
+        if (!num) return;
+        if (this.isDistrictSelected(num)) {
+          this.selectedDistrictIds = this.selectedDistrictIds.filter((x) => Number(x) !== num);
+        } else {
+          this.selectedDistrictIds = [...this.selectedDistrictIds, num];
+        }
+      },
+      async reloadDistricts() {
+        const prev = new Set(this.selectedDistrictIds.map(Number));
+        this.districts = [];
+        this.selectedDistrictIds = [];
+        if (this.selectedCityIds.length === 0) {
+          if (this.open === "district") this.open = null;
+          return;
+        }
+        this.loadingDistricts = true;
+        try {
+          const qs = this.selectedCityIds.join(",");
+          const res = await fetch(`/api/locations/districts?cityIds=${encodeURIComponent(qs)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          this.districts = (data || []).map((d) => ({
+            id: d.id ?? d.Id,
+            name: d.name ?? d.Name,
+            cityId: d.cityId ?? d.CityId,
+            cityName: d.cityName ?? d.CityName,
+          }));
+          this.selectedDistrictIds = this.districts
+            .map((d) => Number(d.id))
+            .filter((id) => prev.has(id));
+        } catch {
+          this.districts = [];
+        } finally {
+          this.loadingDistricts = false;
+        }
+      },
+      clearCitySearch() {
+        this.citySearch = "";
+        this.$refs.citySearch?.focus();
+      },
+      clearDistrictSearch() {
+        this.districtSearch = "";
+        this.$refs.districtSearch?.focus();
+      },
+    }));
+
     Alpine.data("ilanVerImages", () => ({
       urls: [""],
       get canRemove() {
@@ -1124,9 +1352,178 @@
     }));
   });
 
+  // —— İlanlar (liste) sayfası geliştirmeleri ——
+  const SAVED_SEARCHES = "ap:saved-searches";
+  const RANGE_PAIRS = [
+    ["fiyatMin", "fiyatMax"],
+    ["yilMin", "yilMax"],
+    ["saatMin", "saatMax"],
+    ["hpMin", "hpMax"],
+    ["kgMin", "kgMax"],
+    ["tonMin", "tonMax"],
+  ];
+
+  const validateRanges = (form) => {
+    let ok = true;
+    RANGE_PAIRS.forEach(([minName, maxName]) => {
+      const minEl = form.querySelector(`[name="${minName}"]`);
+      const maxEl = form.querySelector(`[name="${maxName}"]`);
+      if (!minEl || !maxEl) return;
+      if (typeof maxEl.setCustomValidity === "function") maxEl.setCustomValidity("");
+      maxEl.classList?.remove("is-invalid");
+      const minV = String(minEl.value || "").trim();
+      const maxV = String(maxEl.value || "").trim();
+      if (minV !== "" && maxV !== "" && Number(minV) > Number(maxV)) {
+        if (typeof maxEl.setCustomValidity === "function") {
+          maxEl.setCustomValidity("Maksimum değer minimumdan küçük olamaz.");
+        }
+        maxEl.classList?.add("is-invalid");
+        ok = false;
+      }
+    });
+    return ok;
+  };
+
+  const announceResults = () => {
+    const live = document.getElementById("list-live");
+    const title = document.getElementById("list-title");
+    if (!live || !title) return;
+    const text = title.textContent.replace(/\s+/g, " ").trim();
+    live.textContent = "";
+    requestAnimationFrame(() => {
+      live.textContent = text;
+    });
+  };
+
+  const readSavedSearches = () => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SAVED_SEARCHES) || "[]");
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeSavedSearches = (list) => {
+    try {
+      localStorage.setItem(SAVED_SEARCHES, JSON.stringify(list.slice(0, 50)));
+    } catch {
+      /* storage dolu / kapalı — sessizce geç */
+    }
+  };
+
+  const initSaveSearch = () => {
+    const btn = document.querySelector("[data-save-search]");
+    if (!(btn instanceof HTMLElement) || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    const textEl = btn.querySelector("[data-save-search-text]");
+    const url = btn.getAttribute("data-url") || location.pathname + location.search;
+    const label = (btn.getAttribute("data-label") || "Arama").trim();
+
+    const setState = (on) => {
+      btn.classList.toggle("is-saved", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (textEl) textEl.textContent = on ? "Arama Kaydedildi" : "Aramayı Kaydet";
+    };
+
+    setState(readSavedSearches().some((s) => s && s.url === url));
+
+    btn.addEventListener("click", () => {
+      const list = readSavedSearches();
+      const idx = list.findIndex((s) => s && s.url === url);
+      if (idx >= 0) {
+        list.splice(idx, 1);
+        writeSavedSearches(list);
+        setState(false);
+        toast("Arama kayıtlardan çıkarıldı.");
+      } else {
+        list.unshift({ url, label, savedAt: Date.now() });
+        writeSavedSearches(list);
+        setState(true);
+        toast("Arama kaydedildi. Favori aramalarından ulaşabilirsin.");
+      }
+    });
+  };
+
+  const initListEnhancements = () => {
+    // Sonuç bölgesinin tamamı yeniden bağlanmasın diye body seviyesinde bir kez bağlanır.
+    if (document.body.dataset.listBound === "1") {
+      initSaveSearch();
+      return;
+    }
+    document.body.dataset.listBound = "1";
+    initSaveSearch();
+
+    document.body.addEventListener("htmx:beforeRequest", (evt) => {
+      const elt = evt.detail && evt.detail.elt;
+      const form = elt
+        ? elt.id === "list-filter-form"
+          ? elt
+          : elt.id === "sort-select"
+            ? document.getElementById("list-filter-form")
+            : null
+        : null;
+      if (form && !validateRanges(form)) {
+        evt.preventDefault();
+        const bad = form.querySelector(".is-invalid");
+        if (bad) {
+          bad.reportValidity?.();
+          bad.focus();
+        }
+        return;
+      }
+      const bar = document.getElementById("route-progress");
+      if (bar) bar.classList.add("is-active");
+      if (evt.detail && evt.detail.target && evt.detail.target.id === "list-shell") {
+        document.getElementById("list-results")?.setAttribute("aria-busy", "true");
+      }
+    });
+
+    document.body.addEventListener("htmx:afterRequest", () => {
+      const bar = document.getElementById("route-progress");
+      if (bar) {
+        clearTimeout(initListEnhancements._t);
+        initListEnhancements._t = setTimeout(() => bar.classList.remove("is-active"), 150);
+      }
+      document.getElementById("list-results")?.setAttribute("aria-busy", "false");
+    });
+
+    document.body.addEventListener("htmx:afterSwap", (evt) => {
+      if (!evt.detail || !evt.detail.target || evt.detail.target.id !== "list-shell") return;
+      announceResults();
+      initSaveSearch();
+      const title = document.getElementById("list-title");
+      if (title) {
+        try {
+          title.focus({ preventScroll: false });
+        } catch {
+          title.focus();
+        }
+      }
+    });
+
+    // Tablo satırının tamamını tıklanabilir yap (Fitts) — gerçek kontroller korunur.
+    document.body.addEventListener("click", (evt) => {
+      const t = evt.target;
+      if (!(t instanceof Element)) return;
+      const row = t.closest(".classified-table-row[data-href]");
+      if (!row) return;
+      if (t.closest("a, button, input, label, select, textarea")) return;
+      if (window.getSelection && String(window.getSelection()).length > 0) return;
+      const href = row.getAttribute("data-href");
+      if (!href) return;
+      if (evt.metaKey || evt.ctrlKey || evt.button === 1) {
+        window.open(href, "_blank", "noopener");
+      } else {
+        window.location.href = href;
+      }
+    });
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     trackRecent();
     initVerifyBanner();
+    initListEnhancements();
     const boot = document.getElementById("toast")?.getAttribute("data-boot-toast");
     if (boot) {
       // Auth / e-posta bildirimleri daha uzun kalsın — kullanıcı okusun.

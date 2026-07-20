@@ -62,9 +62,7 @@
 
   .header-search input,
   .filter-field select,
-  .sort-field select,
-  .filter-box select,
-  .list-toolbar .sort-field select {
+  .filter-box select {
     font-size: 16px;
   }
 
@@ -84,6 +82,19 @@
     grid-template-columns: 108px 1fr;
     gap: 10px;
     padding: 10px;
+  }
+
+  .list-seller-tabs {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .list-sort-select {
+    font-size: 16px;
+    height: 36px;
+  }
+
+  .list-toolbar {
+    padding: 0 10px;
   }
 
   .cat-bar-inner {
@@ -195,7 +206,7 @@
   }
 
   .list-layout {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 248px 1fr;
     align-items: start;
     gap: var(--space-3);
   }
@@ -209,11 +220,6 @@
   .account-aside {
     position: sticky;
     top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 72px);
-  }
-
-  .filter-box select,
-  .list-toolbar .sort-field select {
-    font-size: 14px;
   }
 
   .detail-layout {

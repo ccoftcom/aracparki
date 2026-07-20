@@ -1,0 +1,41 @@
+@using System.Globalization
+@using AracParki.Application.Listings.Dtos
+@model ListingCardDto
+@{
+    var href = ListingRoutes.Detail(Model.AdNo);
+    var tr = CultureInfo.GetCultureInfo("tr-TR");
+    var hoursText = Model.Hours is not null ? Model.Hours.Value.ToString("N0", tr) : "—";
+    var dateText = Model.ListedAt.ToString("dd MMMM yyyy", tr);
+    var priceText = Model.Price.ToString("N0", tr) + " TL";
+    if (!string.IsNullOrWhiteSpace(Model.PriceUnit))
+    {
+        priceText += " / " + PriceUnit.Label(Model.PriceUnit);
+    }
+}
+<tr class="classified-table-row" data-href="@href">
+  <td class="col-thumb">
+    <a class="classified-thumb" href="@href" tabindex="-1" aria-hidden="true">
+      <img src="@Model.CoverImageUrl" alt="" loading="lazy" width="120" height="90" />
+    </a>
+  </td>
+  <td class="col-brand" data-label="Marka">@Model.Brand</td>
+  <td class="col-model" data-label="Model">@Model.ModelName</td>
+  <td class="col-title">
+    <a class="classified-title" href="@href">@Model.Title</a>
+    @if (Model.IsVerified)
+    {
+      <span class="classified-badge classified-badge--verified">
+        <ap-icon name="badge-check" size="12" class="ap-icon" aria-hidden="true" />
+        Doğrulanmış
+      </span>
+    }
+  </td>
+  <td class="col-year" data-label="Yıl">@Model.ModelYear</td>
+  <td class="col-hours" data-label="Saat">@hoursText</td>
+  <td class="col-price" data-label="Fiyat">@priceText</td>
+  <td class="col-date" data-label="Tarih">@dateText</td>
+  <td class="col-loc" data-label="Konum">
+    <span class="loc-city">@Model.City</span>
+    <span class="loc-district">@Model.District</span>
+  </td>
+</tr>

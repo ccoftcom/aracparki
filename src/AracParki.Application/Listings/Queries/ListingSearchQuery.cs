@@ -6,8 +6,8 @@ public sealed class ListingSearchQuery
     public int? CategoryId { get; init; }
     public int? BrandId { get; init; }
     public int? ModelId { get; init; }
-    public int? CityId { get; init; }
-    public int? DistrictId { get; init; }
+    public IReadOnlyList<int> CityIds { get; init; } = [];
+    public IReadOnlyList<int> DistrictIds { get; init; } = [];
     public string? Condition { get; init; }
     public string? SellerType { get; init; }
     public int? YearMin { get; init; }

@@ -170,9 +170,17 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
         parameters.Add("Category", query.Category, DbType.String);
         parameters.Add("BrandId", query.BrandId, DbType.Int32);
         parameters.Add("ModelId", query.ModelId, DbType.Int32);
-        parameters.Add("CityId", query.CityId, DbType.Int32);
+        var cityIds = query.CityIds.Count == 0
+            ? Array.Empty<int>()
+            : query.CityIds.Where(id => id > 0).Distinct().ToArray();
+        var districtIds = query.DistrictIds.Count == 0
+            ? Array.Empty<int>()
+            : query.DistrictIds.Where(id => id > 0).Distinct().ToArray();
+        parameters.Add("HasCityFilter", cityIds.Length > 0, DbType.Boolean);
+        parameters.Add("CityIds", cityIds);
         parameters.Add("City", query.City, DbType.String);
-        parameters.Add("DistrictId", query.DistrictId, DbType.Int32);
+        parameters.Add("HasDistrictFilter", districtIds.Length > 0, DbType.Boolean);
+        parameters.Add("DistrictIds", districtIds);
         parameters.Add("Condition", query.Condition, DbType.String);
         parameters.Add("SellerType", query.SellerType, DbType.String);
         parameters.Add("YearMin", query.YearMin, DbType.Int32);

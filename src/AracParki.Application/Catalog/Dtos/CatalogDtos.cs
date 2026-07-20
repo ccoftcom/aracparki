@@ -45,6 +45,8 @@ public sealed class DistrictOptionDto
 {
     public int Id { get; init; }
     public required string Name { get; init; }
+    public int CityId { get; init; }
+    public string? CityName { get; init; }
 }
 
 public sealed class NeighborhoodOptionDto

@@ -48,11 +48,15 @@
 
 .promo-filters select:focus,
 .filter-field select:focus,
-.sort-field select:focus {
-  outline: none;
-  border-color: var(--machine-deep);
+.sort-field select:focus,
+.promo-filters select:focus-visible,
+.filter-field select:focus-visible,
+.sort-field select:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-color: var(--link);
   background-color: var(--raised);
-  box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.35);
+  box-shadow: none;
 }
 
 .promo-filters select:has(> option[value=""]:checked),
@@ -105,12 +109,11 @@
 .filter-range .range-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 8px;
 }
+
 .filter-range input[type="number"] {
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.4rem 0.6rem;
 }
 .badge-new { /* reuse used styling with distinct tone if needed */ }
 

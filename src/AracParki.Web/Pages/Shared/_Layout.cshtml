@@ -1,5 +1,4 @@
 ﻿@using System.Text.Json
-@using AracParki.Web.Infrastructure
 @inject SiteUrls SiteUrls
 @{
     var pageKey = ViewData["PageKey"] as string ?? "home";
@@ -129,6 +128,7 @@
 </head>
 <body data-page="@pageKey" x-data="siteChrome">
     <a class="skip-link" href="#main">İçeriğe geç</a>
+    <div id="route-progress" class="route-progress" role="presentation" aria-hidden="true"></div>
 
     <div class="site-chrome">
         @if (!isAuth)

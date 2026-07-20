@@ -70,6 +70,19 @@ public sealed class CatalogService(ICatalogQuery catalogQuery)
         return catalogQuery.GetDistrictsByCityAsync(cityId, cancellationToken);
     }
 
+    public Task<IReadOnlyList<DistrictOptionDto>> GetDistrictsByCitiesAsync(
+        IReadOnlyList<int> cityIds,
+        CancellationToken cancellationToken)
+    {
+        var ids = cityIds.Where(id => id > 0).Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return Task.FromResult<IReadOnlyList<DistrictOptionDto>>([]);
+        }
+
+        return catalogQuery.GetDistrictsByCitiesAsync(ids, cancellationToken);
+    }
+
     public Task<IReadOnlyList<NeighborhoodOptionDto>> GetNeighborhoodsByDistrictAsync(
         int districtId,
         CancellationToken cancellationToken)

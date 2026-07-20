@@ -2,6 +2,7 @@
 
 /* Only scan modal partial — utilities optional; layout is BEM below */
 @source "../Pages/Shared/**/*Modal*.cshtml";
+@source "../Pages/Ilanlar/**/*.cshtml";
 
 @layer base {
   [x-cloak] {

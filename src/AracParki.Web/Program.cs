@@ -183,6 +183,16 @@ try
         Results.Json(await catalog.GetAllCitiesAsync(ct)));
     locations.MapGet("/cities/{cityId:int}/districts", async (int cityId, CatalogService catalog, CancellationToken ct) =>
         Results.Json(await catalog.GetDistrictsByCityAsync(cityId, ct)));
+    locations.MapGet("/districts", async (string? cityIds, CatalogService catalog, CancellationToken ct) =>
+    {
+        var ids = (cityIds ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => int.TryParse(s, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+        return Results.Json(await catalog.GetDistrictsByCitiesAsync(ids, ct));
+    });
     locations.MapGet("/districts/{districtId:int}/neighborhoods", async (int districtId, CatalogService catalog, CancellationToken ct) =>
         Results.Json(await catalog.GetNeighborhoodsByDistrictAsync(districtId, ct)));
     locations.MapGet("/neighborhoods/{neighborhoodId:int}/streets", async (

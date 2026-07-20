@@ -1,0 +1,318 @@
+@model AracParki.Web.Pages.Ilanlar.IndexModel
+@{
+    var groupLabel = Model.RootNavLabel;
+    var showGroup = !string.Equals(groupLabel, "İş Makineleri", StringComparison.Ordinal);
+    var rootUrl = Model.RootNavUrl();
+    var hasIntent = Model.Filter.Intent is not ListingIntent.All;
+    var hasCategory = Model.Filter.CategoryId is > 0 && !string.IsNullOrWhiteSpace(Model.CurrentCategoryName);
+    var hasBrand = Model.Filter.BrandId is > 0 && !string.IsNullOrWhiteSpace(Model.CurrentBrandName);
+    var intentUrl = hasIntent ? Model.IntentNavUrl(Model.Filter.Intent) : null;
+    var categoryUrl = hasCategory ? Model.CategoryNavUrl(Model.Filter.CategoryId!.Value) : null;
+    var brandUrl = hasBrand ? Model.BrandNavUrl(Model.Filter.BrandId!.Value) : null;
+
+    var siblingCategories = Model.CategoryNav.Where(c => c.ListingCount > 0).ToArray();
+    var siblingBrands = Model.BrandFacets.Where(b => b.Count > 0).ToArray();
+    var siblingGroups = Model.CategoryNav
+        .Where(c => !string.IsNullOrWhiteSpace(c.GroupName) && c.ListingCount > 0)
+        .Select(c => c.GroupName!)
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+    var crumbCaret = $"<span class=\"bc-caret\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-caret-right", 12)}{Lucide.Svg("chevron-down", "ap-icon bc-caret-down", 12)}</span>";
+    var crumbSep = $"<span class=\"bc-sep\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-sep-icon", 12)}</span>";
+}
+<div class="list-crumb-bar">
+  <div class="list-crumb-inner">
+    <nav class="list-crumb" aria-label="Sayfa yolu">
+      <ol class="breadcrumb">
+        <li>
+          <a href="/">Anasayfa</a>
+          @Html.Raw(crumbSep)
+        </li>
+        <li>
+          @if (showGroup)
+          {
+            <div class="bc-has-menu">
+              <a class="bc-trigger bc-truncate"
+                 href="@rootUrl"
+                 hx-get="@rootUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 title="@groupLabel"
+                 aria-haspopup="true"
+                 aria-expanded="false"
+                 aria-current="@(!hasIntent && !hasCategory && !hasBrand ? "page" : null)">
+                <span>@groupLabel</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                @if (siblingGroups.Length > 1)
+                {
+                  @foreach (var name in siblingGroups)
+                  {
+                    <li>
+                      <a class="@(string.Equals(name, groupLabel, StringComparison.Ordinal) ? "is-current" : null)"
+                         href="@rootUrl"
+                         hx-get="@rootUrl"
+                         hx-select="#list-shell"
+                         hx-target="#list-shell"
+                         hx-swap="outerHTML"
+                         hx-push-url="true"
+                         aria-current="@(string.Equals(name, groupLabel, StringComparison.Ordinal) ? "page" : null)">@name</a>
+                    </li>
+                  }
+                }
+                else
+                {
+                  <li>
+                    <a class="is-current"
+                       href="@rootUrl"
+                       hx-get="@rootUrl"
+                       hx-select="#list-shell"
+                       hx-target="#list-shell"
+                       hx-swap="outerHTML"
+                       hx-push-url="true"
+                       aria-current="page">İş Makineleri</a>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          else
+          {
+            <div class="bc-has-menu">
+              <a class="bc-trigger bc-truncate"
+                 href="@rootUrl"
+                 hx-get="@rootUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 title="@groupLabel"
+                 aria-haspopup="true"
+                 aria-expanded="false"
+                 aria-current="@(!hasIntent && !hasCategory && !hasBrand ? "page" : null)">
+                <span>@groupLabel</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Satilik)</a>
+                </li>
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+                </li>
+              </ul>
+            </div>
+          }
+        </li>
+        @if (showGroup)
+        {
+          <li>
+            <div class="bc-has-menu">
+              <a class="bc-trigger"
+                 href="@rootUrl"
+                 hx-get="@rootUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 aria-haspopup="true"
+                 aria-expanded="false"
+                 aria-current="@(!hasIntent && !hasCategory && !hasBrand ? "page" : null)">
+                <span>İş Makineleri</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Satilik)</a>
+                </li>
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        }
+        @if (hasIntent)
+        {
+          <li>
+            <div class="bc-has-menu">
+              <a class="bc-trigger"
+                 href="@intentUrl"
+                 hx-get="@intentUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 aria-current="@(!hasCategory && !hasBrand ? "page" : null)"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                <span>@ListingIntent.Label(Model.Filter.Intent)</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                <li>
+                  <a class="@(Model.Filter.Intent == ListingIntent.Satilik ? "is-current" : null)"
+                     href="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Satilik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Satilik)</a>
+                </li>
+                <li>
+                  <a class="@(Model.Filter.Intent == ListingIntent.Kiralik ? "is-current" : null)"
+                     href="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-get="@Model.IntentNavUrl(ListingIntent.Kiralik)"
+                     hx-select="#list-shell"
+                     hx-target="#list-shell"
+                     hx-swap="outerHTML"
+                     hx-push-url="true">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        }
+        @if (hasCategory)
+        {
+          var categoryHasMenu = siblingCategories.Length > 0;
+          <li>
+            @if (categoryHasMenu)
+            {
+              <div class="bc-has-menu">
+                <a class="bc-trigger"
+                   href="@categoryUrl"
+                   hx-get="@categoryUrl"
+                   hx-select="#list-shell"
+                   hx-target="#list-shell"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   aria-current="@(!hasBrand ? "page" : null)"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                  <span>@Model.CurrentCategoryName</span>
+                  @Html.Raw(crumbCaret)
+                </a>
+                <ul class="bc-menu" role="list">
+                  @foreach (var cat in siblingCategories)
+                  {
+                    var catUrl = Model.CategoryNavUrl(cat.Id);
+                    var isCurrent = Model.Filter.CategoryId == cat.Id;
+                    <li>
+                      <a class="@(isCurrent ? "is-current" : null)"
+                         href="@catUrl"
+                         hx-get="@catUrl"
+                         hx-select="#list-shell"
+                         hx-target="#list-shell"
+                         hx-swap="outerHTML"
+                         hx-push-url="true"
+                         aria-current="@(isCurrent ? "page" : null)">@cat.Name</a>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            else
+            {
+              <a href="@categoryUrl"
+                 hx-get="@categoryUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 aria-current="@(!hasBrand ? "page" : null)">@Model.CurrentCategoryName</a>
+              @if (hasBrand)
+              {
+                @Html.Raw(crumbSep)
+              }
+            }
+          </li>
+        }
+        @if (hasBrand)
+        {
+          var brandHasMenu = siblingBrands.Length > 0;
+          <li>
+            @if (brandHasMenu)
+            {
+              <div class="bc-has-menu">
+                <a class="bc-trigger"
+                   href="@brandUrl"
+                   hx-get="@brandUrl"
+                   hx-select="#list-shell"
+                   hx-target="#list-shell"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   aria-current="page"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                  <span>@Model.CurrentBrandName</span>
+                  @Html.Raw(crumbCaret)
+                </a>
+                <ul class="bc-menu" role="list">
+                  @foreach (var brand in siblingBrands)
+                  {
+                    if (!int.TryParse(brand.Key, out var brandId))
+                    {
+                      continue;
+                    }
+                    var bUrl = Model.BrandNavUrl(brandId);
+                    var isCurrent = Model.Filter.BrandId == brandId;
+                    <li>
+                      <a class="@(isCurrent ? "is-current" : null)"
+                         href="@bUrl"
+                         hx-get="@bUrl"
+                         hx-select="#list-shell"
+                         hx-target="#list-shell"
+                         hx-swap="outerHTML"
+                         hx-push-url="true"
+                         aria-current="@(isCurrent ? "page" : null)">@brand.Label</a>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            else
+            {
+              <a href="@brandUrl"
+                 hx-get="@brandUrl"
+                 hx-select="#list-shell"
+                 hx-target="#list-shell"
+                 hx-swap="outerHTML"
+                 hx-push-url="true"
+                 aria-current="page">@Model.CurrentBrandName</a>
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+
+    <ul class="list-crumb-utils" aria-label="Hızlı bağlantılar">
+      <li><a href="/favorilerim">Favori İlanlarım</a></li>
+      <li><a href="/kayitli-aramalar">Favori Aramalarım</a></li>
+      <li><a href="/panel">Size Özel İlanlar</a></li>
+      <li><a href="/favorilerim" title="Karşılaştırma yakında">Karşılaştır</a></li>
+    </ul>
+  </div>
+</div>

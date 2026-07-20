@@ -42,18 +42,18 @@ public static class ListingRoutes
             dict["modelId"] = query.ModelId.Value.ToString(CultureInfo.InvariantCulture);
         }
 
-        if (query.CityId is > 0)
+        if (query.CityIds.Count > 0)
         {
-            dict["ilId"] = query.CityId.Value.ToString(CultureInfo.InvariantCulture);
+            dict["ilId"] = string.Join(',', query.CityIds.Where(x => x > 0).Distinct());
         }
         else if (!string.IsNullOrWhiteSpace(query.City))
         {
             dict["il"] = query.City;
         }
 
-        if (query.DistrictId is > 0)
+        if (query.DistrictIds.Count > 0)
         {
-            dict["ilceId"] = query.DistrictId.Value.ToString(CultureInfo.InvariantCulture);
+            dict["ilceId"] = string.Join(',', query.DistrictIds.Where(x => x > 0).Distinct());
         }
 
         if (!string.IsNullOrWhiteSpace(query.Condition))
@@ -200,8 +200,8 @@ public static class ListingRoutes
             CategoryId = ParseInt(query["kategoriId"]),
             BrandId = ParseInt(query["markaId"]),
             ModelId = ParseInt(query["modelId"]),
-            CityId = ParseInt(query["ilId"]),
-            DistrictId = ParseInt(query["ilceId"]),
+            CityIds = ParseIntList(query["ilId"]),
+            DistrictIds = ParseIntList(query["ilceId"]),
             Category = NullIfEmpty(query["kategori"].ToString()),
             City = NullIfEmpty(query["il"].ToString()),
             Condition = condition,
@@ -337,6 +337,28 @@ public static class ListingRoutes
 
     private static int? ParseInt(string? raw)
         => int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v : null;
+
+    private static IReadOnlyList<int> ParseIntList(Microsoft.Extensions.Primitives.StringValues values)
+    {
+        var ids = new List<int>();
+        foreach (var raw in values)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) && id > 0)
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+
+        return ids.Distinct().ToArray();
+    }
 
     private static decimal? ParseDecimal(string? raw)
         => decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) && v >= 0 ? v : null;
