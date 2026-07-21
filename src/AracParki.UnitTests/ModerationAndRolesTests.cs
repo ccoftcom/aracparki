@@ -1,4 +1,5 @@
 using AracParki.Application.Authorization;
+using AracParki.Application.Listings;
 using AracParki.Application.Listings.Services;
 using AracParki.Domain.Accounts;
 using AracParki.Domain.Listings;
@@ -16,6 +17,17 @@ public sealed class ModerationAndRolesTests
         Assert.Contains(ListingStatus.Rejected, ListingStatus.Known);
         Assert.Equal("İncelemede", ListingStatus.Label(ListingStatus.PendingReview));
         Assert.Equal("Reddedildi", ListingStatus.Label(ListingStatus.Rejected));
+    }
+
+    [Fact]
+    public void ListingStatus_owner_editable_includes_published()
+    {
+        Assert.True(ListingStatus.IsOwnerEditable(ListingStatus.Published));
+        Assert.True(ListingStatus.IsOwnerEditable(ListingStatus.PendingReview));
+        Assert.True(ListingStatus.IsOwnerEditable(ListingStatus.Rejected));
+        Assert.False(ListingStatus.IsOwnerEditable(ListingStatus.Archived));
+        Assert.False(ListingStatus.IsOwnerImageMutable(ListingStatus.Published));
+        Assert.True(ListingStatus.IsOwnerImageMutable(ListingStatus.PendingReview));
     }
 
     [Fact]
@@ -66,11 +78,51 @@ public sealed class ModerationAndRolesTests
     }
 
     [Fact]
+    public void ListingAccessContext_from_principal_maps_admin_and_account()
+    {
+        var admin = AuthCookie.CreatePrincipal(new Application.Accounts.Dtos.AccountDto
+        {
+            Id = 9,
+            Email = "a@b.com",
+            PasswordHash = "x",
+            FirstName = "A",
+            LastName = "B",
+            SecurityStamp = "s",
+            Role = AccountRole.Admin,
+            EmailConfirmedAt = DateTimeOffset.UtcNow
+        });
+
+        var ctx = ListingAccessContext.FromPrincipal(admin);
+        Assert.Equal(9, ctx.AccountId);
+        Assert.True(ctx.IsAdmin);
+
+        Assert.Equal(ListingAccessContext.Anonymous, ListingAccessContext.FromPrincipal(null));
+        Assert.False(ListingAccessContext.FromPrincipal(new ClaimsPrincipal()).IsAdmin);
+    }
+
+    [Fact]
     public async Task RejectAsync_requires_reason()
     {
         var svc = new ListingModerationService(new FakeStore());
         await Assert.ThrowsAsync<ArgumentException>(() =>
             svc.RejectAsync("AP-1", 1, "  ", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ApproveAsync_rejects_invalid_admin()
+    {
+        var svc = new ListingModerationService(new FakeStore());
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            svc.ApproveAsync("AP-1", 0, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RejectAsync_rejects_overlong_reason()
+    {
+        var svc = new ListingModerationService(new FakeStore());
+        var reason = new string('x', ListingModerationService.RejectionReasonMaxLength + 1);
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            svc.RejectAsync("AP-1", 1, reason, CancellationToken.None));
     }
 
     private sealed class FakeStore : Application.Listings.IListingStore

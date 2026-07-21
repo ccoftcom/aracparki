@@ -96,7 +96,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_listing_images_one_cover
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_listing_images_image_id
     ON listing_images (image_id)
-    WHERE image_id IS NOT NULL;
+    WHERE image_id IS NOT NULL AND deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS ix_listing_images_listing_sort
     ON listing_images (listing_id, sort_order, id)

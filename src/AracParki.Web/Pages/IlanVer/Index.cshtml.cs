@@ -304,6 +304,7 @@ public sealed class IndexModel(
 
     public async Task<IActionResult> OnPostCascadeAsync(
         string? intent,
+        string? condition,
         int categoryId,
         int brandId,
         int? modelId,
@@ -323,6 +324,11 @@ public sealed class IndexModel(
         if (intent is not (ListingIntent.Satilik or ListingIntent.Kiralik))
         {
             return await FailAsync(1, "İlan tipi seç (Satılık veya Kiralık).", cancellationToken);
+        }
+
+        if (string.IsNullOrWhiteSpace(condition) || !EquipmentCondition.Known.Contains(condition))
+        {
+            return await FailAsync(1, "Durum seç (İkinci el / Sıfır).", cancellationToken);
         }
 
         var categories = await catalog.GetAllCategoriesAsync(cancellationToken);
@@ -378,6 +384,7 @@ public sealed class IndexModel(
         var intentChanged = !string.Equals(Draft.PrimaryIntent, intent, StringComparison.Ordinal);
         Draft.PrimaryIntent = intent;
         Draft.Intents = [intent];
+        Draft.Condition = condition;
         if (intentChanged)
         {
             Draft.RentPrice = null;
@@ -523,8 +530,8 @@ public sealed class IndexModel(
 
         if (!Draft.HorsepowerFromCatalog)
         {
-            Draft.HorsepowerUnknown = horsepowerUnknown;
-            Draft.Horsepower = horsepowerUnknown ? null : horsepower;
+            Draft.HorsepowerUnknown = true;
+            Draft.Horsepower = null;
         }
         else
         {
@@ -1123,16 +1130,9 @@ public sealed class IndexModel(
             gaps["hours"] = "Çalışma saati gir veya “Bilmiyorum” seç.";
         }
 
-        if (!draft.HorsepowerFromCatalog && !draft.HorsepowerUnknown && draft.Horsepower is null)
+        if (draft.Tons <= 0)
         {
-            gaps["horsepower"] = "Beygir (HP) gir veya “Bilmiyorum” seç.";
-        }
-
-        if (!draft.TonsFromCatalog && draft.Tons <= 0)
-        {
-            gaps["tons"] = draft.CapacityMetric == "capacity_t"
-                ? "Kapasite (ton) gir."
-                : "Tonaj gir.";
+            gaps["tons"] = "Seçilen modelde tonaj/kapasite bilgisi yok. Katalogdan bir model seç.";
         }
 
         if (draft.CapacityMetric == "capacity_kg" && draft.CapacityKg is not > 0)

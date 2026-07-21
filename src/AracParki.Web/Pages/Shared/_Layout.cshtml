@@ -111,6 +111,7 @@
     <link rel="stylesheet" href="~/css/pages/auth.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/ilan-ver.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/quill/quill.snow.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/cropperjs/cropper.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/tw-ui.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/legal.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/account.css" asp-append-version="true" />
@@ -152,9 +153,9 @@
     }
 
     <script src="~/lib/htmx/htmx.min.js" asp-append-version="true" defer></script>
+    @await RenderSectionAsync("Scripts", required: false)
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     <script src="~/lib/alpine/focus.min.js" asp-append-version="true" defer></script>
     <script src="~/lib/alpine/alpine.min.js" asp-append-version="true" defer></script>
-    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

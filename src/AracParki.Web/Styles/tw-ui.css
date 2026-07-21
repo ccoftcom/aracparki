@@ -71,8 +71,13 @@
   }
 
   .ap-input {
-    @apply box-border h-11 w-full min-w-0 rounded-ap border border-ap-line bg-ap-surface px-3 text-[15px] text-ap-ink outline-none transition-[border-color,box-shadow] duration-150;
+    @apply box-border h-11 w-full min-w-0 rounded-ap border border-ap-line bg-ap-raised px-3 text-[15px] text-ap-ink outline-none transition-[border-color,box-shadow] duration-150;
     transition-timing-function: var(--ease-ap);
+  }
+
+  .ap-input::placeholder {
+    @apply text-ap-muted-2;
+    opacity: 1;
   }
 
   .ap-input:hover:not(:disabled):not(:focus) {
@@ -80,7 +85,7 @@
   }
 
   .ap-input:focus {
-    @apply border-ap-link;
+    @apply border-ap-link bg-ap-raised;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 25%, transparent);
   }
 
@@ -124,6 +129,22 @@
     @apply max-w-md grid-cols-2;
   }
 
+  .ap-tile-group--6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .ap-tile-group--6 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 980px) {
+    .ap-tile-group--6 {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
   .ap-tile {
     @apply relative m-0 block h-full cursor-pointer;
   }
@@ -132,38 +153,40 @@
     @apply absolute inset-0 z-10 m-0 h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 opacity-0 shadow-none outline-none;
   }
 
+  /* Tile checkbox: bordered card, yellow primary when selected */
   .ap-tile-face {
-    @apply relative flex h-full min-h-12 items-center justify-center rounded-ap border border-ap-line bg-ap-surface px-3 py-2.5 pr-7 text-center text-[13px] font-semibold leading-snug text-ap-ink transition-[border-color,background-color,box-shadow,color] duration-150;
+    @apply relative flex h-full min-h-[3.25rem] items-center justify-start gap-2.5 rounded-lg border-2 border-ap-line bg-ap-raised py-3 pr-3.5 pl-3.5 text-left text-[13px] font-semibold leading-snug text-ap-ink transition-[border-color,background-color] duration-150;
+    box-shadow: none;
     transition-timing-function: var(--ease-ap);
   }
 
   .ap-tile:hover .ap-tile-face {
-    @apply border-ap-line-strong bg-ap-raised;
+    @apply border-ap-line-strong;
   }
 
   .ap-tile input:checked + .ap-tile-face {
-    @apply border-ap-machine-deep text-ap-machine-ink;
-    background: color-mix(in srgb, var(--machine) 42%, var(--raised));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--machine-deep) 55%, transparent);
+    @apply border-ap-machine-deep bg-ap-raised text-ap-ink;
   }
 
   .ap-tile input:focus-visible + .ap-tile-face {
-    @apply border-ap-link;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--link) 28%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--machine) 45%, transparent);
   }
 
   .ap-tile input:disabled + .ap-tile-face {
     @apply cursor-not-allowed opacity-70;
   }
 
-  /* Check badge: hidden until selected, top-right corner */
+  /* Circular indicator — in-flow, left-aligned with label */
   .ap-tile-mark {
-    @apply pointer-events-none absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-ap border-0 bg-ap-machine-ink text-[10px] leading-none text-ap-machine opacity-0 scale-75;
-    transition: opacity 150ms var(--ease-ap), transform 150ms var(--ease-ap);
+    @apply pointer-events-none relative top-auto left-auto flex h-[1.125rem] w-[1.125rem] shrink-0 items-center justify-center rounded-full border-2 border-ap-line-strong bg-transparent text-[11px] leading-none text-transparent opacity-100 scale-100;
+    transition:
+      background-color 150ms var(--ease-ap),
+      border-color 150ms var(--ease-ap),
+      color 150ms var(--ease-ap);
   }
 
   .ap-tile input:checked + .ap-tile-face .ap-tile-mark {
-    @apply opacity-100 scale-100;
+    @apply border-ap-machine-deep bg-ap-machine text-ap-machine-ink;
   }
 
   .ap-tile input:checked + .ap-tile-face .ap-tile-mark::after {

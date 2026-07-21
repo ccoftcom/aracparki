@@ -710,7 +710,12 @@
         { id: "satilik", name: "Satılık" },
         { id: "kiralik", name: "Kiralık" },
       ],
+      conditions: [
+        { id: "used", name: "İkinci el" },
+        { id: "new", name: "Sıfır" },
+      ],
       intent: "",
+      condition: "",
       groupId: 0,
       groupName: "",
       categoryId: 0,
@@ -730,6 +735,7 @@
       get pathText() {
         const parts = [];
         if (this.intentLabel) parts.push(this.intentLabel);
+        if (this.conditionLabel) parts.push(this.conditionLabel);
         if (this.groupName) parts.push(this.groupName);
         if (this.categoryName) parts.push(this.categoryName);
         if (this.brandName) parts.push(this.brandName);
@@ -744,8 +750,18 @@
         });
         return hit ? hit.name : "";
       },
+      get conditionLabel() {
+        const id = String(this.condition || "");
+        const hit = this.conditions.find(function (c) {
+          return c.id === id;
+        });
+        return hit ? hit.name : "";
+      },
       get hasIntent() {
         return this.intent === "satilik" || this.intent === "kiralik";
+      },
+      get hasCondition() {
+        return this.condition === "used" || this.condition === "new";
       },
       get hasGroup() {
         return this.groupId > 0;
@@ -759,15 +775,38 @@
       get brandsEmpty() {
         return !this.brandsLoading && this.brands.length === 0;
       },
+      get modelsEmpty() {
+        return !this.modelsLoading && this.models.length === 0;
+      },
+      get brandsReady() {
+        return !this.brandsLoading;
+      },
       get modelsReady() {
         return !this.modelsLoading;
       },
+      get brandsColClass() {
+        return this.brandsLoading ? "is-loading" : "";
+      },
+      get modelsColClass() {
+        return this.modelsLoading ? "is-loading" : "";
+      },
+      get brandsBusy() {
+        return this.brandsLoading ? "true" : "false";
+      },
+      get modelsBusy() {
+        return this.modelsLoading ? "true" : "false";
+      },
       get canPickYear() {
-        return this.brandId > 0 && String(this.modelName || "").trim().length > 0;
+        return (
+          this.brandId > 0 &&
+          !this.modelsLoading &&
+          String(this.modelName || "").trim().length > 0
+        );
       },
       get canContinue() {
         return (
           this.hasIntent &&
+          this.hasCondition &&
           this.categoryId > 0 &&
           this.brandId > 0 &&
           String(this.modelName || "").trim().length > 0 &&
@@ -780,6 +819,12 @@
       get customModelClass() {
         return this.showCustomModel ? "is-selected" : "";
       },
+      get customModelNeedsName() {
+        return this.showCustomModel && String(this.modelName || "").trim().length === 0;
+      },
+      get customModelHasName() {
+        return this.showCustomModel && String(this.modelName || "").trim().length > 0;
+      },
       get intentsView() {
         const selected = String(this.intent || "");
         return this.intents.map(function (t) {
@@ -787,6 +832,18 @@
           return {
             id: t.id,
             name: t.name,
+            itemClass: on ? "is-selected" : "",
+            ariaSelected: on ? "true" : "false",
+          };
+        });
+      },
+      get conditionsView() {
+        const selected = String(this.condition || "");
+        return this.conditions.map(function (c) {
+          const on = c.id === selected;
+          return {
+            id: c.id,
+            name: c.name,
             itemClass: on ? "is-selected" : "",
             ariaSelected: on ? "true" : "false",
           };
@@ -859,7 +916,13 @@
         const id = String((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || "");
         if (id !== "satilik" && id !== "kiralik") return;
         this.intent = id;
-        this.scrollBoard();
+        this.scrollBoardOnClick();
+      },
+      pickCondition(event) {
+        const id = String((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || "");
+        if (id !== "used" && id !== "new") return;
+        this.condition = id;
+        this.scrollBoardOnClick();
       },
       pickGroup(event) {
         const id = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
@@ -891,6 +954,7 @@
       },
       pickYear(event) {
         this.modelYear = Number((event && event.currentTarget && event.currentTarget.getAttribute("data-id")) || 0);
+        this.scrollBoardOnClick();
       },
 
       init() {
@@ -904,6 +968,8 @@
 
         const intentRaw = String(this.$el.dataset.intent || "").trim();
         this.intent = intentRaw === "satilik" || intentRaw === "kiralik" ? intentRaw : "";
+        const conditionRaw = String(this.$el.dataset.condition || "").trim();
+        this.condition = conditionRaw === "used" || conditionRaw === "new" ? conditionRaw : "";
         this.groupId = Number(this.$el.dataset.groupId || 0);
         this.groupName = this.$el.dataset.groupName || "";
         this.categoryId = Number(this.$el.dataset.categoryId || 0);
@@ -925,6 +991,7 @@
       },
       reset() {
         this.intent = "";
+        this.condition = "";
         this.groupId = 0;
         this.groupName = "";
         this.categoryId = 0;
@@ -938,6 +1005,10 @@
         this.brands = [];
         this.models = [];
         this.showCustomModel = false;
+        this.brandsLoading = false;
+        this.modelsLoading = false;
+        const board = this.cascadeBoard();
+        if (board) board.scrollLeft = 0;
       },
       selectGroup(g) {
         this.groupId = Number(g.id);
@@ -946,15 +1017,17 @@
         this.categoryId = 0;
         this.categoryName = "";
         this.clearBrandDown();
-        this.scrollBoard();
+        this.scrollBoardOnClick();
       },
       selectCategory(c) {
         this.categoryId = Number(c.id);
         this.categoryName = c.name;
         this.clearBrandDown();
+        this.brandsLoading = true;
+        this.scrollBoardOnClick();
         const self = this;
         this.loadBrands(false).then(function () {
-          self.scrollBoard();
+          self.scrollBoardOnClick();
         });
       },
       async selectBrand(b) {
@@ -965,37 +1038,64 @@
         this.modelYear = 0;
         this.showCustomModel = false;
         this.models = [];
+        this.modelsLoading = true;
+        this.scrollBoardOnClick();
         await this.loadModels(false);
-        this.scrollBoard();
+        this.scrollBoardOnClick();
       },
       selectModel(m) {
         this.modelId = Number(m.id);
         this.modelName = m.name;
         this.showCustomModel = false;
         this.modelYear = 0;
-        this.scrollBoard();
+        this.scrollBoardOnClick();
       },
       selectCustomModel() {
         this.modelId = 0;
+        this.modelName = "";
         this.showCustomModel = true;
         this.modelYear = 0;
+        this.scrollBoardOnClick();
         this.$nextTick(function () {
           const el = document.getElementById("cascade-model-custom");
-          if (el) el.focus();
+          if (!el) return;
+          // preventScroll: input lives outside the board; don't yank the page/board.
+          try {
+            el.focus({ preventScroll: true });
+          } catch {
+            el.focus();
+          }
         });
-        this.scrollBoard();
       },
-      onCustomModelInput() {
+      onCustomModelInput(event) {
+        // Input is bound one-way (:value + @input); this is the single writer.
+        if (event && event.target) {
+          this.modelName = event.target.value;
+        }
         this.modelId = 0;
-        if (!String(this.modelName || "").trim()) this.modelYear = 0;
+        const name = String(this.modelName || "").trim();
+        if (!name) {
+          this.modelYear = 0;
+          return;
+        }
+        this.scrollBoardOnClick();
       },
-      scrollBoard() {
-        const self = this;
-        this.$nextTick(function () {
-          const board = self.$el.querySelector(".cascade-board");
-          if (!board) return;
-          board.scrollTo({ left: board.scrollWidth, behavior: "smooth" });
-        });
+      cascadeBoard() {
+        return window.document.getElementsByClassName("cascade-board")[0];
+      },
+      preferReducedMotion() {
+        return (
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        );
+      },
+      scrollBoardOnClick() {
+        const board = this.cascadeBoard();
+        setTimeout(() => {
+          if (board) {
+            board.scrollTo({ left: board.scrollWidth, behavior: "smooth" });
+          }
+        }, 1000);
       },
       clearBrandDown() {
         this.brandId = 0;
@@ -1006,10 +1106,13 @@
         this.brands = [];
         this.models = [];
         this.showCustomModel = false;
+        this.brandsLoading = false;
+        this.modelsLoading = false;
       },
       async loadBrands(restore) {
         if (!this.categoryId) return;
         this.brandsLoading = true;
+        this.brands = [];
         try {
           const res = await fetch(`/api/catalog/categories/${this.categoryId}/brands`);
           if (!res.ok) {
@@ -1032,6 +1135,7 @@
       async loadModels(restore) {
         if (!this.categoryId || !this.brandId) return;
         this.modelsLoading = true;
+        this.models = [];
         try {
           const res = await fetch(
             `/api/catalog/categories/${this.categoryId}/brands/${this.brandId}/models`
@@ -1549,6 +1653,12 @@
           this.loadingDistricts = false;
         }
       },
+      onCitySearchInput(event) {
+        this.citySearch = String((event && event.target && event.target.value) || "");
+      },
+      onDistrictSearchInput(event) {
+        this.districtSearch = String((event && event.target && event.target.value) || "");
+      },
       clearCitySearch() {
         this.citySearch = "";
         this.$refs.citySearch?.focus();
@@ -1561,16 +1671,14 @@
 
     Alpine.data("ilanVerMachine", () => ({
       hoursUnknown: false,
-      hpUnknown: false,
       get hoursRequired() {
         return !this.hoursUnknown;
       },
-      get hpRequired() {
-        return !this.hpUnknown;
+      toggleHoursUnknown(event) {
+        this.hoursUnknown = !!(event && event.target && event.target.checked);
       },
       init() {
         this.hoursUnknown = String(this.$el.dataset.hoursUnknown || "") === "true";
-        this.hpUnknown = String(this.$el.dataset.hpUnknown || "") === "true";
         const invalid = this.$el.querySelector(".is-invalid, [aria-invalid='true']");
         if (invalid && typeof invalid.scrollIntoView === "function") {
           invalid.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1607,21 +1715,33 @@
       // Trap is always open while the modal is rendered.
     }));
 
-    // CSP Alpine: multi-file upload with per-thumbnail overlay progress → UploadJson handler.
+    // CSP Alpine: multi-file upload with square crop (Cropper.js) → UploadJson.
     Alpine.data("ilanVerUploader", () => ({
       dragging: false,
       queue: [],
+      cropQueue: [],
+      cropOpen: false,
+      cropBusy: false,
+      cropError: "",
+      cropFileName: "",
       currentCount: 0,
       maxCount: 8,
       maxBytes: 10 * 1024 * 1024,
       uploadUrl: "",
       _nextId: 1,
       _token: "",
+      _cropper: null,
+      _cropObjectUrl: "",
+      _cropOutputPx: 1600,
       get dropzoneClass() {
         return this.dragging ? "is-dragging" : "";
       },
       get busy() {
-        return this.queue.some((item) => item.state === "pending" || item.state === "uploading");
+        return (
+          this.cropOpen ||
+          this.cropQueue.length > 0 ||
+          this.queue.some((item) => item.state === "pending" || item.state === "uploading")
+        );
       },
       get busyAria() {
         return this.busy ? "true" : "false";
@@ -1658,14 +1778,224 @@
         }
       },
       enqueueFiles(fileList) {
-        const inFlight = this.queue.filter((q) => q.state !== "done").length;
+        const inFlight =
+          this.queue.filter((q) => q.state !== "done").length +
+          this.cropQueue.length +
+          (this.cropOpen ? 1 : 0);
         const remaining = this.maxCount - this.currentCount - inFlight;
         if (remaining <= 0) return;
         const files = Array.from(fileList).slice(0, remaining);
         for (const file of files) {
-          this.queue.push(this.createQueueItem(file));
+          this.cropQueue.push(file);
         }
+        this.processCropQueue();
+      },
+      async processCropQueue() {
+        if (this.cropOpen || this._cropProcessing) return;
+        this._cropProcessing = true;
+        try {
+          while (this.cropQueue.length > 0) {
+            if (this.currentCount >= this.maxCount) {
+              this.cropQueue = [];
+              break;
+            }
+            const file = this.cropQueue.shift();
+            await this.openCropper(file);
+          }
+        } finally {
+          this._cropProcessing = false;
+        }
+      },
+      openCropper(file) {
+        const parent = this;
+        return new Promise((resolve) => {
+          parent._cropResolve = resolve;
+          parent.cropError = "";
+          parent.cropBusy = false;
+          parent.cropFileName = file.name || "görsel";
+          parent._pendingCropFile = file;
+
+          const type = String(file.type || "").toLowerCase();
+          const allowed = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+          if (file.size > parent.maxBytes) {
+            parent.cropError = "Dosya en fazla 10 MB olabilir.";
+            parent.cropOpen = true;
+            parent.$nextTick(() => parent.focusCropPanel());
+            return;
+          }
+          if (type && allowed.indexOf(type) < 0) {
+            parent.cropError = "Desteklenmeyen format.";
+            parent.cropOpen = true;
+            parent.$nextTick(() => parent.focusCropPanel());
+            return;
+          }
+          if (typeof window.Cropper !== "function") {
+            // Library not loaded yet / failed — upload without interactive crop.
+            parent.finishCropWithFile(file);
+            return;
+          }
+
+          parent.destroyCropper();
+          parent._cropObjectUrl = URL.createObjectURL(file);
+          parent.cropOpen = true;
+
+          parent.$nextTick(() => {
+            const img = parent.$refs.cropImage;
+            if (!(img instanceof HTMLImageElement)) {
+              parent.finishCropWithFile(file);
+              return;
+            }
+            img.onload = () => {
+              parent.destroyCropperInstanceOnly();
+              parent._cropper = new window.Cropper(img, {
+                aspectRatio: 1,
+                viewMode: 1,
+                dragMode: "move",
+                autoCropArea: 1,
+                responsive: true,
+                background: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                checkOrientation: true,
+              });
+              parent.focusCropPanel();
+            };
+            img.onerror = () => {
+              parent.cropError =
+                "Bu görsel tarayıcıda açılamadı. Kırpmadan yüklemek için “Kırpmadan yükle”ye bas.";
+              parent.focusCropPanel();
+            };
+            img.src = parent._cropObjectUrl;
+          });
+        });
+      },
+      focusCropPanel() {
+        const panel = this.$el.querySelector(".wizard-crop-panel");
+        if (panel instanceof HTMLElement) panel.focus({ preventScroll: true });
+      },
+      destroyCropperInstanceOnly() {
+        if (this._cropper) {
+          try {
+            this._cropper.destroy();
+          } catch {
+            /* ignore */
+          }
+          this._cropper = null;
+        }
+      },
+      destroyCropper() {
+        this.destroyCropperInstanceOnly();
+        if (this._cropObjectUrl) {
+          URL.revokeObjectURL(this._cropObjectUrl);
+          this._cropObjectUrl = "";
+        }
+        const img = this.$refs.cropImage;
+        if (img instanceof HTMLImageElement) {
+          img.onload = null;
+          img.onerror = null;
+          img.removeAttribute("src");
+        }
+      },
+      rotateCropLeft() {
+        if (this._cropper) this._cropper.rotate(-90);
+      },
+      rotateCropRight() {
+        if (this._cropper) this._cropper.rotate(90);
+      },
+      resetCrop() {
+        if (this._cropper) this._cropper.reset();
+      },
+      cancelCrop() {
+        // Skip this file entirely.
+        this.closeCropModal();
+        if (typeof this._cropResolve === "function") {
+          this._cropResolve();
+          this._cropResolve = null;
+        }
+      },
+      uploadWithoutCrop() {
+        const file = this._pendingCropFile;
+        if (!file) {
+          this.cancelCrop();
+          return;
+        }
+        this.finishCropWithFile(file);
+      },
+      finishCropWithFile(file) {
+        this.closeCropModal();
+        this.queue.push(this.createQueueItem(file));
         this.processQueue();
+        if (typeof this._cropResolve === "function") {
+          this._cropResolve();
+          this._cropResolve = null;
+        }
+      },
+      closeCropModal() {
+        this.destroyCropper();
+        this.cropOpen = false;
+        this.cropBusy = false;
+        this.cropError = "";
+        this._pendingCropFile = null;
+      },
+      confirmCrop() {
+        const parent = this;
+        if (parent.cropBusy) return;
+        if (parent.cropError && !parent._cropper) {
+          // Allow fallback button path via uploadWithoutCrop.
+          return;
+        }
+        if (!parent._cropper) {
+          parent.cropError = "Kırpıcı hazır değil. “Kırpmadan yükle” veya başka bir dosya dene.";
+          return;
+        }
+
+        parent.cropBusy = true;
+        parent.cropError = "";
+
+        const canvas = parent._cropper.getCroppedCanvas({
+          width: parent._cropOutputPx,
+          height: parent._cropOutputPx,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: "high",
+          fillColor: "#fff",
+        });
+
+        if (!canvas) {
+          parent.cropBusy = false;
+          parent.cropError = "Kırpma başarısız. Tekrar dene.";
+          return;
+        }
+
+        const baseName = String(parent._pendingCropFile && parent._pendingCropFile.name
+          ? parent._pendingCropFile.name
+          : "gorsel")
+          .replace(/\.[^.]+$/, "");
+        const outName = baseName + "-kare.jpg";
+
+        canvas.toBlob(
+          (blob) => {
+            parent.cropBusy = false;
+            if (!blob) {
+              parent.cropError = "Görsel oluşturulamadı.";
+              return;
+            }
+            if (blob.size > parent.maxBytes) {
+              parent.cropError = "Kırpılmış dosya 10 MB sınırını aşıyor. Daha küçük alan seç.";
+              return;
+            }
+            const file = new File([blob], outName, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            parent.finishCropWithFile(file);
+          },
+          "image/jpeg",
+          0.92
+        );
       },
       createQueueItem(file) {
         const parent = this;
@@ -1679,7 +2009,6 @@
           state: "pending",
           progress: 0,
           error: "",
-          // CSP Alpine: no comparisons / method(args) in markup — expose getters + zero-arg methods.
           get isVisible() {
             return this.state !== "done";
           },
@@ -1822,8 +2151,7 @@
         const img = document.createElement("img");
         img.alt = "";
         img.width = 480;
-        img.height = 360;
-        // Show local preview immediately; swap to CDN once it loads to avoid a blank flash.
+        img.height = 480;
         const localPreview = typeof previewUrl === "string" && previewUrl ? previewUrl : "";
         if (localPreview) {
           img.src = localPreview;
@@ -2212,17 +2540,38 @@
       const thumbs = [...host.querySelectorAll("[data-gallery-thumb]")];
       if (!(main instanceof HTMLImageElement) || thumbs.length === 0) return;
 
+      const counter = host.querySelector("[data-gallery-counter]");
+      const total = thumbs.length;
+
       const activate = (btn) => {
         if (!(btn instanceof HTMLElement)) return;
         const src = btn.getAttribute("data-src");
         if (!src) return;
         main.src = src;
         thumbs.forEach((t) => t.classList.toggle("is-active", t === btn));
+        if (counter) {
+          const idx = thumbs.indexOf(btn);
+          counter.textContent = `${idx + 1} / ${total} Fotoğraf`;
+        }
+      };
+
+      const step = (delta) => {
+        const current = thumbs.findIndex((t) => t.classList.contains("is-active"));
+        if (current < 0) return;
+        activate(thumbs[(current + delta + total) % total]);
       };
 
       host.addEventListener("click", (e) => {
         const t = e.target;
         if (!(t instanceof Element)) return;
+        if (t.closest("[data-gallery-prev]")) {
+          step(-1);
+          return;
+        }
+        if (t.closest("[data-gallery-next]")) {
+          step(1);
+          return;
+        }
         const btn = t.closest("[data-gallery-thumb]");
         if (btn) activate(btn);
       });
@@ -2230,16 +2579,61 @@
       host.addEventListener("keydown", (e) => {
         if (!(e instanceof KeyboardEvent)) return;
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-        const current = thumbs.findIndex((t) => t.classList.contains("is-active"));
-        if (current < 0) return;
-        const next = e.key === "ArrowRight"
-          ? (current + 1) % thumbs.length
-          : (current - 1 + thumbs.length) % thumbs.length;
-        activate(thumbs[next]);
+        step(e.key === "ArrowRight" ? 1 : -1);
         e.preventDefault();
       });
 
       host.dataset.galleryReady = "1";
+    });
+  };
+
+  const initDetailTabs = () => {
+    document.querySelectorAll("[data-detail-tabs]").forEach((root) => {
+      if (!(root instanceof HTMLElement) || root.dataset.tabsReady === "1") return;
+      const tabs = [...root.querySelectorAll("[data-detail-tab]")];
+      const panels = [...root.querySelectorAll("[data-detail-panel]")];
+      if (tabs.length === 0) return;
+
+      const activate = (name) => {
+        tabs.forEach((tab) => {
+          const on = tab.getAttribute("data-detail-tab") === name;
+          tab.classList.toggle("is-active", on);
+          tab.setAttribute("aria-selected", on ? "true" : "false");
+          tab.tabIndex = on ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const on = panel.getAttribute("data-detail-panel") === name;
+          panel.classList.toggle("is-active", on);
+          panel.toggleAttribute("hidden", !on);
+        });
+      };
+
+      root.addEventListener("click", (e) => {
+        const t = e.target;
+        if (!(t instanceof Element)) return;
+        const tab = t.closest("[data-detail-tab]");
+        if (!(tab instanceof HTMLElement)) return;
+        const name = tab.getAttribute("data-detail-tab");
+        if (name) activate(name);
+      });
+
+      root.addEventListener("keydown", (e) => {
+        if (!(e instanceof KeyboardEvent)) return;
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        const current = tabs.findIndex((t) => t.classList.contains("is-active"));
+        if (current < 0) return;
+        const next = e.key === "ArrowRight"
+          ? (current + 1) % tabs.length
+          : (current - 1 + tabs.length) % tabs.length;
+        const name = tabs[next].getAttribute("data-detail-tab");
+        if (name) {
+          activate(name);
+          tabs[next].focus();
+        }
+        e.preventDefault();
+      });
+
+      root.dataset.tabsReady = "1";
     });
   };
 
@@ -2249,6 +2643,7 @@
       btn.addEventListener("click", async () => {
         const url = btn.getAttribute("data-share-url") || window.location.href;
         const title = btn.getAttribute("data-share-title") || document.title;
+        const label = btn.querySelector("[data-share-label]");
         try {
           if (navigator.share) {
             await navigator.share({ title, url });
@@ -2260,13 +2655,24 @@
         try {
           await navigator.clipboard.writeText(url);
           toast("Bağlantı kopyalandı");
-          btn.textContent = "Kopyalandı";
-          setTimeout(() => { btn.textContent = "Bağlantıyı kopyala"; }, 2000);
+          if (label) {
+            const prev = label.textContent;
+            label.textContent = "Kopyalandı";
+            setTimeout(() => { label.textContent = prev || "Paylaş"; }, 2000);
+          }
         } catch {
           toast("Bağlantı kopyalanamadı");
         }
       });
       btn.dataset.shareReady = "1";
+    });
+  };
+
+  const initPrintListing = () => {
+    document.querySelectorAll("[data-print-listing]").forEach((btn) => {
+      if (!(btn instanceof HTMLButtonElement) || btn.dataset.printReady === "1") return;
+      btn.addEventListener("click", () => window.print());
+      btn.dataset.printReady = "1";
     });
   };
 
@@ -2276,7 +2682,9 @@
     initListEnhancements();
     initQuillDescriptions();
     initDetailGallery();
+    initDetailTabs();
     initShareListing();
+    initPrintListing();
     const boot = document.getElementById("toast")?.getAttribute("data-boot-toast");
     if (boot) {
       // Auth / e-posta bildirimleri daha uzun kalsın — kullanıcı okusun.

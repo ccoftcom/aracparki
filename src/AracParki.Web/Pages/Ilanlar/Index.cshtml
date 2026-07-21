@@ -106,7 +106,8 @@
                 </span>
                 <input x-ref="citySearch"
                        type="search"
-                       x-model="citySearch"
+                       :value="citySearch"
+                       @@input="onCitySearchInput"
                        placeholder="İl ara"
                        aria-label="İl ara"
                        class="filter-pop-search"
@@ -162,7 +163,8 @@
                 </span>
                 <input x-ref="districtSearch"
                        type="search"
-                       x-model="districtSearch"
+                       :value="districtSearch"
+                       @@input="onDistrictSearchInput"
                        placeholder="İlçe ara"
                        aria-label="İlçe ara"
                        class="filter-pop-search"

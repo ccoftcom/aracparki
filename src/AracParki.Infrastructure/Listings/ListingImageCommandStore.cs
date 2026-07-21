@@ -294,7 +294,9 @@ public sealed class ListingImageCommandStore(IDbConnectionFactory connectionFact
                 SELECT l.id
                 FROM listings l
                 INNER JOIN sellers s ON s.id = l.seller_id
-                WHERE l.ad_no = @AdNo AND s.account_id = @AccountId
+                WHERE l.ad_no = @AdNo
+                  AND s.account_id = @AccountId
+                  AND l.status IN ('pending_review', 'rejected')
                 """,
                 new { AdNo = adNo, AccountId = accountId },
                 transaction: tx,

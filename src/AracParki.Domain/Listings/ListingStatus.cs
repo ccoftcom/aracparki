@@ -17,6 +17,27 @@ public static class ListingStatus
         Archived
     ];
 
+    /// <summary>Statuses an owner may edit / resubmit for review (including unpublish).</summary>
+    public static readonly HashSet<string> OwnerEditable =
+    [
+        PendingReview,
+        Rejected,
+        Published
+    ];
+
+    /// <summary>Statuses where the listing-image API may mutate rows (not silent published edits).</summary>
+    public static readonly HashSet<string> OwnerImageMutable =
+    [
+        PendingReview,
+        Rejected
+    ];
+
+    public static bool IsOwnerEditable(string? status)
+        => !string.IsNullOrWhiteSpace(status) && OwnerEditable.Contains(status);
+
+    public static bool IsOwnerImageMutable(string? status)
+        => !string.IsNullOrWhiteSpace(status) && OwnerImageMutable.Contains(status);
+
     public static string Label(string status) => status switch
     {
         Draft => "Taslak",

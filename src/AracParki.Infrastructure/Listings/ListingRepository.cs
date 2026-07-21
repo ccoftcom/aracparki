@@ -151,8 +151,7 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
 
     public async Task<ListingDetailDto?> GetByAdNoAsync(
         string adNo,
-        long? viewerAccountId,
-        bool isAdmin,
+        ListingAccessContext access,
         CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -163,8 +162,8 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
                 new
                 {
                     AdNo = adNo,
-                    ViewerAccountId = viewerAccountId,
-                    IsAdmin = isAdmin
+                    ViewerAccountId = access.AccountId,
+                    IsAdmin = access.IsAdmin
                 },
                 cancellationToken: cancellationToken));
 

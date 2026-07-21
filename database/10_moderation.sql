@@ -18,11 +18,8 @@ CREATE INDEX IF NOT EXISTS ix_accounts_role
     ON accounts (role)
     WHERE role = 'admin';
 
--- Promote known owner account (password hash unchanged).
-UPDATE accounts
-SET role = 'admin'
-WHERE lower(email) = 'gfrulutas@gmail.com'
-  AND role <> 'admin';
+-- Promote staff via one-off ops SQL (never hard-code emails in migrations):
+--   UPDATE accounts SET role = 'admin' WHERE lower(email) = 'you@example.com';
 
 -- ---------------------------------------------------------------------------
 -- listings moderation columns + expanded status

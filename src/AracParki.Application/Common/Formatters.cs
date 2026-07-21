@@ -27,7 +27,8 @@ public static class Formatters
 
     public static string Horsepower(int hp) => $"{hp} HP";
 
-    public static string ListedAt(DateTimeOffset listedAt) => listedAt.ToString("yyyy-MM-dd", Tr);
+    public static string ListedAt(DateTimeOffset listedAt) =>
+        listedAt.ToString("dd MMMM yyyy", Tr);
 
     public static string Count(int count) => count.ToString("N0", Tr);
 }

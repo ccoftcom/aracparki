@@ -206,7 +206,7 @@ public sealed class ListingWriteRepository(IDbConnectionFactory connectionFactor
                     WHERE l.ad_no = @AdNo
                       AND l.seller_id = s.id
                       AND s.account_id = @AccountId
-                      AND l.status IN ('pending_review', 'rejected')
+                      AND l.status IN ('pending_review', 'rejected', 'published')
                     RETURNING l.id
                     """,
                     new
@@ -498,14 +498,7 @@ public sealed class ListingWriteRepository(IDbConnectionFactory connectionFactor
     {
         var next = await connection.ExecuteScalarAsync<long>(
             new CommandDefinition(
-                """
-                SELECT COALESCE(
-                    MAX(CAST(substring(ad_no FROM 4) AS BIGINT)),
-                    100000
-                ) + 1
-                FROM listings
-                WHERE ad_no ~ '^AP-[0-9]+$'
-                """,
+                "SELECT nextval('listing_ad_no_seq')",
                 transaction: tx,
                 cancellationToken: cancellationToken));
 

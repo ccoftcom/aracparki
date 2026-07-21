@@ -32,13 +32,19 @@
   overflow: hidden;
 }
 
-/* Dropdown header satırını taşır; cat-bar üstüne çıkabilsin */
+/* Dropdown header satırını taşır; cat-bar / breadcrumb üstüne çıkabilsin */
 .header-top:has(.account-menu-trigger[aria-expanded="true"]) {
   z-index: 40;
 }
 
 .header-top-inner:has(.account-menu-trigger[aria-expanded="true"]) {
   overflow: visible;
+}
+
+/* Crumb bar (z-index 45–60) site-header'ın kardeşidir; menü açıkken header üste çıkmalı */
+.site-header:has(.account-menu.is-open),
+.site-header:has(.account-menu-trigger[aria-expanded="true"]) {
+  z-index: 70;
 }
 
 .logo {

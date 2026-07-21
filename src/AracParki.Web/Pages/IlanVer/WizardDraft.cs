@@ -18,7 +18,7 @@ public sealed class WizardDraft
     public string? BrandName { get; set; }
     public int? ModelId { get; set; }
     public string ModelName { get; set; } = "";
-    public string Condition { get; set; } = EquipmentCondition.Used;
+    public string Condition { get; set; } = "";
     public int ModelYear { get; set; } = DateTime.UtcNow.Year;
     public int? Hours { get; set; }
     public bool HoursUnknown { get; set; }

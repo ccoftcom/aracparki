@@ -8,8 +8,7 @@ public interface IListingQuery
     Task<ListingSearchResult> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken);
     Task<ListingDetailDto?> GetByAdNoAsync(
         string adNo,
-        long? viewerAccountId,
-        bool isAdmin,
+        ListingAccessContext access,
         CancellationToken cancellationToken);
     Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken);
     Task<IReadOnlyList<ListingCardDto>> GetFeaturedAsync(ListingSearchQuery query, int take, CancellationToken cancellationToken);

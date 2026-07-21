@@ -14,6 +14,9 @@
             : new[] { listing.CoverImageUrl };
     var mainImage = images.Count > 0 ? images[0] : "/assets/logo/icon-512.png";
     var isPreview = listing.Status != ListingStatus.Published;
+    var locationText = $"{listing.City} / {listing.District}" +
+        (string.IsNullOrWhiteSpace(listing.Neighborhood) ? "" : $" / {listing.Neighborhood}");
+    var hasTechSpecs = Model.SpecRows.Count > 0;
 }
 
 <main class="container page-detail" id="main" data-recent-id="@listing.Id">
@@ -33,143 +36,249 @@
     </div>
   }
 
-  <div class="detail-layout">
-    <div class="detail-left">
-      <h1 class="detail-title">@listing.Title</h1>
-      <div class="detail-meta-strip">
-        <span>İlan No: @listing.AdNo</span>
-        <span>@Formatters.ListedAt(listing.ListedAt)</span>
-        <span>@listing.City / @listing.District</span>
-        <span class="@badgeClass">@badgeText</span>
-        <span class="@EquipmentCondition.BadgeClass(listing.Condition)">@EquipmentCondition.Label(listing.Condition)</span>
-      </div>
+  <header class="detail-head">
+    <h1 class="detail-title">@listing.Title</h1>
+    <div class="detail-utils" role="group" aria-label="İlan işlemleri">
+      <button type="button" class="detail-util" data-toast="Favori özelliği yakında">
+        <ap-icon name="heart" size="16" />
+        <span>Favorilerime Ekle</span>
+      </button>
+      <button type="button" class="detail-util" data-print-listing>
+        <span>Yazdır</span>
+      </button>
+      @if (!isPreview)
+      {
+        <button type="button" class="detail-util" data-share-listing
+                data-share-title="@listing.Title"
+                data-share-url="">
+          <span data-share-label>Paylaş</span>
+        </button>
+      }
+    </div>
+  </header>
 
-      <div class="detail-gallery" data-detail-gallery>
+  <div class="detail-top">
+    <div class="detail-gallery" data-detail-gallery tabindex="0" aria-label="İlan görselleri">
+      <div class="gallery-main-wrap">
         <img class="gallery-main" src="@mainImage" alt="@listing.Title" width="900" height="600" loading="eager" data-gallery-main />
         @if (images.Count > 1)
         {
-          <div class="gallery-thumbs" role="list">
-            @for (var i = 0; i < images.Count; i++)
-            {
-              <button type="button" role="listitem" class="@(i == 0 ? "is-active" : null)"
-                      data-gallery-thumb data-src="@images[i]" aria-label="Görsel @(i + 1)">
-                <img src="@images[i]" alt="" width="88" height="66" loading="lazy" />
-              </button>
-            }
-          </div>
+          <button type="button" class="gallery-nav gallery-nav--prev" data-gallery-prev aria-label="Önceki görsel">
+            <ap-icon name="arrow-left" size="20" />
+          </button>
+          <button type="button" class="gallery-nav gallery-nav--next" data-gallery-next aria-label="Sonraki görsel">
+            <ap-icon name="chevron-right" size="20" />
+          </button>
         }
       </div>
 
-      <section class="detail-card" aria-labelledby="spec-title">
-        <h2 class="detail-section-title" id="spec-title">İlan Bilgileri</h2>
-        <table class="spec-table">
-          <tbody>
-            <tr><th scope="row">İlan No</th><td>@listing.AdNo</td></tr>
-            <tr><th scope="row">İlan Tarihi</th><td>@Formatters.ListedAt(listing.ListedAt)</td></tr>
-            <tr><th scope="row">Kategori</th><td>@listing.Category</td></tr>
-            <tr><th scope="row">Marka</th><td>@listing.Brand</td></tr>
-            <tr><th scope="row">Model</th><td>@listing.ModelName</td></tr>
-            @if (!string.IsNullOrWhiteSpace(listing.SerialNo))
-            {
-              <tr><th scope="row">Seri No</th><td>@listing.SerialNo</td></tr>
-            }
-            <tr><th scope="row">Tip</th><td><span class="@badgeClass">@badgeText</span></td></tr>
-            <tr><th scope="row">Durum</th><td><span class="@EquipmentCondition.BadgeClass(listing.Condition)">@EquipmentCondition.Label(listing.Condition)</span></td></tr>
-            <tr><th scope="row">Model Yılı</th><td>@listing.ModelYear</td></tr>
-            <tr><th scope="row">Çalışma Saati</th><td>@(listing.Hours is null ? "Belirtilmedi" : Formatters.Hours(listing.Hours.Value))</td></tr>
-            @if (listing.CapacityMetric == "capacity_kg" && listing.CapacityKg is not null)
-            {
-              <tr><th scope="row">Kaldırma Kapasitesi</th><td>@listing.CapacityKg.Value.ToString("N0") kg</td></tr>
-            }
-            else if (listing.CapacityMetric == "capacity_t")
-            {
-              <tr><th scope="row">Kapasite</th><td>@Formatters.Tons(listing.Tons)</td></tr>
-            }
-            else
-            {
-              <tr><th scope="row">Operasyon Ağırlığı</th><td>@Formatters.Tons(listing.Tons)</td></tr>
-            }
-            @if (listing.Horsepower is > 0)
-            {
-              <tr><th scope="row">Motor Gücü</th><td>@Formatters.Horsepower(listing.Horsepower.Value)</td></tr>
-            }
-            @if (listing.IncludesOperator)
-            {
-              <tr><th scope="row">Operatör</th><td>Dahil</td></tr>
-            }
-            <tr><th scope="row">Konum</th><td>@listing.City / @listing.District@(string.IsNullOrWhiteSpace(listing.Neighborhood) ? null : $" / {listing.Neighborhood}")</td></tr>
-            @foreach (var row in Model.SpecRows)
-            {
-              <tr><th scope="row">@row.Label</th><td>@row.Value</td></tr>
-            }
-            @if (listing.Attachments.Count > 0)
-            {
-              <tr><th scope="row">Ekipmanlar</th><td>@string.Join(", ", listing.Attachments.Select(a => a.Name))</td></tr>
-            }
-          </tbody>
-        </table>
-      </section>
-
-      <section class="detail-card" aria-labelledby="desc-title">
-        <h2 class="detail-section-title" id="desc-title">Açıklama</h2>
-        <div class="detail-desc">@Html.Raw(ListingDescriptionHtml.ToSafeDisplayHtml(listing.Description))</div>
-      </section>
-
-      @if (Model.Similar.Count > 0)
+      @if (images.Count > 0)
       {
-        <section class="detail-similar" aria-labelledby="similar-title">
-          <h2 id="similar-title">Benzer ilanlar</h2>
-          <div class="listing-grid">
-            @foreach (var card in Model.Similar)
-            {
-              <partial name="Shared/Partials/_ListingCard" model="card" />
-            }
-          </div>
-        </section>
+        <div class="gallery-thumbs" role="list">
+          @for (var i = 0; i < images.Count; i++)
+          {
+            <button type="button" role="listitem" class="@(i == 0 ? "is-active" : null)"
+                    data-gallery-thumb data-src="@images[i]" aria-label="Görsel @(i + 1)">
+              <img src="@images[i]" alt="" width="88" height="66" loading="lazy" />
+            </button>
+          }
+        </div>
+        <div class="gallery-meta">
+          <span data-gallery-counter>1 / @images.Count Fotoğraf</span>
+        </div>
       }
     </div>
 
-    <aside class="detail-right" aria-label="Fiyat ve iletişim">
-      <div class="detail-card detail-buybox sticky-box" id="buybox">
-        <div class="detail-price">
-          @Formatters.Price(listing.Price, listing.PrimaryIntent == ListingIntent.Kiralik ? listing.PriceUnit : null, listing.Currency)
+    <section class="detail-info" aria-labelledby="info-title">
+      <h2 class="sr-only" id="info-title">İlan özeti</h2>
+      <div class="detail-price">
+        @Formatters.Price(listing.Price, listing.PrimaryIntent == ListingIntent.Kiralik ? listing.PriceUnit : null, listing.Currency)
+      </div>
+      <div class="detail-loc">@locationText</div>
+
+      <table class="spec-table">
+        <tbody>
+          <tr>
+            <th scope="row">İlan No</th>
+            <td><span class="spec-adno">@listing.AdNo</span></td>
+          </tr>
+          <tr>
+            <th scope="row">İlan Tarihi</th>
+            <td>@Formatters.ListedAt(listing.ListedAt)</td>
+          </tr>
+          <tr>
+            <th scope="row">Kategori</th>
+            <td>@listing.Category</td>
+          </tr>
+          <tr>
+            <th scope="row">Marka</th>
+            <td>@listing.Brand</td>
+          </tr>
+          <tr>
+            <th scope="row">Model</th>
+            <td>@listing.ModelName</td>
+          </tr>
+          @if (!string.IsNullOrWhiteSpace(listing.SerialNo))
+          {
+            <tr>
+              <th scope="row">Seri No</th>
+              <td>@listing.SerialNo</td>
+            </tr>
+          }
+          <tr>
+            <th scope="row">Tip</th>
+            <td><span class="@badgeClass">@badgeText</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Durum</th>
+            <td><span class="@EquipmentCondition.BadgeClass(listing.Condition)">@EquipmentCondition.Label(listing.Condition)</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Model Yılı</th>
+            <td>@listing.ModelYear</td>
+          </tr>
+          <tr>
+            <th scope="row">Çalışma Saati</th>
+            <td>@(listing.Hours is null ? "Belirtilmedi" : Formatters.Hours(listing.Hours.Value))</td>
+          </tr>
+          @if (listing.CapacityMetric == "capacity_kg" && listing.CapacityKg is not null)
+          {
+            <tr>
+              <th scope="row">Kaldırma Kapasitesi</th>
+              <td>@listing.CapacityKg.Value.ToString("N0") kg</td>
+            </tr>
+          }
+          else if (listing.CapacityMetric == "capacity_t")
+          {
+            <tr>
+              <th scope="row">Kapasite</th>
+              <td>@Formatters.Tons(listing.Tons)</td>
+            </tr>
+          }
+          else
+          {
+            <tr>
+              <th scope="row">Operasyon Ağırlığı</th>
+              <td>@Formatters.Tons(listing.Tons)</td>
+            </tr>
+          }
+          @if (listing.Horsepower is > 0)
+          {
+            <tr>
+              <th scope="row">Motor Gücü</th>
+              <td>@Formatters.Horsepower(listing.Horsepower.Value)</td>
+            </tr>
+          }
+          @if (listing.IncludesOperator)
+          {
+            <tr>
+              <th scope="row">Operatör</th>
+              <td>Dahil</td>
+            </tr>
+          }
+          <tr>
+            <th scope="row">Konum</th>
+            <td>@locationText</td>
+          </tr>
+          @if (listing.Attachments.Count > 0)
+          {
+            <tr>
+              <th scope="row">Ekipmanlar</th>
+              <td>@string.Join(", ", listing.Attachments.Select(a => a.Name))</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <a class="detail-report" href="mailto:destek@aracparki.com?subject=İlan%20şikayeti%20@Uri.EscapeDataString(listing.AdNo)">
+        İlan ile ilgili şikayetim var
+      </a>
+    </section>
+
+    <aside class="detail-seller" aria-label="Satıcı bilgileri" id="buybox">
+      <div class="seller-card sticky-box">
+        <div class="seller-card-head">
+          <strong class="seller-name">@listing.SellerName</strong>
+          <span class="seller-meta">@sellerLabel@(listing.IsVerified ? " · Doğrulanmış" : "")</span>
         </div>
-        <div class="detail-loc">@listing.City / @listing.District@(string.IsNullOrWhiteSpace(listing.Neighborhood) ? null : $" / {listing.Neighborhood}")</div>
 
         @if (!isPreview)
         {
-          <div class="detail-actions">
-            <button type="button" class="btn btn-machine btn-block"
-                    data-toast="Teklif talebi alındı">
-              Teklif Al
-            </button>
-            <button type="button" class="btn btn-dark btn-block"
-                    data-reveal-phone="@listing.AdNo">
-              Telefonu Göster
+          <div class="seller-actions">
+            <button type="button" class="btn btn-dark btn-block" data-reveal-phone="@listing.AdNo">
+              <ap-icon name="phone" size="18" />
+              <span>Telefonu Göster</span>
             </button>
             <span data-phone-slot hidden>
               <a class="btn btn-ghost btn-block" data-phone-link href="#">Ara</a>
             </span>
+            <button type="button" class="btn btn-machine btn-block" data-toast="Teklif talebi alındı">
+              <ap-icon name="message-circle" size="18" />
+              <span>Teklif Al</span>
+            </button>
           </div>
         }
-
-        <div class="seller-box">
-          <strong>@listing.SellerName</strong>
-          <span>@sellerLabel@(listing.IsVerified ? " · Doğrulanmış" : "")</span>
-        </div>
-
-        <div class="detail-share">
-          <button type="button" class="btn btn-ghost btn-block" data-share-listing
-                  data-share-title="@listing.Title"
-                  data-share-url="">
-            Bağlantıyı kopyala
-          </button>
-        </div>
 
         <a class="detail-back" href="@Model.BackToListUrl()">← Benzer ilanlara dön</a>
       </div>
     </aside>
   </div>
+
+  <div class="detail-tabs" data-detail-tabs>
+    <div class="detail-tablist" role="tablist" aria-label="İlan içeriği">
+      <button type="button" class="detail-tab is-active" role="tab" id="tab-details"
+              aria-selected="true" aria-controls="panel-details" data-detail-tab="details">
+        İlan Detayları
+      </button>
+      @if (hasTechSpecs)
+      {
+        <button type="button" class="detail-tab" role="tab" id="tab-tech"
+                aria-selected="false" aria-controls="panel-tech" data-detail-tab="tech" tabindex="-1">
+          Teknik Özellikler
+        </button>
+      }
+    </div>
+
+    <div class="detail-tabpanels">
+      <section class="detail-tabpanel is-active" role="tabpanel" id="panel-details"
+               aria-labelledby="tab-details" data-detail-panel="details">
+        <h2 class="detail-section-title" id="desc-title">Açıklama</h2>
+        <div class="detail-desc">@Html.Raw(ListingDescriptionHtml.ToSafeDisplayHtml(listing.Description))</div>
+      </section>
+
+      @if (hasTechSpecs)
+      {
+        <section class="detail-tabpanel" role="tabpanel" id="panel-tech"
+                 aria-labelledby="tab-tech" data-detail-panel="tech" hidden>
+          <h2 class="detail-section-title" id="tech-title">Teknik Özellikler</h2>
+          <table class="spec-table">
+            <tbody>
+              @foreach (var row in Model.SpecRows)
+              {
+                <tr>
+                  <th scope="row">@row.Label</th>
+                  <td>@row.Value</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    </div>
+  </div>
+
+  @if (Model.Similar.Count > 0)
+  {
+    <section class="detail-similar" aria-labelledby="similar-title">
+      <h2 id="similar-title">Benzer ilanlar</h2>
+      <div class="listing-grid">
+        @foreach (var card in Model.Similar)
+        {
+          <partial name="Shared/Partials/_ListingCard" model="card" />
+        }
+      </div>
+    </section>
+  }
 
   @if (!isPreview)
   {

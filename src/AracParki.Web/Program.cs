@@ -256,8 +256,7 @@ try
 
     var listingImages = app.MapGroup("/api/listings/{adNo}/images")
         .RequireAuthorization()
-        .RequireRateLimiting("listing-images")
-        .DisableAntiforgery();
+        .RequireRateLimiting("listing-images");
 
     listingImages.MapGet("/", async (
             string adNo,
@@ -295,7 +294,8 @@ try
                     ? null
                     : ListingImageVariants.All(publicBase, i.StorageKey)
             }));
-        });
+        })
+        .DisableAntiforgery();
 
     listingImages.MapGet("/{imageId:long}/variants", async (
             string adNo,
@@ -329,7 +329,8 @@ try
                 storageKey = item.StorageKey,
                 variants = ListingImageVariants.All(publicBase, item.StorageKey)
             });
-        });
+        })
+        .DisableAntiforgery();
 
     listingImages.MapPatch("/reorder", async (
             string adNo,

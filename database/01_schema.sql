@@ -174,9 +174,10 @@ CREATE TABLE IF NOT EXISTS listings (
     specs             JSONB NOT NULL DEFAULT '{}'::jsonb
                       CHECK (jsonb_typeof(specs) = 'object'),
     cover_image_url   TEXT NOT NULL,
-    status            TEXT NOT NULL DEFAULT 'published'
+    status            TEXT NOT NULL DEFAULT 'pending_review'
                       CHECK (status IN ('draft', 'pending_review', 'published', 'rejected', 'archived')),
-    rejection_reason  TEXT NULL,
+    rejection_reason  TEXT NULL
+                      CHECK (rejection_reason IS NULL OR char_length(rejection_reason) <= 1000),
     reviewed_at       TIMESTAMPTZ NULL,
     reviewed_by_account_id BIGINT NULL,
     submitted_at      TIMESTAMPTZ NULL,

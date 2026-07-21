@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AracParki.Application.Catalog.Services;
 using AracParki.Application.Listings;
 using AracParki.Application.Listings.Dtos;
@@ -27,13 +26,8 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             return NotFound();
         }
 
-        var viewerId = GetAccountId();
-        var isAdmin = AuthCookie.IsAdmin(User);
-        Listing = await listingService.GetByAdNoAsync(
-            AdNo,
-            cancellationToken,
-            viewerAccountId: viewerId,
-            isAdmin: isAdmin);
+        var access = ListingAccessContext.FromPrincipal(User);
+        Listing = await listingService.GetByAdNoAsync(AdNo, access, cancellationToken);
         if (Listing is null)
         {
             return NotFound();
@@ -86,12 +80,6 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         }
 
         return Page();
-    }
-
-    private long? GetAccountId()
-    {
-        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return long.TryParse(raw, out var id) ? id : null;
     }
 
     private string BuildProductJsonLd(ListingDetailDto listing)

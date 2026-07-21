@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AracParki.Application.Authorization;
+using AracParki.Application.Listings;
 using AracParki.Application.Listings.Dtos;
 using AracParki.Application.Listings.Services;
 using AracParki.Domain.Listings;
@@ -29,9 +30,8 @@ public sealed class DetayModel(
 
         Listing = await listings.GetByAdNoAsync(
             AdNo,
-            cancellationToken,
-            viewerAccountId: null,
-            isAdmin: true);
+            ListingAccessContext.FromPrincipal(User),
+            cancellationToken);
         if (Listing is null)
         {
             return NotFound();
@@ -56,9 +56,15 @@ public sealed class DetayModel(
             TempData["AuthNotice"] = $"{AdNo} onaylandı ve yayınlandı.";
             return RedirectToPage("/Admin/Ilanlar/Index", new { durum = ListingStatus.PendingReview });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException)
         {
-            FormError = ex.Message;
+            FormError = "Onaylanacak ilan bulunamadı veya durumu uygun değil.";
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+        catch (Exception)
+        {
+            FormError = "Onay işlemi başarısız. Lütfen tekrar dene.";
             await OnGetAsync(cancellationToken);
             return Page();
         }
@@ -77,9 +83,21 @@ public sealed class DetayModel(
             TempData["AuthNotice"] = $"{AdNo} reddedildi.";
             return RedirectToPage("/Admin/Ilanlar/Index", new { durum = ListingStatus.PendingReview });
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
             FormError = ex.Message;
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+        catch (InvalidOperationException)
+        {
+            FormError = "Reddedilecek ilan bulunamadı veya durumu uygun değil.";
+            await OnGetAsync(cancellationToken);
+            return Page();
+        }
+        catch (Exception)
+        {
+            FormError = "Red işlemi başarısız. Lütfen tekrar dene.";
             await OnGetAsync(cancellationToken);
             return Page();
         }

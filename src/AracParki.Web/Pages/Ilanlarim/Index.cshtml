@@ -31,15 +31,17 @@ else
               <strong>Red notu:</strong> @item.RejectionReason
             </div>
           }
-          @if (item.Status is ListingStatus.Rejected or ListingStatus.PendingReview)
+          @if (item.Status is ListingStatus.Rejected or ListingStatus.PendingReview or ListingStatus.Published)
           {
-            <a class="btn btn-ghost btn-sm" href="/ilan-ver?duzenle=@item.AdNo">Düzenle ve tekrar gönder</a>
-            @if (item.Status == ListingStatus.PendingReview)
+            <a class="btn btn-ghost btn-sm" href="/ilan-ver?duzenle=@item.AdNo">
+              @(item.Status == ListingStatus.Published ? "Düzenle (yeniden incelemeye gider)" : "Düzenle ve tekrar gönder")
+            </a>
+            @if (item.Status is ListingStatus.PendingReview or ListingStatus.Rejected)
             {
               <a class="btn btn-ghost btn-sm" href="/ilan/@item.AdNo">Önizleme</a>
             }
           }
-          else if (item.Status == ListingStatus.Published)
+          @if (item.Status == ListingStatus.Published)
           {
             <a class="btn btn-ghost btn-sm" href="/ilan/@item.AdNo">İlanı görüntüle</a>
           }

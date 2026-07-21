@@ -25,12 +25,11 @@ public sealed class ListingService(
 
     public Task<ListingDetailDto?> GetByAdNoAsync(
         string adNo,
-        CancellationToken cancellationToken,
-        long? viewerAccountId = null,
-        bool isAdmin = false)
+        ListingAccessContext access,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(adNo);
-        return listingQuery.GetByAdNoAsync(adNo.Trim(), viewerAccountId, isAdmin, cancellationToken);
+        return listingQuery.GetByAdNoAsync(adNo.Trim(), access, cancellationToken);
     }
 
     public Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken)

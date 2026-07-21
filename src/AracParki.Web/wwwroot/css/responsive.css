@@ -228,11 +228,6 @@
     grid-template-columns: 1fr 340px;
     align-items: start;
   }
-
-  .sticky-box {
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 72px);
-  }
 }
 
 @media (min-width: 1100px) {
