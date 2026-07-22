@@ -87,6 +87,7 @@
                width="900"
                height="900"
                loading="eager"
+               decoding="async"
                data-gallery-main
                data-gallery-src="@mainImage" />
           @if (images.Count > 1)
@@ -121,7 +122,7 @@
                       data-index="@i"
                       aria-label="Görsel @(i + 1)"
                       aria-current="@(i == 0 ? "true" : "false")">
-                <img src="@images[i]" alt="" width="88" height="88" loading="lazy" />
+                <img src="@images[i]" alt="" width="88" height="88" loading="lazy" decoding="async" />
               </button>
             }
           </div>

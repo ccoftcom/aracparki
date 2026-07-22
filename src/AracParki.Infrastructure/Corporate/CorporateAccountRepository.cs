@@ -1,4 +1,5 @@
 using AracParki.Application.Abstractions;
+using AracParki.Application.Common;
 using AracParki.Application.Corporate;
 using AracParki.Application.Corporate.Dtos;
 using AracParki.Domain.Corporate;
@@ -14,6 +15,7 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
                ca.company_type AS CompanyType,
                ca.trade_name AS TradeName,
                ca.display_name AS DisplayName,
+               ca.slug,
                ca.tax_office AS TaxOffice,
                ca.tax_number AS TaxNumber,
                ca.mersis_no AS MersisNo,
@@ -47,23 +49,30 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
     public async Task<long> CreateAsync(long accountId, CorporateProfileData data, CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        return await connection.ExecuteScalarAsync<long>(
+        var id = await connection.ExecuteScalarAsync<long>(
             new CommandDefinition(
                 """
                 INSERT INTO corporate_accounts (
-                    account_id, company_type, trade_name, display_name,
+                    account_id, company_type, trade_name, display_name, slug,
                     tax_office, tax_number, mersis_no, trade_registry_no, kep_address,
                     authorized_name, phone, email, website,
                     city_id, district_id, address_line, status)
                 VALUES (
-                    @AccountId, @CompanyType, @TradeName, @DisplayName,
+                    @AccountId, @CompanyType, @TradeName, @DisplayName, @Slug,
                     @TaxOffice, @TaxNumber, @MersisNo, @TradeRegistryNo, @KepAddress,
                     @AuthorizedName, @Phone, @Email, @Website,
                     @CityId, @DistrictId, @AddressLine, 'draft')
                 RETURNING id
                 """,
-                BuildProfileParams(accountId, null, data),
+                BuildProfileParams(accountId, null, data, temporarySlug: true),
                 cancellationToken: cancellationToken));
+
+        await connection.ExecuteAsync(
+            new CommandDefinition(
+                "UPDATE corporate_accounts SET slug = @Slug WHERE id = @Id",
+                new { Id = id, Slug = SeoSlug.Unique(data.DisplayName, id) },
+                cancellationToken: cancellationToken));
+        return id;
     }
 
     public async Task<bool> UpdateProfileAsync(long id, long accountId, CorporateProfileData data, CancellationToken cancellationToken)
@@ -76,6 +85,7 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
                 SET company_type = @CompanyType,
                     trade_name = @TradeName,
                     display_name = @DisplayName,
+                    slug = @Slug,
                     tax_office = @TaxOffice,
                     tax_number = @TaxNumber,
                     mersis_no = @MersisNo,
@@ -95,6 +105,50 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
                 BuildProfileParams(accountId, id, data),
                 cancellationToken: cancellationToken));
         return affected > 0;
+    }
+
+    public async Task<PublicDealerDto?> GetApprovedPublicBySlugAsync(string slug, CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.QuerySingleOrDefaultAsync<PublicDealerDto>(
+            new CommandDefinition(
+                """
+                SELECT ca.id,
+                       ca.slug,
+                       ca.display_name AS DisplayName,
+                       ca.company_type AS CompanyType,
+                       ca.phone,
+                       ca.email,
+                       ca.website,
+                       ca.logo_url AS LogoUrl,
+                       c.name AS CityName,
+                       d.name AS DistrictName,
+                       ca.address_line AS AddressLine,
+                       ca.updated_at AS UpdatedAt
+                FROM corporate_accounts ca
+                JOIN cities c ON c.id = ca.city_id
+                JOIN districts d ON d.id = ca.district_id
+                WHERE ca.status = 'approved'
+                  AND ca.slug = @Slug
+                LIMIT 1
+                """,
+                new { Slug = slug },
+                cancellationToken: cancellationToken));
+    }
+
+    public async Task<IReadOnlyList<PublicDealerSitemapEntry>> ListApprovedForSitemapAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await connection.QueryAsync<PublicDealerSitemapEntry>(
+            new CommandDefinition(
+                """
+                SELECT slug, updated_at AS LastModified
+                FROM corporate_accounts
+                WHERE status = 'approved'
+                ORDER BY id
+                """,
+                cancellationToken: cancellationToken));
+        return rows.AsList();
     }
 
     public async Task<CorporateAccountDto?> GetAsync(long id, CancellationToken cancellationToken)
@@ -368,24 +422,36 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
         return affected > 0;
     }
 
-    private static object BuildProfileParams(long accountId, long? id, CorporateProfileData data) => new
+    private static object BuildProfileParams(
+        long accountId,
+        long? id,
+        CorporateProfileData data,
+        bool temporarySlug = false)
     {
-        Id = id,
-        AccountId = accountId,
-        data.CompanyType,
-        data.TradeName,
-        data.DisplayName,
-        data.TaxOffice,
-        data.TaxNumber,
-        data.MersisNo,
-        data.TradeRegistryNo,
-        data.KepAddress,
-        data.AuthorizedName,
-        data.Phone,
-        data.Email,
-        data.Website,
-        data.CityId,
-        data.DistrictId,
-        data.AddressLine
-    };
+        var slug = temporarySlug
+            ? "tmp-" + Guid.NewGuid().ToString("N")
+            : SeoSlug.Unique(data.DisplayName, id ?? 0);
+
+        return new
+        {
+            Id = id,
+            AccountId = accountId,
+            data.CompanyType,
+            data.TradeName,
+            data.DisplayName,
+            Slug = slug,
+            data.TaxOffice,
+            data.TaxNumber,
+            data.MersisNo,
+            data.TradeRegistryNo,
+            data.KepAddress,
+            data.AuthorizedName,
+            data.Phone,
+            data.Email,
+            data.Website,
+            data.CityId,
+            data.DistrictId,
+            data.AddressLine
+        };
+    }
 }

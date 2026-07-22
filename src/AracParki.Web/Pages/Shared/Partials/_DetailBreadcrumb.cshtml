@@ -1,0 +1,174 @@
+@model AracParki.Web.Pages.Ilan.IndexModel
+@using AracParki.Domain.Listings
+@{
+    var listing = Model.Listing!;
+    var intent = Model.CrumbIntent;
+    var groupLabel = Model.RootNavLabel;
+    var showGroup = !string.Equals(groupLabel, "İş Makineleri", StringComparison.Ordinal);
+    var rootUrl = Model.RootNavUrl();
+    var hasCategory = listing.CategoryId > 0 && !string.IsNullOrWhiteSpace(listing.Category);
+    var intentUrl = Model.IntentNavUrl(intent);
+    var categoryUrl = hasCategory ? Model.CategoryNavUrl(listing.CategoryId) : null;
+
+    var siblingCategories = Model.CategoryNav.Where(c => c.ListingCount > 0).ToArray();
+    var siblingGroups = Model.CategoryNav
+        .Where(c => !string.IsNullOrWhiteSpace(c.GroupName) && c.ListingCount > 0)
+        .Select(c => c.GroupName!)
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+    var crumbCaret = $"<span class=\"bc-caret\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-caret-right", 12)}{Lucide.Svg("chevron-down", "ap-icon bc-caret-down", 12)}</span>";
+    var crumbSep = $"<span class=\"bc-sep\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-sep-icon", 12)}</span>";
+}
+<div id="site-crumb-bar" class="list-crumb-bar">
+  <div class="list-crumb-inner">
+    <nav class="list-crumb" aria-label="Sayfa yolu">
+      <ol class="breadcrumb">
+        <li>
+          <a href="/">Anasayfa</a>
+          @Html.Raw(crumbSep)
+        </li>
+        <li>
+          @if (showGroup)
+          {
+            <div class="bc-has-menu">
+              <a class="bc-trigger bc-truncate"
+                 href="@rootUrl"
+                 title="@groupLabel"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                <span>@groupLabel</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                @if (siblingGroups.Length > 1)
+                {
+                  @foreach (var name in siblingGroups)
+                  {
+                    <li>
+                      <a class="@(string.Equals(name, groupLabel, StringComparison.Ordinal) ? "is-current" : null)"
+                         href="@rootUrl"
+                         aria-current="@(string.Equals(name, groupLabel, StringComparison.Ordinal) ? "page" : null)">@name</a>
+                    </li>
+                  }
+                }
+                else
+                {
+                  <li>
+                    <a class="is-current" href="@rootUrl" aria-current="page">İş Makineleri</a>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          else
+          {
+            <div class="bc-has-menu">
+              <a class="bc-trigger bc-truncate"
+                 href="@rootUrl"
+                 title="@groupLabel"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                <span>@groupLabel</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Satilik)">@ListingIntent.Label(ListingIntent.Satilik)</a>
+                </li>
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Kiralik)">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+                </li>
+              </ul>
+            </div>
+          }
+        </li>
+        @if (showGroup)
+        {
+          <li>
+            <div class="bc-has-menu">
+              <a class="bc-trigger"
+                 href="@rootUrl"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                <span>İş Makineleri</span>
+                @Html.Raw(crumbCaret)
+              </a>
+              <ul class="bc-menu" role="list">
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Satilik)">@ListingIntent.Label(ListingIntent.Satilik)</a>
+                </li>
+                <li>
+                  <a href="@Model.IntentNavUrl(ListingIntent.Kiralik)">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+                </li>
+              </ul>
+            </div>
+          </li>
+        }
+        <li>
+          <div class="bc-has-menu">
+            <a class="bc-trigger"
+               href="@intentUrl"
+               aria-haspopup="true"
+               aria-expanded="false">
+              <span>@ListingIntent.Label(intent)</span>
+              @Html.Raw(crumbCaret)
+            </a>
+            <ul class="bc-menu" role="list">
+              <li>
+                <a class="@(intent == ListingIntent.Satilik ? "is-current" : null)"
+                   href="@Model.IntentNavUrl(ListingIntent.Satilik)">@ListingIntent.Label(ListingIntent.Satilik)</a>
+              </li>
+              <li>
+                <a class="@(intent == ListingIntent.Kiralik ? "is-current" : null)"
+                   href="@Model.IntentNavUrl(ListingIntent.Kiralik)">@ListingIntent.Label(ListingIntent.Kiralik)</a>
+              </li>
+            </ul>
+          </div>
+        </li>
+        @if (hasCategory)
+        {
+          var categoryHasMenu = siblingCategories.Length > 0;
+          <li>
+            @if (categoryHasMenu)
+            {
+              <div class="bc-has-menu">
+                <a class="bc-trigger"
+                   href="@categoryUrl"
+                   aria-haspopup="true"
+                   aria-expanded="false">
+                  <span>@listing.Category</span>
+                  @Html.Raw(crumbCaret)
+                </a>
+                <ul class="bc-menu" role="list">
+                  @foreach (var cat in siblingCategories)
+                  {
+                    var catUrl = Model.CategoryNavUrl(cat.Id);
+                    var isCurrent = listing.CategoryId == cat.Id;
+                    <li>
+                      <a class="@(isCurrent ? "is-current" : null)" href="@catUrl">@cat.Name</a>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            else
+            {
+              <a href="@categoryUrl">@listing.Category</a>
+              @Html.Raw(crumbSep)
+            }
+          </li>
+        }
+        <li>
+          <span class="bc-current bc-truncate" title="@listing.Title" aria-current="page">@listing.Title</span>
+        </li>
+      </ol>
+    </nav>
+
+    <ul class="list-crumb-utils" aria-label="Hızlı bağlantılar">
+      <li><a href="/favorilerim">Favori İlanlarım</a></li>
+      <li><a href="/kayitli-aramalar">Favori Aramalarım</a></li>
+      <li><a href="/panel">Size Özel İlanlar</a></li>
+      <li><a href="/favorilerim" title="Karşılaştırma yakında">Karşılaştır</a></li>
+    </ul>
+  </div>
+</div>

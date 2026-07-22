@@ -114,24 +114,53 @@
     <link rel="stylesheet" href="~/css/components/buttons.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/icons.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/header.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/components/hero.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/components/forms.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/footer.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/list.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/detail.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/lightgallery/lightgallery-bundle.min.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/auth.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/ilan-ver.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/quill/quill.snow.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/lib/cropperjs/cropper.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/forms.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/toastify/toastify.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/tw-ui.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/legal.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/pages/account.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/responsive.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/styles.css" asp-append-version="true" />
+    @if (pageKey is "home")
+    {
+        <link rel="stylesheet" href="~/css/components/hero.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/aside.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+    }
+    else if (pageKey is "list")
+    {
+        <link rel="stylesheet" href="~/css/components/breadcrumb.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/aside.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/list.css" asp-append-version="true" />
+    }
+    else if (pageKey is "detail")
+    {
+        <link rel="stylesheet" href="~/css/components/breadcrumb.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/detail.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/lib/lightgallery/lightgallery-bundle.min.css" asp-append-version="true" />
+    }
+    else if (pageKey is "auth")
+    {
+        <link rel="stylesheet" href="~/css/pages/auth.css" asp-append-version="true" />
+    }
+    else if (pageKey is "wizard")
+    {
+        <link rel="stylesheet" href="~/css/pages/ilan-ver.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/lib/quill/quill.snow.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/lib/cropperjs/cropper.min.css" asp-append-version="true" />
+    }
+    else if (pageKey is "account")
+    {
+        <link rel="stylesheet" href="~/css/pages/account.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+    }
+    else if (pageKey is "legal")
+    {
+        <link rel="stylesheet" href="~/css/components/breadcrumb.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/legal.css" asp-append-version="true" />
+    }
 
     @if (!string.IsNullOrEmpty(cspNonce))
     {

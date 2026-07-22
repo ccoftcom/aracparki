@@ -336,6 +336,7 @@ public sealed class CorporateAccountServiceTests
         CompanyType = companyType,
         TradeName = "Örnek",
         DisplayName = "Örnek",
+        Slug = "ornek-1",
         TaxOffice = "Kadıköy",
         TaxNumber = "12345678901",
         AuthorizedName = "Ali Veli",
@@ -474,6 +475,12 @@ public sealed class CorporateAccountServiceTests
 
         public Task<bool> UpdateProfileAsync(long id, long accountId, CorporateProfileData data, CancellationToken cancellationToken)
             => Task.FromResult(true);
+
+        public Task<PublicDealerDto?> GetApprovedPublicBySlugAsync(string slug, CancellationToken cancellationToken)
+            => Task.FromResult<PublicDealerDto?>(null);
+
+        public Task<IReadOnlyList<PublicDealerSitemapEntry>> ListApprovedForSitemapAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<PublicDealerSitemapEntry>>([]);
     }
 
     private sealed class CapturingListingStore : IListingStore

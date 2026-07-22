@@ -34,6 +34,7 @@ public sealed class ListingSearchQuery
     /// <summary>JSON minimums for numeric specs, e.g. {"lift_height_m":"3"}.</summary>
     public string? SpecMinJson { get; init; }
     public string? Query { get; init; }
+    public long? CorporateAccountId { get; init; }
     public string Sort { get; init; } = Domain.Listings.ListingSort.Newest;
     public int Page { get; init; } = 1;
     public int PageSize { get; init; } = 24;

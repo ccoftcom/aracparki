@@ -8,20 +8,23 @@ Source: [Google SEO Starter Guide](https://developers.google.com/search/docs/fun
 |------|--------|
 | Title / description / OG / Twitter | Done |
 | Product + BreadcrumbList JSON-LD | Done (enriched) |
-| robots.txt + HTTPS/HSTS/CSP | Done (`/admin`, `/kurumsal-hesap`) |
-| Sitemap | Done — dynamic index + listings + hubs |
-| List canonical | Done — allowlist + noindex policy |
-| Hub URLs (category × city) | Query hubs in sitemap; **path hubs pending** |
-| Search Console / Analytics | Config hooks ready — fill `App:Seo` |
-| Public dealer pages | Pending |
+| robots.txt + HTTPS/HSTS/CSP | Done |
+| Sitemap | Done — listings + path hubs + dealers |
+| List canonical | Done |
+| Hub URLs (category × city) | Done — `/ilanlar/{tip}/{kategori}/{sehir}` |
+| Search Console / Analytics | Config hooks — fill `App:Seo` |
+| Public dealer pages | Done — `/satici/{slug}` |
+| CWV CSS split + prod cache | Done |
 
 ---
 
-## Implementation progress (2026-07-22)
+## Implementation progress
 
-Completed in code: Faz 0.3 robots, Faz 1 sitemap + canonical, Faz 3 list/detail titles, Faz 4 Product JSON-LD enrich, Faz 5 image srcset/alt, SeoSettings + CSP for GA4.
+- **2026-07-22 (P0/P1 partial):** robots, dynamic sitemap, list canonical, titles, Product JSON-LD, image srcset, SeoSettings
+- **2026-07-22 (remaining phases):** city/corporate slugs (`14_seo_slugs.sql`), path hubs + 301, `/satici/{slug}` + LocalBusiness, sitemap dealers, page-scoped CSS, prod Cache-Control
+- **2026-07-22 (Faz 5 images):** site-wide lazy-load spinner (`.img-shell` + `initLazyImageSpinners`); LCP hero excluded
 
-Remaining: Faz 0.1–0.2 manual SC/GA credentials, Faz 2 path hubs + dealer pages, Faz 7 CWV polish.
+Manual remaining: Search Console verify + GA4 IDs in production config.
 
 ## Faz 0 — Eligibility (≈1 week)
 
@@ -151,6 +154,13 @@ Never fake reviews or misleading prices.
 3. Image sitemap; verify CDN host in SC if needed
 4. Consistent `og:image` / Product `image`; avoid extreme aspect ratios
 5. Prefer meaningful filenames where practical
+6. **Lazy load + spinner (site standard):**
+   - Below-fold: `loading="lazy"` + `decoding="async"` + width/height
+   - LCP (home hero): `eager` + `fetchpriority="high"` — skip spinner
+   - Detail gallery main: `eager` + spinner shell (not opacity-hidden)
+   - Bind via `initLazyImageSpinners` / `AP.bindImageSpinner`; HTMX list swap re-init
+   - Opt-out: `data-no-spinner`
+   - See SKILL.md § Images (lazy load + spinner)
 
 ---
 

@@ -12,24 +12,6 @@
   align-content: start;
 }
 
-.aside-card {
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.aside-title {
-  margin: 0;
-  padding: 12px var(--space-2);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
-}
-
 .aside-list,
 .aside-cities {
   list-style: none;

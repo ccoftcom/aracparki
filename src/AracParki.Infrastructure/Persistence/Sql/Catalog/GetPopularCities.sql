@@ -1,6 +1,7 @@
 SELECT
     city.id,
     city.name,
+    city.slug,
     COALESCE(cnt.listing_count, 0)::int AS ListingCount
 FROM cities city
 LEFT JOIN (

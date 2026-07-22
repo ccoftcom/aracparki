@@ -32,6 +32,7 @@ public sealed class CitySummaryDto
 {
     public int Id { get; init; }
     public required string Name { get; init; }
+    public required string Slug { get; init; }
     public int ListingCount { get; init; }
 }
 
@@ -39,6 +40,7 @@ public sealed class CityOptionDto
 {
     public int Id { get; init; }
     public required string Name { get; init; }
+    public required string Slug { get; init; }
 }
 
 public sealed class DistrictOptionDto

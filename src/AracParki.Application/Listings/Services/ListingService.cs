@@ -127,6 +127,7 @@ public sealed class ListingService(
             Query = string.IsNullOrWhiteSpace(query.Query) || query.Query.Trim().Length < 2
                 ? null
                 : query.Query.Trim(),
+            CorporateAccountId = query.CorporateAccountId is > 0 ? query.CorporateAccountId : null,
             Sort = string.IsNullOrWhiteSpace(query.Sort)
                 ? Domain.Listings.ListingSort.Newest
                 : query.Sort.Trim(),

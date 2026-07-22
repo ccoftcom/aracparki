@@ -81,6 +81,7 @@
              width="900"
              height="900"
              loading="eager"
+             decoding="async"
              data-gallery-main
              data-gallery-src="@mainDisplay" />
         @if (images.Count > 1)
@@ -110,6 +111,11 @@
                     class="@(i == 0 ? "is-active" : null)"
                     data-gallery-thumb
                     data-src="@ListingImageUrlVariants.WithVariant(images[i], ListingImageVariants.Lg)"
+                    data-srcset="@ListingImageUrlVariants.SrcSet(
+                        images[i],
+                        (ListingImageVariants.Md, 768),
+                        (ListingImageVariants.Lg, 1280),
+                        (ListingImageVariants.Xl, 1920))"
                     data-index="@i"
                     aria-label="Görsel @(i + 1)"
                     aria-current="@(i == 0 ? "true" : "false")">
@@ -117,7 +123,8 @@
                    alt="@(listing.Title) — görsel @(i + 1)"
                    width="88"
                    height="88"
-                   loading="lazy" />
+                   loading="lazy"
+                   decoding="async" />
             </button>
           }
         </div>
@@ -238,6 +245,10 @@
         <div class="seller-card-head">
           <strong class="seller-name">@sellerDisplayName</strong>
           <span class="seller-meta">@sellerLabel@(sellerVerified ? " · Doğrulanmış" : "")</span>
+          @if (!string.IsNullOrWhiteSpace(listing.CorporateSlug))
+          {
+            <a class="seller-profile-link" href="@ListingRoutes.Dealer(listing.CorporateSlug)">Satıcı profili</a>
+          }
         </div>
 
         @if (!isPreview)
@@ -335,7 +346,7 @@
 </main>
 
 @section CrumbBar {
-  <partial name="Shared/Partials/_SiteBreadcrumb" model="Model.BreadcrumbTrail" />
+  <partial name="Shared/Partials/_DetailBreadcrumb" model="Model" />
 }
 
 @section Scripts {

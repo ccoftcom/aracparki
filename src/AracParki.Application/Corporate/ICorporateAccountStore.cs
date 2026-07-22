@@ -41,4 +41,8 @@ public interface ICorporateAccountStore
 
     /// <summary>pending → rejected; etkilenmediyse false döner.</summary>
     Task<bool> RejectAsync(long id, long adminAccountId, string reason, CancellationToken cancellationToken);
+
+    Task<PublicDealerDto?> GetApprovedPublicBySlugAsync(string slug, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<PublicDealerSitemapEntry>> ListApprovedForSitemapAsync(CancellationToken cancellationToken);
 }

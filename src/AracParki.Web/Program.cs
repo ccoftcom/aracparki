@@ -229,12 +229,23 @@ try
         ContentTypeProvider = contentTypes,
         OnPrepareResponse = ctx =>
         {
-            // styles.css @import zinciri tarayıcıda agresif cache'lenir; Dev'de anlık CSS/JS için kapat.
             if (app.Environment.IsDevelopment())
             {
                 ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
                 ctx.Context.Response.Headers.Pragma = "no-cache";
                 ctx.Context.Response.Headers.Expires = "0";
+            }
+            else
+            {
+                var path = ctx.Context.Request.Path.Value ?? string.Empty;
+                if (path.StartsWith("/css/", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/js/", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/lib/", StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".webmanifest", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+                }
             }
         }
     });

@@ -1,6 +1,8 @@
-@model IReadOnlyList<BreadcrumbItem>
+@model IReadOnlyList<BreadcrumbItem>?
 @{
-    var items = Model ?? [];
+    var items = Model
+        ?? ViewData[Breadcrumbs.ViewDataKey] as IReadOnlyList<BreadcrumbItem>
+        ?? [];
     if (items.Count == 0)
     {
         return;

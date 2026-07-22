@@ -27,6 +27,11 @@ public static class ListingSeo
             return false;
         }
 
+        if (filter.CorporateAccountId is > 0)
+        {
+            return false;
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Sort) && filter.Sort != ListingSort.Newest)
         {
             return false;
@@ -57,8 +62,22 @@ public static class ListingSeo
         return true;
     }
 
-    public static string BuildCanonicalListPath(ListingSearchQuery filter)
+    public static string BuildCanonicalListPath(
+        ListingSearchQuery filter,
+        string? categorySlug = null,
+        string? citySlug = null)
     {
+        if (ListingRoutes.TryHubPath(filter, categorySlug, citySlug, out var hub))
+        {
+            var extra = new Dictionary<string, string?>(StringComparer.Ordinal);
+            if (filter.BrandId is > 0)
+            {
+                extra["markaId"] = filter.BrandId.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return extra.Count == 0 ? hub : QueryHelpers.AddQueryString(hub, extra);
+        }
+
         var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
 
         if (!string.IsNullOrWhiteSpace(filter.Intent) && filter.Intent != ListingIntent.All)

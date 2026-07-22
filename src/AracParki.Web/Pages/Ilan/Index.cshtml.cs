@@ -1,4 +1,5 @@
 using System.Globalization;
+using AracParki.Application.Catalog.Dtos;
 using AracParki.Application.Catalog.Services;
 using AracParki.Application.Listings;
 using AracParki.Application.Listings.Dtos;
@@ -19,6 +20,7 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
     public ListingDetailDto? Listing { get; private set; }
     public IReadOnlyList<SpecDisplayRow> SpecRows { get; private set; } = [];
     public IReadOnlyList<ListingCardDto> Similar { get; private set; } = [];
+    public IReadOnlyList<CategorySummaryDto> CategoryNav { get; private set; } = [];
     public IReadOnlyList<BreadcrumbItem> BreadcrumbTrail { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -29,7 +31,12 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         }
 
         var access = ListingAccessContext.FromPrincipal(User);
-        Listing = await listingService.GetByAdNoAsync(AdNo, access, cancellationToken);
+        var listingTask = listingService.GetByAdNoAsync(AdNo, access, cancellationToken);
+        var categoryNavTask = catalog.GetCategoriesWithCountsAsync(cancellationToken);
+        await Task.WhenAll(listingTask, categoryNavTask);
+
+        Listing = await listingTask;
+        CategoryNav = await categoryNavTask;
         if (Listing is null)
         {
             return NotFound();
@@ -85,18 +92,42 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             ViewData["TwitterCard"] = "summary_large_image";
         }
 
+        BreadcrumbTrail = BuildBreadcrumbTrail(Listing);
         if (Listing.Status == ListingStatus.Published)
         {
             ViewData["JsonLd"] = BuildProductJsonLd(Listing);
-            BreadcrumbTrail = BuildBreadcrumbTrail(Listing);
             Breadcrumbs.Set(ViewData, siteUrls, BreadcrumbTrail);
-        }
-        else
-        {
-            BreadcrumbTrail = BuildBreadcrumbTrail(Listing);
         }
 
         return Page();
+    }
+
+    public string CrumbIntent => Listing?.PrimaryIntent switch
+    {
+        ListingIntent.Kiralik => ListingIntent.Kiralik,
+        _ => ListingIntent.Satilik
+    };
+
+    public string RootNavLabel =>
+        Listing is { CategoryId: > 0 }
+            ? CategoryNav.FirstOrDefault(c => c.Id == Listing.CategoryId)?.GroupName
+              ?? CategoryNav.Select(c => c.GroupName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
+              ?? "İş Makineleri"
+            : "İş Makineleri";
+
+    public string RootNavUrl() => ListingRoutes.List;
+
+    public string IntentNavUrl(string intent) => ListingRoutes.HubUrl(intent);
+
+    public string CategoryNavUrl(int categoryId)
+    {
+        var slug = CategoryNav.FirstOrDefault(c => c.Id == categoryId)?.Slug
+            ?? (Listing?.CategoryId == categoryId ? Listing.CategorySlug : null);
+        return ListingRoutes.ListUrl(new ListingSearchQuery
+        {
+            Intent = CrumbIntent,
+            CategoryId = categoryId
+        }, categorySlug: slug);
     }
 
     private IReadOnlyList<BreadcrumbItem> BuildBreadcrumbTrail(ListingDetailDto listing)
@@ -106,21 +137,29 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             ListingIntent.Kiralik => ListingIntent.Kiralik,
             _ => ListingIntent.Satilik
         };
-        var rootUrl = ListingRoutes.List;
-        var intentUrl = ListingRoutes.ListUrl(new() { Intent = intent });
-        var categoryUrl = ListingRoutes.ListUrl(new()
-        {
-            Intent = intent,
-            CategoryId = listing.CategoryId > 0 ? listing.CategoryId : null,
-            Category = listing.CategoryId > 0 ? null : listing.Category
-        });
 
-        return Breadcrumbs.Create(
-            new BreadcrumbItem("Anasayfa", "/"),
-            new BreadcrumbItem("İş Makineleri", rootUrl),
-            new BreadcrumbItem(ListingIntent.Label(intent), intentUrl),
-            new BreadcrumbItem(listing.Category, categoryUrl),
-            new BreadcrumbItem(listing.Title, $"/ilan/{listing.AdNo}"));
+        var groupLabel = RootNavLabel;
+        var showGroup = !string.Equals(groupLabel, "İş Makineleri", StringComparison.Ordinal);
+        var items = new List<BreadcrumbItem>
+        {
+            new("Anasayfa", "/"),
+            new(groupLabel, RootNavUrl())
+        };
+
+        if (showGroup)
+        {
+            items.Add(new BreadcrumbItem("İş Makineleri", RootNavUrl()));
+        }
+
+        items.Add(new BreadcrumbItem(ListingIntent.Label(intent), IntentNavUrl(intent)));
+
+        if (listing.CategoryId > 0 && !string.IsNullOrWhiteSpace(listing.Category))
+        {
+            items.Add(new BreadcrumbItem(listing.Category, CategoryNavUrl(listing.CategoryId)));
+        }
+
+        items.Add(new BreadcrumbItem(listing.Title, $"/ilan/{listing.AdNo}"));
+        return items;
     }
 
     private string BuildProductJsonLd(ListingDetailDto listing)

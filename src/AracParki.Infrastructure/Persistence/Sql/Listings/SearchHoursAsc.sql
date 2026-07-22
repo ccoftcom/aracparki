@@ -33,6 +33,7 @@ WHERE l.status = 'published'
   AND (@CategoryId IS NULL OR l.category_id = @CategoryId)
   AND (@Category IS NULL OR c.name = @Category OR c.slug = @Category)
   AND (@BrandId IS NULL OR l.brand_id = @BrandId)
+  AND (@CorporateAccountId IS NULL OR l.corporate_account_id = @CorporateAccountId)
   AND (@ModelId IS NULL OR l.model_id = @ModelId)
   AND (NOT @HasCityFilter OR l.city_id = ANY (@CityIds))
   AND (@City IS NULL OR city.name = @City)

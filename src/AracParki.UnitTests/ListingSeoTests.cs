@@ -55,6 +55,32 @@ public sealed class ListingSeoTests
 
         Assert.Equal("/ilanlar?tip=kiralik&kategoriId=2", path);
     }
+
+    [Fact]
+    public void BuildCanonicalListPath_uses_hub_when_slugs_provided()
+    {
+        var path = ListingSeo.BuildCanonicalListPath(
+            new ListingSearchQuery
+            {
+                Intent = ListingIntent.Satilik,
+                CategoryId = 3,
+                CityIds = [34]
+            },
+            categorySlug: "paletli-ekskavator",
+            citySlug: "istanbul");
+
+        Assert.Equal("/ilanlar/satilik/paletli-ekskavator/istanbul", path);
+    }
+
+    [Fact]
+    public void HubUrl_builds_intent_category_city_paths()
+    {
+        Assert.Equal("/ilanlar/satilik", ListingRoutes.HubUrl(ListingIntent.Satilik));
+        Assert.Equal("/ilanlar/kiralik/forklift", ListingRoutes.HubUrl(ListingIntent.Kiralik, "forklift"));
+        Assert.Equal(
+            "/ilanlar/satilik/forklift/ankara",
+            ListingRoutes.HubUrl(ListingIntent.Satilik, "forklift", "ankara"));
+    }
 }
 
 public sealed class ListingImageUrlVariantsTests

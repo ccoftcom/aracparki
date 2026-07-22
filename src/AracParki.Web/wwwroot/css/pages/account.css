@@ -635,6 +635,7 @@
 .admin-listing-thumb,
 .admin-corp-avatar {
   display: block;
+  position: relative;
   width: 88px;
   height: 66px;
   border-radius: var(--radius);

@@ -729,3 +729,14 @@
     animation: none;
   }
 }
+
+/*
+  Tailwind emits a `.container` utility when markup uses class="container"
+  (Ilanlar/IlanVer are in @source). That utility's max-width breakpoints
+  shrink the site shell. Keep this unlayered so it always wins.
+*/
+.container {
+  width: min(100% - 32px, var(--max));
+  max-width: var(--max);
+  margin-inline: auto;
+}

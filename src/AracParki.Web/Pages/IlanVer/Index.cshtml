@@ -1079,7 +1079,7 @@ else if (Model.ShowDraftResumeModal)
             {
               var url = draft.ImageUrls[i];
               <figure class="wizard-gallery-item @(i == 0 ? "is-cover" : null)" data-url="@url">
-                <img src="@url" alt="" loading="lazy" width="240" height="240" />
+                <img src="@url" alt="" loading="lazy" decoding="async" width="240" height="240" />
                 <figcaption>@(i == 0 ? "Kapak" : (i + 1).ToString())</figcaption>
                 <div class="wizard-gallery-actions">
                   @if (i > 0)
@@ -1109,7 +1109,7 @@ else if (Model.ShowDraftResumeModal)
                       :data-state="item.state"
                       x-show="item.isVisible"
                       x-cloak>
-                <img :src="item.previewUrl" alt="" width="240" height="240" />
+                <img :src="item.previewUrl" alt="" width="240" height="240" data-no-spinner decoding="async" />
                 <div class="wizard-gallery-overlay"
                      x-show="item.showProgress"
                      role="status"
@@ -1151,7 +1151,7 @@ else if (Model.ShowDraftResumeModal)
                   <p class="wizard-crop-lead" x-text="cropFileName"></p>
                 </header>
                 <div class="wizard-crop-stage">
-                  <img x-ref="cropImage" alt="Kırpılacak görsel" />
+                  <img x-ref="cropImage" alt="Kırpılacak görsel" data-no-spinner />
                 </div>
                 <p class="wizard-crop-hint" x-show="cropError" x-text="cropError" role="alert"></p>
                 <div class="wizard-crop-toolbar">
@@ -1218,6 +1218,7 @@ else if (Model.ShowDraftResumeModal)
                          width="900"
                          height="900"
                          loading="eager"
+                         decoding="async"
                          data-gallery-main
                          data-gallery-src="@reviewImages[0]" />
                     @if (reviewImages.Count > 1)
@@ -1255,7 +1256,7 @@ else if (Model.ShowDraftResumeModal)
                               data-index="@i"
                               aria-label="Görsel @(i + 1)"
                               aria-current="@(i == 0 ? "true" : "false")">
-                        <img src="@reviewImages[i]" alt="" width="88" height="88" loading="lazy" />
+                        <img src="@reviewImages[i]" alt="" width="88" height="88" loading="lazy" decoding="async" />
                       </button>
                     }
                   </div>

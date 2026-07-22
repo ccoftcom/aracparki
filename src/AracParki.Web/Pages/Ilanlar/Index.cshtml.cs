@@ -8,6 +8,7 @@ using AracParki.Application.Listings.Services;
 using AracParki.Domain.Equipment;
 using AracParki.Domain.Listings;
 using AracParki.Web.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -15,6 +16,15 @@ namespace AracParki.Web.Pages.Ilanlar;
 
 public sealed class IndexModel(ListingService listingService, CatalogService catalogService, SiteUrls siteUrls) : PageModel
 {
+    [BindProperty(SupportsGet = true)]
+    public string? Tip { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? KategoriSlug { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? SehirSlug { get; set; }
+
     public ListingSearchQuery Filter { get; private set; } = new();
     public ListingSearchResult Result { get; private set; } = new()
     {
@@ -43,16 +53,38 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
 
     public sealed record FilterChip(string Label, string RemoveUrl);
 
-    public async Task OnGetAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
         Filter = ListingRoutes.FromRequest(Request.Query);
 
-        // Bağımsız sorgular tek tek beklenmek yerine paralel çalışır (her repo
-        // metodu kendi bağlantısını açtığı için eşzamanlı çalıştırmak güvenlidir).
         var categoriesTask = catalogService.GetAllCategoriesAsync(cancellationToken);
         var categoryNavTask = catalogService.GetCategoriesWithCountsAsync(cancellationToken);
         var citiesTask = catalogService.GetAllCitiesAsync(cancellationToken);
         var attachmentsTask = catalogService.GetAttachmentsAsync(cancellationToken);
+
+        await Task.WhenAll(categoriesTask, categoryNavTask, citiesTask, attachmentsTask);
+        Categories = await categoriesTask;
+        CategoryNav = await categoryNavTask;
+        Cities = await citiesTask;
+        Attachments = await attachmentsTask;
+
+        if (!TryApplyPathSegments(out var pathError))
+        {
+            return pathError == StatusCodes.Status404NotFound ? NotFound() : BadRequest();
+        }
+
+        var categorySlug = ResolveCategorySlug(Filter.CategoryId);
+        var citySlug = Filter.CityIds.Count == 1 ? ResolveCitySlug(Filter.CityIds[0]) : null;
+        var preferredPath = ListingSeo.BuildCanonicalListPath(Filter, categorySlug, citySlug);
+        if (ListingSeo.IsIndexableList(Filter))
+        {
+            var preferredAbs = siteUrls.Absolute(preferredPath);
+            var currentAbs = siteUrls.CanonicalFromRequest(includeQuery: true);
+            if (!UrlsMatch(preferredAbs, currentAbs))
+            {
+                return RedirectPermanent(preferredPath);
+            }
+        }
 
         var brandsTask = Filter.CategoryId is > 0
             ? catalogService.GetBrandsByCategoryAsync(Filter.CategoryId.Value, cancellationToken)
@@ -77,10 +109,6 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         var searchTask = listingService.SearchAsync(Filter, cancellationToken);
 
         await Task.WhenAll(
-            categoriesTask,
-            categoryNavTask,
-            citiesTask,
-            attachmentsTask,
             brandsTask,
             brandFacetsTask,
             modelsTask,
@@ -88,10 +116,6 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             attributesTask,
             searchTask);
 
-        Categories = await categoriesTask;
-        CategoryNav = await categoryNavTask;
-        Cities = await citiesTask;
-        Attachments = await attachmentsTask;
         Brands = await brandsTask;
         BrandFacets = await brandFacetsTask;
         Models = await modelsTask;
@@ -130,12 +154,112 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         ViewData["SearchQuery"] = Filter.Query;
         ViewData["ListHeading"] = heading;
         ViewData["CanonicalIncludeQuery"] = false;
-        ViewData["CanonicalUrl"] = siteUrls.Absolute(ListingSeo.BuildCanonicalListPath(Filter));
+        ViewData["CanonicalUrl"] = siteUrls.Absolute(ListingSeo.BuildCanonicalListPath(Filter, categorySlug, citySlug));
         ViewData["Robots"] = ListingSeo.IsIndexableList(Filter)
             ? ListingSeo.IndexRobots
             : ListingSeo.NoIndexRobots;
         Breadcrumbs.Set(ViewData, siteUrls, BuildBreadcrumbTrail());
+        return Page();
     }
+
+    private static bool UrlsMatch(string preferredAbs, string currentAbs)
+    {
+        static string Norm(string u)
+        {
+            if (!Uri.TryCreate(u, UriKind.Absolute, out var uri))
+            {
+                return u.TrimEnd('/');
+            }
+
+            var path = uri.AbsolutePath.TrimEnd('/');
+            if (string.IsNullOrEmpty(path))
+            {
+                path = "/";
+            }
+
+            var q = QueryHelpers.ParseQuery(uri.Query)
+                .OrderBy(kv => kv.Key, StringComparer.Ordinal)
+                .SelectMany(kv => kv.Value.Select(v => $"{kv.Key}={v}"))
+                .ToArray();
+            return path + (q.Length == 0 ? "" : "?" + string.Join('&', q));
+        }
+
+        return string.Equals(Norm(preferredAbs), Norm(currentAbs), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryApplyPathSegments(out int errorStatus)
+    {
+        errorStatus = StatusCodes.Status404NotFound;
+        var tip = Tip?.Trim();
+        var catSlug = KategoriSlug?.Trim();
+        var citySlugPath = SehirSlug?.Trim();
+
+        if (string.IsNullOrEmpty(tip) && string.IsNullOrEmpty(catSlug) && string.IsNullOrEmpty(citySlugPath))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(tip)
+            || tip is not (ListingIntent.Satilik or ListingIntent.Kiralik))
+        {
+            return false;
+        }
+
+        int? categoryId = Filter.CategoryId;
+        IReadOnlyList<int> cityIds = Filter.CityIds;
+
+        if (!string.IsNullOrEmpty(catSlug))
+        {
+            var cat = Categories.FirstOrDefault(c =>
+                string.Equals(c.Slug, catSlug, StringComparison.OrdinalIgnoreCase));
+            if (cat is null)
+            {
+                return false;
+            }
+
+            categoryId = cat.Id;
+        }
+        else if (!string.IsNullOrEmpty(citySlugPath))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(citySlugPath))
+        {
+            var city = Cities.FirstOrDefault(c =>
+                string.Equals(c.Slug, citySlugPath, StringComparison.OrdinalIgnoreCase));
+            if (city is null)
+            {
+                return false;
+            }
+
+            cityIds = [city.Id];
+        }
+
+        Filter = CopyFilter(
+            page: Filter.Page,
+            intent: tip,
+            categoryId: categoryId,
+            clearCategoryName: true,
+            cityIds: cityIds,
+            clearCityName: true);
+        return true;
+    }
+
+    private string? ResolveCategorySlug(int? categoryId)
+        => categoryId is > 0
+            ? Categories.FirstOrDefault(c => c.Id == categoryId)?.Slug
+              ?? CategoryNav.FirstOrDefault(c => c.Id == categoryId)?.Slug
+            : null;
+
+    private string? ResolveCitySlug(int cityId)
+        => Cities.FirstOrDefault(c => c.Id == cityId)?.Slug;
+
+    private string ListHref(ListingSearchQuery query)
+        => ListingRoutes.ListUrl(
+            query,
+            ResolveCategorySlug(query.CategoryId),
+            query.CityIds.Count == 1 ? ResolveCitySlug(query.CityIds[0]) : null);
 
     /// <summary>Linear trail matching <c>_ListBreadcrumb</c> (without hover menus).</summary>
     public IReadOnlyList<BreadcrumbItem> BuildBreadcrumbTrail()
@@ -173,6 +297,15 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             items.Add(new BreadcrumbItem(CurrentBrandName!, BrandNavUrl(Filter.BrandId!.Value)));
         }
 
+        if (Filter.CityIds.Count == 1)
+        {
+            var cityName = Cities.FirstOrDefault(c => c.Id == Filter.CityIds[0])?.Name;
+            if (!string.IsNullOrWhiteSpace(cityName))
+            {
+                items.Add(new BreadcrumbItem(cityName, CityNavUrl(Filter.CityIds[0])));
+            }
+        }
+
         return items;
     }
 
@@ -203,34 +336,36 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         ? 1
         : Math.Max(1, (int)Math.Ceiling(Result.TotalCount / (double)Result.PageSize));
 
-    public string PageUrl(int page) => ListingRoutes.ListUrl(CopyFilter(page: Math.Max(1, page)));
+    public string PageUrl(int page) => ListHref(CopyFilter(page: Math.Max(1, page)));
 
     public string SellerTabUrl(string? sellerType)
-        => ListingRoutes.ListUrl(CopyFilter(
+        => ListHref(CopyFilter(
             page: 1,
             sellerType: sellerType,
             clearSeller: string.IsNullOrWhiteSpace(sellerType)));
 
     public string RootNavUrl()
-        => ListingRoutes.ListUrl(CopyFilter(
+        => ListHref(CopyFilter(
             page: 1,
             clearIntent: true,
             clearCategory: true,
             clearBrand: true,
             clearModel: true,
-            clearCategoryName: true));
+            clearCategoryName: true,
+            clearCities: true));
 
     public string IntentNavUrl(string intent)
-        => ListingRoutes.ListUrl(CopyFilter(
+        => ListHref(CopyFilter(
             page: 1,
             intent: intent,
             clearCategory: true,
             clearBrand: true,
             clearModel: true,
-            clearCategoryName: true));
+            clearCategoryName: true,
+            clearCities: true));
 
     public string CategoryNavUrl(int categoryId)
-        => ListingRoutes.ListUrl(CopyFilter(
+        => ListHref(CopyFilter(
             page: 1,
             categoryId: categoryId,
             clearBrand: true,
@@ -238,7 +373,10 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             clearCategoryName: true));
 
     public string BrandNavUrl(int brandId)
-        => ListingRoutes.ListUrl(CopyFilter(page: 1, brandId: brandId, clearModel: true));
+        => ListHref(CopyFilter(page: 1, brandId: brandId, clearModel: true));
+
+    public string CityNavUrl(int cityId)
+        => ListHref(CopyFilter(page: 1, cityIds: [cityId], clearCityName: true));
 
     public string? CurrentCategoryName =>
         CategoryNav.FirstOrDefault(c => c.Id == Filter.CategoryId)?.Name
@@ -469,29 +607,7 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
     }
 
     private string BuildClearAllUrl()
-    {
-        var keep = new HashSet<string>(
-            ["tip", "kategoriId", "kategori", "markaId", "modelId", "satici", "sort"],
-            StringComparer.Ordinal);
-        var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (var kv in Request.Query)
-        {
-            if (!keep.Contains(kv.Key))
-            {
-                continue;
-            }
-
-            var value = kv.Value.ToString();
-            if (string.IsNullOrEmpty(value))
-            {
-                continue;
-            }
-
-            dict[kv.Key] = value;
-        }
-
-        return dict.Count == 0 ? ListingRoutes.List : QueryHelpers.AddQueryString(ListingRoutes.List, dict);
-    }
+        => ListHref(new ListingSearchQuery { Page = 1, PageSize = Filter.PageSize });
 
     private ListingSearchQuery CopyFilter(
         int? page = null,
@@ -504,7 +620,10 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         bool clearCategoryName = false,
         int? brandId = null,
         bool clearBrand = false,
-        bool clearModel = false)
+        bool clearModel = false,
+        IReadOnlyList<int>? cityIds = null,
+        bool clearCities = false,
+        bool clearCityName = false)
     {
         return new ListingSearchQuery
         {
@@ -514,10 +633,10 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             CategoryId = clearCategory ? null : categoryId ?? Filter.CategoryId,
             BrandId = clearBrand ? null : brandId ?? Filter.BrandId,
             ModelId = clearModel ? null : Filter.ModelId,
-            CityIds = Filter.CityIds,
-            DistrictIds = Filter.DistrictIds,
+            CityIds = clearCities ? [] : cityIds ?? Filter.CityIds,
+            DistrictIds = clearCities ? [] : Filter.DistrictIds,
             Category = clearCategoryName || clearCategory ? null : Filter.Category,
-            City = Filter.City,
+            City = clearCityName || clearCities ? null : Filter.City,
             Condition = Filter.Condition,
             SellerType = clearSeller ? null : sellerType ?? Filter.SellerType,
             YearMin = Filter.YearMin,
@@ -540,6 +659,7 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
             SpecsFilterJson = Filter.SpecsFilterJson,
             SpecMinJson = Filter.SpecMinJson,
             Query = Filter.Query,
+            CorporateAccountId = Filter.CorporateAccountId,
             Sort = Filter.Sort,
             Page = page ?? Filter.Page,
             PageSize = Filter.PageSize

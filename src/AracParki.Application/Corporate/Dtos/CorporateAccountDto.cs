@@ -7,6 +7,7 @@ public sealed class CorporateAccountDto
     public required string CompanyType { get; init; }
     public required string TradeName { get; init; }
     public required string DisplayName { get; init; }
+    public required string Slug { get; init; }
     public required string TaxOffice { get; init; }
     public required string TaxNumber { get; init; }
     public string? MersisNo { get; init; }

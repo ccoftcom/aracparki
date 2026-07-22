@@ -1,0 +1,46 @@
+@page "/satici/{slug}"
+@model AracParki.Web.Pages.Satici.IndexModel
+@{
+    var dealer = Model.Dealer!;
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" />
+}
+
+<main class="container page-list" id="main">
+  <header class="list-head">
+    <h1>@dealer.DisplayName</h1>
+    <p class="list-lead">
+      @dealer.CityName / @dealer.DistrictName
+      @if (!string.IsNullOrWhiteSpace(dealer.AddressLine))
+      {
+        <span> · @dealer.AddressLine</span>
+      }
+    </p>
+    <div class="list-meta-row">
+      @if (!string.IsNullOrWhiteSpace(dealer.Phone))
+      {
+        <a class="btn btn-ghost btn-sm" href="tel:@dealer.Phone">@dealer.Phone</a>
+      }
+      @if (!string.IsNullOrWhiteSpace(dealer.Website))
+      {
+        <a class="btn btn-ghost btn-sm" href="@dealer.Website" rel="noopener noreferrer" target="_blank">Web sitesi</a>
+      }
+    </div>
+  </header>
+
+  @if (Model.Result.Items.Count == 0)
+  {
+    <p class="empty-state">Bu satıcının yayında ilanı yok.</p>
+  }
+  else
+  {
+    <div class="listing-grid">
+      @foreach (var item in Model.Result.Items)
+      {
+        <partial name="Shared/Partials/_ListingCard" model="item" />
+      }
+    </div>
+  }
+</main>

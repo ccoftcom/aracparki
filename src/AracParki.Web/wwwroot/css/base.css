@@ -39,6 +39,58 @@ img {
   display: block;
 }
 
+/* Lazy / remote image shells — spinner while decoding (see site.js initLazyImageSpinners) */
+.img-shell {
+  position: relative;
+}
+
+.img-shell.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 1.75rem;
+  height: 1.75rem;
+  max-width: 36%;
+  max-height: 36%;
+  margin: auto;
+  box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: img-shell-spin 0.7s linear infinite;
+}
+
+.classified-thumb.img-shell.is-loading::after,
+.gallery-thumbs .img-shell.is-loading::after,
+.admin-listing-thumb.img-shell.is-loading::after,
+.account-result-media.img-shell.is-loading::after,
+.wizard-gallery-item.img-shell.is-loading::after {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-width: 1.5px;
+}
+
+/* Gallery controls stay above the spinner */
+.gallery-main-wrap.img-shell.is-loading::after {
+  z-index: 1;
+}
+
+@keyframes img-shell-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .img-shell.is-loading::after {
+    animation: none;
+    border-top-color: color-mix(in srgb, var(--ink) 14%, transparent);
+    border-right-color: var(--ink);
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -61,7 +113,10 @@ h3 {
 }
 
 .container {
+  /* Unlayered + explicit max-width so Tailwind's .container utility
+     (emitted when markup uses class="container") cannot shrink the site shell. */
   width: min(100% - 32px, var(--max));
+  max-width: var(--max);
   margin-inline: auto;
 }
 

@@ -3,6 +3,75 @@
 
   const STORAGE_RECENT = "ap:recent";
 
+  /** Parents that can host the lazy-load spinner (must be position:relative capable). */
+  const IMG_SHELL_SEL = [
+    ".img-shell",
+    ".listing-media",
+    ".classified-thumb",
+    ".gallery-main-wrap",
+    ".gallery-thumbs button",
+    ".admin-listing-thumb",
+    ".account-result-media",
+    ".wizard-gallery-item",
+  ].join(",");
+
+  /**
+   * Bind a content <img> to show .img-shell.is-loading spinner until load/error.
+   * Skips LCP heroes (fetchpriority=high), crop UI, and upload placeholders.
+   * Safe to call again after src/srcset changes (re-shows spinner).
+   */
+  const bindImageSpinner = (img) => {
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.hasAttribute("data-no-spinner")) return;
+    if (img.getAttribute("fetchpriority") === "high") return;
+    if (img.closest(".wizard-gallery-item.is-uploading")) return;
+    if (img.hasAttribute("x-ref") && img.getAttribute("x-ref") === "cropImage") return;
+
+    const hasSrc = Boolean(img.getAttribute("src") || img.getAttribute("srcset") || img.currentSrc);
+    if (!hasSrc) return;
+
+    const shell = img.closest(IMG_SHELL_SEL);
+    if (!(shell instanceof HTMLElement)) return;
+    shell.classList.add("img-shell");
+
+    const setLoading = (on) => {
+      shell.classList.toggle("is-loading", on);
+      if (on) img.setAttribute("aria-busy", "true");
+      else img.removeAttribute("aria-busy");
+    };
+
+    const settle = () => {
+      if (img.complete && img.naturalWidth > 0) {
+        setLoading(false);
+        return true;
+      }
+      if (img.complete && img.naturalWidth === 0 && img.currentSrc) {
+        // Broken image (error already fired or cached failure)
+        setLoading(false);
+        return true;
+      }
+      return false;
+    };
+
+    const start = () => {
+      if (settle()) return;
+      setLoading(true);
+    };
+
+    if (img.dataset.spinnerBound !== "1") {
+      img.addEventListener("load", () => setLoading(false));
+      img.addEventListener("error", () => setLoading(false));
+      img.dataset.spinnerBound = "1";
+    }
+
+    start();
+  };
+
+  const initLazyImageSpinners = (root = document) => {
+    if (!(root instanceof Document || root instanceof Element)) return;
+    root.querySelectorAll("img[loading], img.gallery-main").forEach((el) => bindImageSpinner(el));
+  };
+
   const toast = (message, durationMs = 2800) => {
     const text = String(message || "").trim();
     if (!text) return;
@@ -2499,15 +2568,18 @@
           remote.onload = () => {
             img.src = url;
             URL.revokeObjectURL(localPreview);
+            bindImageSpinner(img);
           };
           remote.onerror = () => {
             img.src = url;
             URL.revokeObjectURL(localPreview);
+            bindImageSpinner(img);
           };
           remote.src = url;
         } else {
           img.src = url;
           img.loading = "lazy";
+          img.decoding = "async";
         }
 
         const cap = document.createElement("figcaption");
@@ -2543,6 +2615,7 @@
         figure.appendChild(img);
         figure.appendChild(cap);
         figure.appendChild(actions);
+        bindImageSpinner(img);
 
         const firstUploading = gallery.querySelector(".wizard-gallery-item.is-uploading");
         if (firstUploading) {
@@ -2766,6 +2839,7 @@
       if (!evt.detail || !evt.detail.target || evt.detail.target.id !== "list-shell") return;
       announceResults();
       initSaveSearch();
+      initLazyImageSpinners(evt.detail.target);
       const title = document.getElementById("list-title");
       if (title) {
         try {
@@ -2904,10 +2978,12 @@
 
       const items = thumbs.map((btn, i) => {
         const src = String(btn.getAttribute("data-src") || "").trim();
+        const srcset = String(btn.getAttribute("data-srcset") || "").trim();
         const full = galleryFullUrl(src);
         return {
           src: full,
           thumb: src || full,
+          srcset,
           size: "1600-1600",
           alt: main.alt || `Görsel ${i + 1}`,
           subHtml: `<div class="lg-sub-html-inner">${i + 1} / ${total}</div>`,
@@ -2926,10 +3002,18 @@
       const setIndex = (next) => {
         if (total <= 0) return;
         index = ((next % total) + total) % total;
-        const src = items[index]?.thumb || "";
+        const item = items[index];
+        const src = item?.thumb || "";
         if (src) {
+          // Browsers prefer srcset over src — clear/update or the first image sticks.
+          if (item.srcset) {
+            main.srcset = item.srcset;
+          } else {
+            main.removeAttribute("srcset");
+          }
           main.src = src;
           main.dataset.gallerySrc = src;
+          bindImageSpinner(main);
         }
         syncThumbs(index);
       };
@@ -3121,6 +3205,7 @@
     initVerifyBanner();
     initListEnhancements();
     initQuillDescriptions();
+    initLazyImageSpinners();
     initDetailGallery();
     initDetailTabs();
     initShareListing();
@@ -3146,5 +3231,5 @@
     });
   });
 
-  window.AP = { toast, STORAGE_RECENT };
+  window.AP = { toast, STORAGE_RECENT, bindImageSpinner, initLazyImageSpinners };
 })();

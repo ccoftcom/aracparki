@@ -1,5 +1,6 @@
 @page
 @using AracParki.Application.Listings.Queries
+@using AracParki.Domain.Listings
 @model IndexModel
 @{
     var seeAll = ListingRoutes.ListUrl(Model.Filter);
@@ -46,7 +47,7 @@
         <ul class="aside-list" id="category-grid">
           @foreach (var cat in Model.Categories)
           {
-            var href = ListingRoutes.ListUrl(new ListingSearchQuery { Category = cat.Name });
+            var href = ListingRoutes.HubUrl(ListingIntent.Satilik, cat.Slug);
             <li>
               <a href="@href">
                 @Html.Raw(CategoryIcons.Svg(cat.IconKey))
@@ -63,7 +64,11 @@
         <ul class="aside-cities" id="city-grid">
           @foreach (var city in Model.PopularCities)
           {
-            var href = ListingRoutes.ListUrl(new ListingSearchQuery { City = city.Name });
+            var href = ListingRoutes.ListUrl(new ListingSearchQuery
+            {
+                Intent = ListingIntent.Satilik,
+                CityIds = [city.Id]
+            }, citySlug: city.Slug);
             <li>
               <a href="@href">
                 <span>@city.Name</span>

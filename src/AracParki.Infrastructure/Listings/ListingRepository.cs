@@ -272,6 +272,7 @@ public sealed class ListingRepository(
             IsVerified = row.IsVerified,
             CorporateAccountId = row.CorporateAccountId,
             CorporateDisplayName = row.CorporateDisplayName,
+            CorporateSlug = row.CorporateSlug,
             ListedAt = row.ListedAt,
             Status = row.Status,
             RejectionReason = row.RejectionReason,
@@ -329,6 +330,7 @@ public sealed class ListingRepository(
             query.VerifiedOnly,
             query.AttachmentIds,
             query.Query,
+            query.CorporateAccountId,
             query.SpecsFilterJson,
             query.SpecMinJson
         });
@@ -344,6 +346,7 @@ public sealed class ListingRepository(
         parameters.Add("Category", query.Category, DbType.String);
         parameters.Add("BrandId", query.BrandId, DbType.Int32);
         parameters.Add("ModelId", query.ModelId, DbType.Int32);
+        parameters.Add("CorporateAccountId", query.CorporateAccountId, DbType.Int64);
         var cityIds = query.CityIds.Count == 0
             ? Array.Empty<int>()
             : query.CityIds.Where(id => id > 0).Distinct().ToArray();
@@ -420,6 +423,7 @@ public sealed class ListingRepository(
         public bool IsVerified { get; init; }
         public long? CorporateAccountId { get; init; }
         public string? CorporateDisplayName { get; init; }
+        public string? CorporateSlug { get; init; }
         public DateTimeOffset ListedAt { get; init; }
         public string Status { get; init; } = ListingStatus.Published;
         public string? RejectionReason { get; init; }

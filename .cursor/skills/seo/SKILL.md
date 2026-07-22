@@ -4,8 +4,8 @@ description: >-
   Implements and reviews SEO for aracparki.com (iş makinesi classifieds) using
   Google Search Central guidance and the project phased plan. Use when working
   on SEO, sitemap, robots.txt, canonical, meta title/description, Open Graph,
-  structured data/JSON-LD, breadcrumbs, hub URLs, image alt/srcset, Core Web
-  Vitals, Search Console, or organic search visibility.
+  structured data/JSON-LD, breadcrumbs, hub URLs, image alt/srcset, lazy-load
+  image spinners, Core Web Vitals, Search Console, or organic search visibility.
 ---
 
 # aracparki.com SEO
@@ -39,7 +39,7 @@ marketplace. Prefer people-first content and crawl/index hygiene over tricks.
 |----------|--------|---------|
 | **P0** | Crawl & index | Search Console, robots, **dynamic sitemap**, list **canonical/noindex** policy |
 | **P1** | Architecture & SERP | Hub URLs, titles/descriptions, Product/Vehicle JSON-LD |
-| **P2** | Media & UX | Image alt/srcset, CWV/CSS splitting, public dealer pages |
+| **P2** | Media & UX | Image alt/srcset, lazy+spinner shells, CWV/CSS splitting, public dealer pages |
 | **Ongoing** | Content & promo | E-E-A-T pages, promotion without spam, SC iteration |
 
 Full phases, URL policies, and code backlog: [plan.md](plan.md).
@@ -68,6 +68,7 @@ SEO Task:
 | List page SEO/canonical | `src/AracParki.Web/Pages/Ilanlar/Index.cshtml.cs` |
 | Detail Product JSON-LD | `src/AracParki.Web/Pages/Ilan/Index.cshtml.cs` |
 | Breadcrumbs + schema | `src/AracParki.Web/Infrastructure/Breadcrumbs.cs` |
+| Image lazy + spinner | `wwwroot/css/base.css` (`.img-shell`), `wwwroot/js/site.js` (`initLazyImageSpinners`) |
 | robots / static sitemap | `src/AracParki.Web/wwwroot/robots.txt`, `sitemap.xml` |
 | Security/CSP (analytics) | `Program.cs`, security headers extensions |
 
@@ -97,6 +98,23 @@ Meta descriptions: unique, human-readable, programmatic OK (price/hours/city for
 - Prefer vehicle attributes via `additionalProperty` (year, hours, location)
 - Validate with Rich Results Test before claiming rich-result eligibility
 - Never fabricate ratings/reviews
+
+## Images (lazy load + spinner) — best practices
+
+Apply on every content photo (cards, list rows, gallery, account/admin thumbs, wizard uploads).
+
+| Rule | Detail |
+|------|--------|
+| Lazy by default | `loading="lazy"` + `decoding="async"` + explicit `width`/`height` (or aspect-ratio shell) |
+| LCP exception | Above-the-fold hero / primary LCP: `loading="eager"` + `fetchpriority="high"` — **no** spinner, do **not** hide with opacity |
+| Spinner shell | Parent media shell (`.listing-media`, `.classified-thumb`, `.gallery-main-wrap`, …) gets `.img-shell.is-loading` until `load`/`error` via `initLazyImageSpinners` / `AP.bindImageSpinner` in `site.js` |
+| Opt-out | `data-no-spinner` for crop UI, upload progress previews, or non-content images |
+| HTMX | Re-run `initLazyImageSpinners(swapRoot)` after list swaps |
+| Gallery swap | Call `bindImageSpinner(main)` after changing `src`/`srcset` |
+| SEO | Descriptive `alt`, Cloudflare `srcset`/`sizes`; spinner is UX-only and must not block crawlable `src` |
+| A11y / motion | `aria-busy` while loading; honor `prefers-reduced-motion` (static spinner ring) |
+
+CSS lives in `wwwroot/css/base.css` (`.img-shell`). Do not invent a second spinner system per page unless the surface already has one (e.g. wizard upload overlay).
 
 ## Before shipping SEO changes
 

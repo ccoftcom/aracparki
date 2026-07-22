@@ -15,7 +15,109 @@ public static class ListingRoutes
 
     public static string Detail(string adNo) => $"{DetailPrefix}/{Uri.EscapeDataString(adNo)}";
 
-    public static string ListUrl(ListingSearchQuery query)
+    public static string Dealer(string slug) => $"/satici/{Uri.EscapeDataString(slug)}";
+
+    /// <summary>
+    /// Path hub: /ilanlar/{tip}[/kategoriSlug][/sehirSlug].
+    /// Intent must be satilik or kiralik.
+    /// </summary>
+    public static string HubUrl(string intent, string? categorySlug = null, string? citySlug = null)
+    {
+        if (intent is not (ListingIntent.Satilik or ListingIntent.Kiralik))
+        {
+            throw new ArgumentOutOfRangeException(nameof(intent), intent, "Hub URLs require satilik or kiralik.");
+        }
+
+        var path = $"{List}/{intent}";
+        if (!string.IsNullOrWhiteSpace(categorySlug))
+        {
+            path += "/" + Uri.EscapeDataString(categorySlug.Trim());
+            if (!string.IsNullOrWhiteSpace(citySlug))
+            {
+                path += "/" + Uri.EscapeDataString(citySlug.Trim());
+            }
+        }
+
+        return path;
+    }
+
+    public static string ListUrl(ListingSearchQuery query, string? categorySlug = null, string? citySlug = null)
+    {
+        if (TryHubPath(query, categorySlug, citySlug, out var hubPath))
+        {
+            var extra = BuildNonHubQuery(query);
+            return extra.Count == 0 ? hubPath : QueryHelpers.AddQueryString(hubPath, extra);
+        }
+
+        var dict = BuildFullQuery(query);
+        return dict.Count == 0 ? List : QueryHelpers.AddQueryString(List, dict);
+    }
+
+    /// <summary>True when tip[/kategori][/şehir] can be expressed as a path hub.</summary>
+    public static bool TryHubPath(
+        ListingSearchQuery query,
+        string? categorySlug,
+        string? citySlug,
+        out string hubPath)
+    {
+        hubPath = string.Empty;
+        if (query.Intent is not (ListingIntent.Satilik or ListingIntent.Kiralik))
+        {
+            return false;
+        }
+
+        // City-only (no category) stays on query URLs.
+        if (query.CityIds.Count == 1 && query.CategoryId is null && string.IsNullOrWhiteSpace(categorySlug))
+        {
+            return false;
+        }
+
+        if (query.CityIds.Count > 1)
+        {
+            return false;
+        }
+
+        if (query.CategoryId is > 0 && string.IsNullOrWhiteSpace(categorySlug))
+        {
+            return false;
+        }
+
+        if (query.CityIds.Count == 1 && string.IsNullOrWhiteSpace(citySlug))
+        {
+            return false;
+        }
+
+        // No category + no city → /ilanlar/{tip}
+        if (query.CategoryId is null && string.IsNullOrWhiteSpace(categorySlug) && query.CityIds.Count == 0)
+        {
+            hubPath = HubUrl(query.Intent);
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(categorySlug))
+        {
+            hubPath = HubUrl(
+                query.Intent,
+                categorySlug,
+                query.CityIds.Count == 1 ? citySlug : null);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static Dictionary<string, string?> BuildNonHubQuery(ListingSearchQuery query)
+    {
+        var dict = BuildFullQuery(query);
+        dict.Remove("tip");
+        dict.Remove("kategoriId");
+        dict.Remove("kategori");
+        dict.Remove("ilId");
+        dict.Remove("il");
+        return dict;
+    }
+
+    private static Dictionary<string, string?> BuildFullQuery(ListingSearchQuery query)
     {
         var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
 
@@ -113,6 +215,11 @@ public static class ListingRoutes
             dict["q"] = query.Query;
         }
 
+        if (query.CorporateAccountId is > 0)
+        {
+            dict["kurumsalId"] = query.CorporateAccountId.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Sort) && query.Sort != ListingSort.Newest)
         {
             dict["sort"] = query.Sort;
@@ -123,8 +230,9 @@ public static class ListingRoutes
             dict["sayfa"] = query.Page.ToString(CultureInfo.InvariantCulture);
         }
 
-        return dict.Count == 0 ? List : QueryHelpers.AddQueryString(List, dict);
+        return dict;
     }
+
 
     public static ListingSearchQuery FromRequest(IQueryCollection query)
     {
@@ -227,6 +335,7 @@ public static class ListingRoutes
             SpecsFilterJson = equalityJson,
             SpecMinJson = minJson,
             Query = NullIfEmpty(query["q"].ToString()) is { Length: >= 2 } q ? q : null,
+            CorporateAccountId = ParseLong(query["kurumsalId"]),
             Sort = string.IsNullOrWhiteSpace(sort) ? ListingSort.Newest : sort,
             Page = int.TryParse(pageRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var page) && page > 0
                 ? Math.Min(page, 500)
@@ -245,6 +354,9 @@ public static class ListingRoutes
 
     private static int? ParseInt(string? raw)
         => int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v : null;
+
+    private static long? ParseLong(string? raw)
+        => long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) && v > 0 ? v : null;
 
     private static IReadOnlyList<int> ParseIntList(Microsoft.Extensions.Primitives.StringValues values)
     {

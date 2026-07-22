@@ -18,6 +18,7 @@ public static class SitemapEndpoints
         endpoints.MapGet("/sitemap.xml", GetIndexAsync);
         endpoints.MapGet("/sitemap-static.xml", GetStaticAsync);
         endpoints.MapGet("/sitemap-hubs.xml", GetHubsAsync);
+        endpoints.MapGet("/sitemap-dealers.xml", GetDealersAsync);
         endpoints.MapGet("/sitemap-listings-{page:int}.xml", GetListingsAsync);
         return endpoints;
     }
@@ -37,7 +38,8 @@ public static class SitemapEndpoints
 
             var root = new XElement(Ns + "sitemapindex",
                 SitemapRef(siteUrls.Absolute("/sitemap-static.xml"), now),
-                SitemapRef(siteUrls.Absolute("/sitemap-hubs.xml"), now));
+                SitemapRef(siteUrls.Absolute("/sitemap-hubs.xml"), now),
+                SitemapRef(siteUrls.Absolute("/sitemap-dealers.xml"), now));
 
             for (var page = 1; page <= listingPages; page++)
             {
@@ -60,8 +62,8 @@ public static class SitemapEndpoints
             {
                 ("/", "daily", "1.0"),
                 (ListingRoutes.List, "daily", "0.9"),
-                (ListingRoutes.ListUrl(new() { Intent = ListingIntent.Satilik }), "daily", "0.85"),
-                (ListingRoutes.ListUrl(new() { Intent = ListingIntent.Kiralik }), "daily", "0.85"),
+                (ListingRoutes.HubUrl(ListingIntent.Satilik), "daily", "0.85"),
+                (ListingRoutes.HubUrl(ListingIntent.Kiralik), "daily", "0.85"),
                 ("/guvenli-alisveris", "yearly", "0.3"),
                 ("/kullanim-kosullari", "yearly", "0.2"),
                 ("/gizlilik", "yearly", "0.2"),
@@ -89,28 +91,33 @@ public static class SitemapEndpoints
 
             var categories = await catalog.GetCategoriesWithCountsAsync(cancellationToken);
             var cities = (await catalog.GetPopularCitiesAsync(cancellationToken))
-                .Where(c => c.ListingCount > 0)
+                .Where(c => c.ListingCount > 0 && !string.IsNullOrWhiteSpace(c.Slug))
                 .Take(40)
                 .ToArray();
 
             var paths = new HashSet<string>(StringComparer.Ordinal)
             {
-                ListingRoutes.ListUrl(new() { Intent = ListingIntent.Satilik }),
-                ListingRoutes.ListUrl(new() { Intent = ListingIntent.Kiralik })
+                ListingRoutes.HubUrl(ListingIntent.Satilik),
+                ListingRoutes.HubUrl(ListingIntent.Kiralik)
             };
 
             foreach (var intent in new[] { ListingIntent.Satilik, ListingIntent.Kiralik })
             {
-                foreach (var cat in categories.Where(c => c.ListingCount > 0))
+                foreach (var cat in categories.Where(c => c.ListingCount > 0 && !string.IsNullOrWhiteSpace(c.Slug)))
                 {
-                    paths.Add(ListingRoutes.ListUrl(new() { Intent = intent, CategoryId = cat.Id }));
+                    paths.Add(ListingRoutes.HubUrl(intent, cat.Slug));
 
+                    foreach (var city in cities)
+                    {
+                        paths.Add(ListingRoutes.HubUrl(intent, cat.Slug, city.Slug));
+                    }
+
+                    // City-only intent hubs stay query-based (indexable allowlist).
                     foreach (var city in cities)
                     {
                         paths.Add(ListingRoutes.ListUrl(new()
                         {
                             Intent = intent,
-                            CategoryId = cat.Id,
                             CityIds = [city.Id]
                         }));
                     }
@@ -120,6 +127,28 @@ public static class SitemapEndpoints
             var root = new XElement(Ns + "urlset",
                 paths.OrderBy(p => p, StringComparer.Ordinal)
                     .Select(p => UrlEl(siteUrls.Absolute(p), today, "daily", "0.7")));
+            return ToXml(root);
+        });
+
+        return XmlResult(xml!);
+    }
+
+    private static async Task<IResult> GetDealersAsync(
+        AracParki.Application.Corporate.ICorporateAccountStore corporate,
+        SiteUrls siteUrls,
+        IMemoryCache cache,
+        CancellationToken cancellationToken)
+    {
+        var xml = await cache.GetOrCreateAsync("seo:sitemap:dealers", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            var dealers = await corporate.ListApprovedForSitemapAsync(cancellationToken);
+            var root = new XElement(Ns + "urlset",
+                dealers.Select(d => UrlEl(
+                    siteUrls.Absolute(ListingRoutes.Dealer(d.Slug)),
+                    d.LastModified.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    "weekly",
+                    "0.6")));
             return ToXml(root);
         });
 
