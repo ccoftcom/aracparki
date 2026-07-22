@@ -7,18 +7,6 @@ public static class Formatters
 {
     private static readonly CultureInfo Tr = CultureInfo.GetCultureInfo("tr-TR");
 
-    /// <summary>Active UI culture from the request (Accept-Language), falling back to tr-TR.</summary>
-    private static CultureInfo Ui
-    {
-        get
-        {
-            var current = CultureInfo.CurrentUICulture;
-            return string.IsNullOrWhiteSpace(current.Name) || current.Name == CultureInfo.InvariantCulture.Name
-                ? Tr
-                : current;
-        }
-    }
-
     public static string Price(decimal price, string? priceUnit, string? currency = null)
     {
         var formatted = price.ToString("N0", Tr) + " " + Currency.Label(currency);
@@ -40,10 +28,10 @@ public static class Formatters
     public static string Horsepower(int hp) => $"{hp} HP";
 
     public static string ListedAt(DateTimeOffset listedAt) =>
-        listedAt.ToLocalTime().ToString("dd MMMM yyyy", Ui);
+        listedAt.ToLocalTime().ToString("dd MMMM yyyy", Tr);
 
     public static string DateTime(DateTimeOffset value) =>
-        value.ToLocalTime().ToString("d MMM yyyy · HH:mm", Ui);
+        value.ToLocalTime().ToString("d MMM yyyy · HH:mm", Tr);
 
     public static string Count(int count) => count.ToString("N0", Tr);
 }

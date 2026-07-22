@@ -51,10 +51,11 @@ public static class ListingStatus
 
     public static string BadgeClass(string status) => status switch
     {
-        PendingReview => "badge badge-warn",
+        Draft => "badge badge-muted",
+        PendingReview => "badge badge-info",
         Published => "badge badge-ok",
         Rejected => "badge badge-danger",
         Archived => "badge badge-muted",
-        _ => "badge"
+        _ => "badge badge-muted"
     };
 }

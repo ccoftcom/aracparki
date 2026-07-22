@@ -55,16 +55,13 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.Configure<RequestLocalizationOptions>(options =>
     {
-        var supported = new[] { "tr-TR", "en-US", "en-GB", "en" };
+        // Site UI is Turkish-only; do not follow Accept-Language (would show English month names).
+        var supported = new[] { "tr-TR" };
         options.SetDefaultCulture("tr-TR")
             .AddSupportedCultures(supported)
             .AddSupportedUICultures(supported);
         options.ApplyCurrentCultureToResponseHeaders = true;
-        options.RequestCultureProviders =
-        [
-            new AcceptLanguageHeaderRequestCultureProvider(),
-            new CookieRequestCultureProvider()
-        ];
+        options.RequestCultureProviders = [];
     });
     var cookieSecure = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest

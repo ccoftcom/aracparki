@@ -26,7 +26,8 @@ public static class CorporateStatus
 
     public static string BadgeClass(string status) => status switch
     {
-        Pending => "badge badge-warn",
+        Draft => "badge badge-muted",
+        Pending => "badge badge-info",
         Approved => "badge badge-ok",
         Rejected => "badge badge-danger",
         _ => "badge badge-muted"

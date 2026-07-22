@@ -1,0 +1,26 @@
+@using System.Security.Claims
+@using AracParki.Application.Accounts.Services
+@inject AccountNavCountsService NavCounts
+@{
+    var favorites = 0;
+    var savedSearches = 0;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (long.TryParse(raw, out var accountId) && accountId > 0)
+        {
+            var counts = await NavCounts.GetAsync(accountId, Context.RequestAborted);
+            favorites = counts.Favorites;
+            savedSearches = counts.SavedSearches;
+        }
+    }
+
+    var favoritesLabel = favorites > 0 ? $"Favori İlanlarım ({favorites})" : "Favori İlanlarım";
+    var searchesLabel = savedSearches > 0 ? $"Favori Aramalarım ({savedSearches})" : "Favori Aramalarım";
+}
+<ul class="list-crumb-utils" aria-label="Hızlı bağlantılar">
+  <li><a href="/favorilerim">@favoritesLabel</a></li>
+  <li><a href="/kayitli-aramalar">@searchesLabel</a></li>
+  <li><a href="/panel">Size Özel İlanlar</a></li>
+  <li><a href="/favorilerim" title="Karşılaştırma yakında">Karşılaştır</a></li>
+</ul>

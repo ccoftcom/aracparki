@@ -5,6 +5,20 @@
 @{
     Layout = "Shared/_AccountLayout";
     var now = DateTimeOffset.Now;
+    var activeStatus = Model.Status;
+    string TabHref(string? status) => string.IsNullOrEmpty(status) ? "/ilanlarim" : $"/ilanlarim?durum={status}";
+    string? TabCurrent(string? status) =>
+        string.Equals(activeStatus, status, StringComparison.Ordinal) ? "page" : null;
+    string? TabActive(string? status) =>
+        string.Equals(activeStatus, status, StringComparison.Ordinal) ? "is-active" : null;
+    var emptyCopy = activeStatus switch
+    {
+        ListingStatus.Published => "Yayında ilan yok.",
+        ListingStatus.PendingReview => "İncelemede ilan yok.",
+        ListingStatus.Rejected => "Reddedilmiş ilan yok.",
+        ListingStatus.Archived => "Arşivde ilan yok.",
+        _ => "Henüz ilanın yok."
+    };
 }
 <header class="page-account-head">
   <partial name="Shared/Partials/_AccountBreadcrumb" />
@@ -12,9 +26,6 @@
     <div>
       <h1>İlanlarım</h1>
       <p class="page-account-lead">Yayındaki, arşivdeki ve incelemedeki ilanların</p>
-    </div>
-    <div class="page-account-actions">
-      <a class="btn btn-machine btn-sm" href="/ilan-ver">Ücretsiz İlan Ver</a>
     </div>
   </div>
 </header>
@@ -24,14 +35,51 @@
   <p class="field-error" role="alert">@Model.FormError</p>
 }
 
+@if (Model.TotalCount > 0)
+{
+  <nav class="account-filter-tabs" aria-label="Durum filtresi">
+    <a class="@TabActive(null)" href="@TabHref(null)" aria-current="@TabCurrent(null)">
+      <span>Tümü</span>
+      <span class="account-filter-count">@Model.TotalCount</span>
+    </a>
+    <a class="@TabActive(ListingStatus.Published)"
+       href="@TabHref(ListingStatus.Published)"
+       aria-current="@TabCurrent(ListingStatus.Published)">
+      <span>Yayında</span>
+      <span class="account-filter-count">@(Model.StatusCounts.GetValueOrDefault(ListingStatus.Published))</span>
+    </a>
+    <a class="@TabActive(ListingStatus.PendingReview)"
+       href="@TabHref(ListingStatus.PendingReview)"
+       aria-current="@TabCurrent(ListingStatus.PendingReview)">
+      <span>İncelemede</span>
+      <span class="account-filter-count">@(Model.StatusCounts.GetValueOrDefault(ListingStatus.PendingReview))</span>
+    </a>
+    <a class="@TabActive(ListingStatus.Rejected)"
+       href="@TabHref(ListingStatus.Rejected)"
+       aria-current="@TabCurrent(ListingStatus.Rejected)">
+      <span>Reddedildi</span>
+      <span class="account-filter-count">@(Model.StatusCounts.GetValueOrDefault(ListingStatus.Rejected))</span>
+    </a>
+    <a class="@TabActive(ListingStatus.Archived)"
+       href="@TabHref(ListingStatus.Archived)"
+       aria-current="@TabCurrent(ListingStatus.Archived)">
+      <span>Arşiv</span>
+      <span class="account-filter-count">@(Model.StatusCounts.GetValueOrDefault(ListingStatus.Archived))</span>
+    </a>
+  </nav>
+}
+
 @if (Model.Items.Count == 0)
 {
   <div class="empty-state">
     <span class="empty-state-icon" aria-hidden="true"><ap-icon name="plus" size="22" class="ap-icon" /></span>
-    <p>Henüz ilanın yok.</p>
-    <div class="empty-state-actions">
-      <a class="btn btn-machine" href="/ilan-ver">Ücretsiz İlan Ver</a>
-    </div>
+    <p>@emptyCopy</p>
+    @if (Model.TotalCount == 0)
+    {
+      <div class="empty-state-actions">
+        <a class="btn btn-machine" href="/ilan-ver">Ücretsiz İlan Ver</a>
+      </div>
+    }
   </div>
 }
 else
@@ -130,6 +178,10 @@ else
                 <form method="post" asp-page-handler="Archive" role="none">
                   @Html.AntiForgeryToken()
                   <input type="hidden" name="adNo" value="@item.AdNo" />
+                  @if (!string.IsNullOrEmpty(Model.Status))
+                  {
+                    <input type="hidden" name="durum" value="@Model.Status" />
+                  }
                   <button type="submit"
                           class="account-action-item account-action-item--danger"
                           role="menuitem"
@@ -145,6 +197,10 @@ else
                 <form method="post" asp-page-handler="Republish" role="none">
                   @Html.AntiForgeryToken()
                   <input type="hidden" name="adNo" value="@item.AdNo" />
+                  @if (!string.IsNullOrEmpty(Model.Status))
+                  {
+                    <input type="hidden" name="durum" value="@Model.Status" />
+                  }
                   <button type="submit" class="account-action-item" role="menuitem" @@click="close">
                     <ap-icon name="refresh-cw" size="14" class="ap-icon" aria-hidden="true" />
                     <span>Yeniden yayınla</span>

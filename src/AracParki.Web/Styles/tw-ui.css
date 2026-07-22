@@ -25,6 +25,11 @@
   --color-ap-link-hover: var(--link-hover);
   --color-ap-signal: var(--signal, #c62828);
   --color-ap-ok: var(--ok, #1b7a3d);
+  --color-ap-status-ok: var(--status-ok, #067647);
+  --color-ap-status-warn: var(--status-warn, #b54708);
+  --color-ap-status-danger: var(--status-danger, #b42318);
+  --color-ap-status-info: var(--status-info, #175cd3);
+  --color-ap-status-muted: var(--status-muted, #475467);
   --color-ap-tint: var(--tint, #fffce6);
 
   --radius-ap: var(--radius, 4px);

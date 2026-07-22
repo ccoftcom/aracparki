@@ -884,12 +884,12 @@ button.account-action-item {
 }
 
 .account-expiry.is-soon {
-  color: #b54708;
+  color: var(--status-warn);
   font-weight: 600;
 }
 
 .account-expiry.is-past {
-  color: var(--signal, #b42318);
+  color: var(--status-danger);
   font-weight: 600;
 }
 
@@ -1143,40 +1143,6 @@ button.account-action-item {
   .admin-detail-grid {
     grid-template-columns: 1fr 280px;
   }
-}
-.badge-warn {
-  background: color-mix(in srgb, #b54708 18%, var(--surface));
-  color: #93370d;
-}
-.badge-danger {
-  background: color-mix(in srgb, #b42318 16%, var(--surface));
-  color: #912018;
-}
-.badge-ok {
-  background: color-mix(in srgb, #067647 16%, var(--surface));
-  color: #067647;
-}
-.badge-muted {
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-/* Kart galerisindeki absolute badge, hesap/admin metinlerinde inline kalsın */
-.page-account .badge {
-  position: static;
-  top: auto;
-  left: auto;
-  z-index: auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  border-radius: var(--radius);
-  border: none;
-  vertical-align: middle;
 }
 
 .detail-status-banner {

@@ -245,7 +245,7 @@
   transform: scale(1.04);
 }
 
-.badge {
+.listing-media .badge {
   position: absolute;
   top: 8px;
   left: 8px;
@@ -261,15 +261,27 @@
   color: var(--machine-ink);
 }
 
-.badge-rent {
+/* Intent / condition chips (also used inline in list + detail specs) */
+.badge.badge-sale {
+  background: var(--machine);
+  color: var(--machine-ink);
+}
+
+.badge.badge-rent {
   background: var(--signal);
   color: #fff;
 }
 
-.badge-used {
+.badge.badge-used {
   background: var(--raised);
   border: 1px solid var(--line);
   color: var(--ink);
+}
+
+.badge.badge-new {
+  background: color-mix(in srgb, var(--status-ok, #067647) 12%, var(--raised));
+  color: var(--status-ok, #067647);
+  border: 1px solid color-mix(in srgb, var(--status-ok, #067647) 28%, var(--line));
 }
 
 .listing-body {

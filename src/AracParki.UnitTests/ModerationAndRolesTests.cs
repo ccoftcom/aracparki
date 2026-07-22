@@ -20,6 +20,16 @@ public sealed class ModerationAndRolesTests
     }
 
     [Fact]
+    public void ListingStatus_badge_classes_are_semantic()
+    {
+        Assert.Equal("badge badge-muted", ListingStatus.BadgeClass(ListingStatus.Draft));
+        Assert.Equal("badge badge-info", ListingStatus.BadgeClass(ListingStatus.PendingReview));
+        Assert.Equal("badge badge-ok", ListingStatus.BadgeClass(ListingStatus.Published));
+        Assert.Equal("badge badge-danger", ListingStatus.BadgeClass(ListingStatus.Rejected));
+        Assert.Equal("badge badge-muted", ListingStatus.BadgeClass(ListingStatus.Archived));
+    }
+
+    [Fact]
     public void ListingStatus_owner_editable_includes_published()
     {
         Assert.True(ListingStatus.IsOwnerEditable(ListingStatus.Published));

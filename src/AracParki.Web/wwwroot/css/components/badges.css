@@ -1,0 +1,56 @@
+/* Status / workflow labels — not listing-card intent badges (those stay in cards.css) */
+
+/* Reset absolute yellow card-badge when used as inline status on account/admin */
+.page-account .badge {
+  position: static;
+  top: auto;
+  left: auto;
+  z-index: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  text-transform: none;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--status-muted);
+}
+
+/* Double class beats any leftover single-.badge rules from cards.css */
+.badge.badge-ok {
+  background: color-mix(in srgb, var(--status-ok) 12%, var(--raised));
+  color: var(--status-ok);
+  border-color: color-mix(in srgb, var(--status-ok) 28%, var(--line));
+}
+
+.badge.badge-warn {
+  background: color-mix(in srgb, var(--status-warn) 12%, var(--raised));
+  color: var(--status-warn);
+  border-color: color-mix(in srgb, var(--status-warn) 28%, var(--line));
+}
+
+.badge.badge-danger {
+  background: color-mix(in srgb, var(--status-danger) 12%, var(--raised));
+  color: var(--status-danger);
+  border-color: color-mix(in srgb, var(--status-danger) 28%, var(--line));
+}
+
+.badge.badge-info {
+  background: color-mix(in srgb, var(--status-info) 12%, var(--raised));
+  color: var(--status-info);
+  border-color: color-mix(in srgb, var(--status-info) 28%, var(--line));
+}
+
+.badge.badge-muted {
+  background: var(--surface-2);
+  color: var(--status-muted);
+  border-color: var(--line);
+}

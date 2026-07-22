@@ -345,7 +345,8 @@
     </section>
 
     <aside class="detail-seller" aria-label="Satıcı bilgileri" id="buybox">
-      <div class="seller-card sticky-box">
+      <div class="detail-seller-stack sticky-box">
+      <div class="seller-card">
         <div class="seller-card-head">
           <div class="seller-identity">
             @if (isCorporateListing)
@@ -409,6 +410,22 @@
             <p class="seller-trust">Onaylı kurumsal satıcı · güvenli iletişim</p>
           }
         }
+      </div>
+
+      <a class="safety-tips"
+         href="/guvenli-alisveris"
+         title="Detaylı güvenlik ipuçları"
+         aria-label="Güvenlik ipuçları — detaylı bilgi için tıklayın">
+        <span class="safety-tips-head">
+          <span class="safety-tips-icon" aria-hidden="true">
+            <ap-icon name="shield-check" size="16" class="ap-icon" />
+          </span>
+          <strong class="safety-tips-title">Güvenlik İpuçları</strong>
+        </span>
+        <span class="safety-tips-text">
+          İlgilendiğiniz makineyi yerinde görmeden kapora ödemeyin, para göndermeyin.
+        </span>
+      </a>
       </div>
     </aside>
   </div>

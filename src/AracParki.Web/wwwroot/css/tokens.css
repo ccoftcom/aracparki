@@ -17,6 +17,12 @@
   --link-hover: #083aa0;
   --signal: #c62828;
   --ok: #1b7a3d;
+  /* Status / label badges (semantic) */
+  --status-ok: #067647;
+  --status-warn: #b54708;
+  --status-danger: #b42318;
+  --status-info: #175cd3;
+  --status-muted: #475467;
   --tint: #fffce6;
   --radius: 4px;
   --space-1: 8px;

@@ -553,10 +553,14 @@ a.detail-util {
   min-width: 0;
 }
 
+.detail-seller-stack {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
 .seller-card {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--machine) 10%, var(--raised)) 0%, var(--raised) 42%),
-    var(--raised);
+  background: var(--raised);
   border: 1px solid var(--line);
   padding: 16px;
 }
@@ -682,6 +686,58 @@ a.detail-util {
   color: var(--muted);
   text-align: center;
   line-height: 1.35;
+}
+
+/* Güvenlik ipuçları */
+.safety-tips {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s var(--ease, ease), background 0.15s var(--ease, ease);
+}
+
+.safety-tips:hover {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.safety-tips:focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+
+.safety-tips-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.safety-tips-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--link);
+}
+
+.safety-tips-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.safety-tips-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .detail-back {
@@ -869,6 +925,11 @@ a.detail-util {
 
   .detail-seller {
     grid-column: 1 / -1;
+  }
+
+  .detail-seller-stack {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .seller-card {
