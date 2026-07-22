@@ -33,7 +33,7 @@ SELECT
   city.id, dist.id, 1, 'satilik', ARRAY['satilik']::text[], 'used',
   2019, 7200, 22, NULL, 162, 4850000, NULL, false,
   '{"undercarriage":"steel_track","tail_swing":"standard","breaker_circuit":true,"ac_cabin":true,"bucket_volume_m3":1.0}'::jsonb,
-  'https://images.unsplash.com/photo-1778066994998-97f74a5bf901?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-11T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Tuzla' AND dist.city_id = city.id
@@ -53,7 +53,7 @@ DELETE FROM listing_attachments WHERE listing_id = 1;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (1, 1), (1, 2);
 DELETE FROM listing_images WHERE listing_id = 1;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (1, 'https://images.unsplash.com/photo-1778066994998-97f74a5bf901?auto=format&fit=crop&w=900&q=80', 0);
+ (1, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 2 Hidromek HMK 102B
 INSERT INTO listings (
@@ -70,7 +70,7 @@ SELECT
   city.id, dist.id, 2, 'satilik', ARRAY['satilik']::text[], 'used',
   2021, 4100, 8.5, NULL, 100, 2750000, NULL, false,
   '{"four_wd":true,"extendable_dipper":false,"ac_cabin":true}'::jsonb,
-  'https://images.unsplash.com/photo-1612878100556-032bbf1b3bab?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-12T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Sincan' AND dist.city_id = city.id
@@ -88,7 +88,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 2;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (2, 'https://images.unsplash.com/photo-1612878100556-032bbf1b3bab?auto=format&fit=crop&w=900&q=80', 0);
+ (2, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 3 Komatsu PC210 — kiralık
 INSERT INTO listings (
@@ -105,7 +105,7 @@ SELECT
   city.id, dist.id, 3, 'kiralik', ARRAY['kiralik']::text[], 'used',
   2020, 5800, 22, NULL, 123, 18000, 'day', true,
   '{"undercarriage":"steel_track","tail_swing":"standard","breaker_circuit":true,"ac_cabin":true}'::jsonb,
-  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-13T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Aliağa' AND dist.city_id = city.id
@@ -125,7 +125,7 @@ DELETE FROM listing_attachments WHERE listing_id = 3;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (3, 1), (3, 2);
 DELETE FROM listing_images WHERE listing_id = 3;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (3, 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80', 0);
+ (3, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 4 Volvo L120H
 INSERT INTO listings (
@@ -142,7 +142,7 @@ SELECT
   city.id, dist.id, 4, 'satilik', ARRAY['satilik']::text[], 'used',
   2018, 9200, 19, NULL, 276, 4200000, NULL, false,
   '{"bucket_volume_m3":3.5,"articulated":true}'::jsonb,
-  'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-10T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Nilüfer' AND dist.city_id = city.id
@@ -160,7 +160,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 4;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (4, 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=900&q=80', 0);
+ (4, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 5 JCB 3CX
 INSERT INTO listings (
@@ -177,7 +177,7 @@ SELECT
   city.id, dist.id, 5, 'satilik', ARRAY['satilik']::text[], 'used',
   2022, 2100, 8, NULL, 109, 3100000, NULL, false,
   '{"four_wd":true,"extendable_dipper":true,"ac_cabin":true}'::jsonb,
-  'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-14T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Kepez' AND dist.city_id = city.id
@@ -195,7 +195,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 5;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (5, 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80', 0);
+ (5, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 6 Toyota forklift
 INSERT INTO listings (
@@ -212,7 +212,7 @@ SELECT
   city.id, dist.id, 6, 'satilik', ARRAY['satilik']::text[], 'used',
   2019, 3200, 2.5, 1500, 0, 890000, NULL, false,
   '{"fuel":"electric","mast_type":"duplex","lift_height_m":4.5}'::jsonb,
-  'https://images.unsplash.com/photo-1566576721346-d4a3fc4bb9f4?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-09T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Gebze' AND dist.city_id = city.id
@@ -232,7 +232,7 @@ DELETE FROM listing_attachments WHERE listing_id = 6;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (6, 4);
 DELETE FROM listing_images WHERE listing_id = 6;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (6, 'https://images.unsplash.com/photo-1566576721346-d4a3fc4bb9f4?auto=format&fit=crop&w=900&q=80', 0);
+ (6, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 7 Liebherr crane — kiralık
 INSERT INTO listings (
@@ -249,7 +249,7 @@ SELECT
   city.id, dist.id, 7, 'kiralik', ARRAY['kiralik']::text[], 'used',
   2017, 11000, 100, NULL, 450, 45000, 'day', true,
   '{"crane_type":"mobile","boom_length_m":52}'::jsonb,
-  'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-08T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Şehitkamil' AND dist.city_id = city.id
@@ -267,7 +267,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 7;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (7, 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=900&q=80', 0);
+ (7, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 8 Cat D6T
 INSERT INTO listings (
@@ -284,7 +284,7 @@ SELECT
   city.id, dist.id, 8, 'satilik', ARRAY['satilik']::text[], 'used',
   2016, 14000, 20, NULL, 215, 3900000, NULL, false,
   '{"lgp":false,"blade_width_m":3.4}'::jsonb,
-  'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-07T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Selçuklu' AND dist.city_id = city.id
@@ -304,7 +304,7 @@ DELETE FROM listing_attachments WHERE listing_id = 8;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (8, 6);
 DELETE FROM listing_images WHERE listing_id = 8;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (8, 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=900&q=80', 0);
+ (8, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 9 Case 580ST (beko — model free-text)
 INSERT INTO listings (
@@ -321,7 +321,7 @@ SELECT
   city.id, dist.id, 9, 'satilik', ARRAY['satilik']::text[], 'used',
   2015, 12500, 8, NULL, 97, 1650000, NULL, false,
   '{"four_wd":true,"extendable_dipper":false,"ac_cabin":false}'::jsonb,
-  'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-06T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Seyhan' AND dist.city_id = city.id
@@ -339,7 +339,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 9;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (9, 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=900&q=80', 0);
+ (9, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 10 Bobcat E50 mini
 INSERT INTO listings (
@@ -356,7 +356,7 @@ SELECT
   city.id, dist.id, 10, 'satilik', ARRAY['satilik']::text[], 'used',
   2023, 900, 5, NULL, 49, 2450000, NULL, false,
   '{"undercarriage":"rubber_track","tail_swing":"zero","breaker_circuit":true,"ac_cabin":true}'::jsonb,
-  'https://images.unsplash.com/photo-1590674869190-b1c1f1a0f1f1?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-15T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Yenişehir' AND dist.city_id = city.id
@@ -379,7 +379,7 @@ DELETE FROM listing_attachments WHERE listing_id = 10;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (10, 1), (10, 2);
 DELETE FROM listing_images WHERE listing_id = 10;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (10, 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80', 0);
+ (10, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 11 Manitou telehandler
 INSERT INTO listings (
@@ -396,7 +396,7 @@ SELECT
   city.id, dist.id, 11, 'satilik', ARRAY['satilik']::text[], 'used',
   2020, 4500, 11, 4000, 100, 2650000, NULL, false,
   '{"lift_height_m":17.5,"fuel":"diesel"}'::jsonb,
-  'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-05T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Melikgazi' AND dist.city_id = city.id
@@ -416,7 +416,7 @@ DELETE FROM listing_attachments WHERE listing_id = 11;
 INSERT INTO listing_attachments (listing_id, attachment_id) VALUES (11, 4);
 DELETE FROM listing_images WHERE listing_id = 11;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (11, 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80', 0);
+ (11, '/uploads/listings/demo/placeholder.jpg', 0);
 
 -- 12 Doosan DX225
 INSERT INTO listings (
@@ -433,7 +433,7 @@ SELECT
   city.id, dist.id, 12, 'satilik', ARRAY['satilik']::text[], 'used',
   2019, 6700, 22, NULL, 163, 3950000, NULL, false,
   '{"undercarriage":"steel_track","tail_swing":"standard","breaker_circuit":false,"ac_cabin":true}'::jsonb,
-  'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80',
+  '/uploads/listings/demo/placeholder.jpg',
   'published', TIMESTAMPTZ '2026-07-04T10:00:00+03:00'
 FROM cities city
 JOIN districts dist ON dist.name = 'Bağlar' AND dist.city_id = city.id
@@ -451,7 +451,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 DELETE FROM listing_images WHERE listing_id = 12;
 INSERT INTO listing_images (listing_id, url, sort_order) VALUES
- (12, 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80', 0);
+ (12, '/uploads/listings/demo/placeholder.jpg', 0);
 
 SELECT setval(pg_get_serial_sequence('sellers','id'), GREATEST((SELECT MAX(id) FROM sellers),1));
 SELECT setval(pg_get_serial_sequence('listings','id'), GREATEST((SELECT MAX(id) FROM listings),1));

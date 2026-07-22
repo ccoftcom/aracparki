@@ -198,7 +198,7 @@ public sealed class CreatePublishedListingValidatorTests
         Assert.False(ListingImageUrl.IsAllowed("https://127.0.0.1/x.jpg"));
         Assert.False(ListingImageUrl.IsAllowed("https://localhost/x.jpg"));
         Assert.True(ListingImageUrl.IsAllowed("/uploads/listings/1/a.jpg"));
-        Assert.True(ListingImageUrl.IsAllowed("https://cdn.example.com/a.jpg"));
+        Assert.False(ListingImageUrl.IsAllowed("https://cdn.example.com/a.jpg"));
     }
 
     [Fact]

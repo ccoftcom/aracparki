@@ -2,9 +2,11 @@
 .DS_Store
 Thumbs.db
 
-# Uploaded listing images (keep folder)
+# Uploaded listing images (keep folder + demo placeholder for seed data)
 src/AracParki.Web/wwwroot/uploads/listings/**
 !src/AracParki.Web/wwwroot/uploads/listings/.gitkeep
+!src/AracParki.Web/wwwroot/uploads/listings/demo/
+!src/AracParki.Web/wwwroot/uploads/listings/demo/placeholder.jpg
 
 # Private corporate documents (never under wwwroot)
 src/AracParki.Web/App_Data/

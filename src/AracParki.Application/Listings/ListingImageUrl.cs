@@ -25,9 +25,9 @@ public static class ListingImageUrl
         => !string.IsNullOrWhiteSpace(contentType) && AllowedContentTypes.Contains(contentType);
 
     /// <summary>
-    /// Allowed: local upload paths (dev fallback) or HTTPS URLs that are not private/localhost.
-    /// When <paramref name="media"/> is configured, HTTPS hosts are restricted to the media public host
-    /// (plus existing relative upload paths for legacy drafts).
+    /// Allowed delivery URLs from our upload pipeline only:
+    /// local <c>/uploads/listings/…</c> (dev) or HTTPS on the configured media public host under <c>/m/…</c>.
+    /// Arbitrary external image URLs are never accepted.
     /// </summary>
     public static bool IsAllowed(string? url, CloudflareMediaSettings? media = null)
     {
@@ -44,6 +44,11 @@ public static class ListingImageUrl
             return true;
         }
 
+        if (media?.IsConfigured != true)
+        {
+            return false;
+        }
+
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
             || uri.Scheme != Uri.UriSchemeHttps
             || uri.Host.Length == 0
@@ -52,16 +57,14 @@ public static class ListingImageUrl
             return false;
         }
 
-        if (media?.IsConfigured == true)
+        if (!Uri.TryCreate(media.ResolvedPublicBaseUrl, UriKind.Absolute, out var allowed)
+            || !string.Equals(uri.Host, allowed.Host, StringComparison.OrdinalIgnoreCase))
         {
-            if (!Uri.TryCreate(media.ResolvedPublicBaseUrl, UriKind.Absolute, out var allowed)
-                || !string.Equals(uri.Host, allowed.Host, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
+            return false;
         }
 
-        return true;
+        // Media Worker delivery paths only (upload-derived), not arbitrary files on the host.
+        return uri.AbsolutePath.StartsWith("/m/", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsBlockedHost(string host)

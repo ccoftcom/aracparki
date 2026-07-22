@@ -21,6 +21,14 @@ public sealed class ListingImageUrlTests
     }
 
     [Fact]
+    public void When_media_not_configured_rejects_external_https()
+    {
+        Assert.False(ListingImageUrl.IsAllowed("https://cdn.example.com/a.jpg"));
+        Assert.False(ListingImageUrl.IsAllowed("https://images.unsplash.com/photo-1"));
+        Assert.True(ListingImageUrl.IsAllowed("/uploads/listings/1/a.jpg"));
+    }
+
+    [Fact]
     public void When_media_configured_restricts_host()
     {
         var media = new CloudflareMediaSettings
@@ -32,6 +40,7 @@ public sealed class ListingImageUrlTests
         };
 
         Assert.True(ListingImageUrl.IsAllowed("https://media.aracparki.com/m/masters/1/abc/v1?v=card", media));
+        Assert.False(ListingImageUrl.IsAllowed("https://media.aracparki.com/other/path.jpg", media));
         Assert.False(ListingImageUrl.IsAllowed("https://cdn.example.com/a.jpg", media));
     }
 

@@ -84,7 +84,7 @@ Icons: **Lucide** (`lucide-static@1.25.0`) via `<ap-icon name="…" />`.
 
 Worker projesi: `workers/media/` (kurulum için oradaki README).
 
-`Enabled=false` **veya** `IngestSecret` boşsa → `LocalListingImageStorage` (`wwwroot/uploads/listings/`). URL ile görsel ekleme yok. Şema: `database/08_media.sql`.
+`Enabled=false` **veya** `IngestSecret` boşsa → `LocalListingImageStorage` (`wwwroot/uploads/listings/`). Harici URL ile görsel ekleme yok; yalnızca yüklenen dosyalar (`/uploads/listings/…` veya medya Worker `/m/…`) kabul edilir. Şema: `database/08_media.sql`.
 
 ### İlan Ver UX (taslak + fotoğraf)
 

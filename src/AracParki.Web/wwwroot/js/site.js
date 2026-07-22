@@ -2970,55 +2970,6 @@
       },
       onFileChange() {},
     }));
-
-    // CSP Alpine: no method(args) / bracket access in markup — use item objects + getters.
-    Alpine.data("ilanVerImages", () => ({
-      items: [],
-      _nextId: 1,
-      get canRemove() {
-        return this.items.length > 1;
-      },
-      get canAdd() {
-        return this.items.length < 8;
-      },
-      get hasAnyUrl() {
-        return this.items.some((item) => !!String(item.value || "").trim());
-      },
-      createItem(value) {
-        const parent = this;
-        const id = this._nextId++;
-        return {
-          id,
-          value: String(value || ""),
-          get label() {
-            const index = parent.items.indexOf(this);
-            return index === 0 ? "Kapak görseli (URL)" : "Görsel " + (index + 1);
-          },
-          get inputId() {
-            return "img-" + this.id;
-          },
-          get hasPreview() {
-            return !!String(this.value || "").trim();
-          },
-          remove() {
-            parent.removeItem(this);
-          },
-        };
-      },
-      init() {
-        const parsed = parseJsonAttr(this.$el, "data-urls", [""]);
-        const urls = Array.isArray(parsed) && parsed.length ? parsed : [""];
-        this.items = urls.map((url) => this.createItem(url));
-      },
-      add() {
-        if (this.items.length < 8) this.items.push(this.createItem(""));
-      },
-      removeItem(item) {
-        if (this.items.length <= 1) return;
-        const index = this.items.indexOf(item);
-        if (index >= 0) this.items.splice(index, 1);
-      },
-    }));
   });
 
   // —— İlanlar (liste) sayfası geliştirmeleri ——
