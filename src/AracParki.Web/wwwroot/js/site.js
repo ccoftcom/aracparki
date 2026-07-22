@@ -3343,12 +3343,18 @@
 
       const counter = host.querySelector("[data-gallery-counter]");
       const lgTrigger = host.querySelector("[data-gallery-lg-trigger]");
+      const track = host.querySelector("[data-gallery-track]");
+      const dots = [...host.querySelectorAll("[data-gallery-page]")];
+      const pages = [...host.querySelectorAll(".gallery-thumbs-page")];
+      const perPage = Math.max(1, Number(host.dataset.thumbsPerPage || 10) || 10);
       const total = thumbs.length;
+      const pageCount = Math.max(1, pages.length || Math.ceil(total / perPage));
       let index = Math.max(
         0,
         thumbs.findIndex((t) => t.classList.contains("is-active"))
       );
       if (index < 0) index = 0;
+      let page = Math.floor(index / perPage);
 
       const items = thumbs.map((btn, i) => {
         const src = String(btn.getAttribute("data-src") || "").trim();
@@ -3364,16 +3370,34 @@
         };
       });
 
+      const syncDots = () => {
+        dots.forEach((dot) => {
+          const p = Number(dot.getAttribute("data-gallery-page"));
+          const on = p === page;
+          dot.classList.toggle("is-active", on);
+          dot.setAttribute("aria-selected", on ? "true" : "false");
+        });
+      };
+
       const syncThumbs = (activeIndex) => {
         thumbs.forEach((btn, i) => {
           const on = i === activeIndex;
           btn.classList.toggle("is-active", on);
           btn.setAttribute("aria-current", on ? "true" : "false");
         });
-        if (counter) counter.textContent = `${activeIndex + 1} / ${total} Fotoğraf`;
+        if (counter) counter.textContent = `${activeIndex + 1}/${total} Fotoğraf`;
       };
 
-      const setIndex = (next) => {
+      const setPage = (nextPage) => {
+        if (pageCount <= 0) return;
+        page = ((nextPage % pageCount) + pageCount) % pageCount;
+        if (track instanceof HTMLElement) {
+          track.style.transform = `translate3d(-${page * 100}%, 0, 0)`;
+        }
+        syncDots();
+      };
+
+      const setIndex = (next, { skipPage } = {}) => {
         if (total <= 0) return;
         index = ((next % total) + total) % total;
         const item = items[index];
@@ -3390,9 +3414,11 @@
           bindImageSpinner(main);
         }
         syncThumbs(index);
+        if (!skipPage) {
+          const nextPage = Math.floor(index / perPage);
+          if (nextPage !== page) setPage(nextPage);
+        }
       };
-
-      const step = (delta) => setIndex(index + delta);
 
       let lgInstance = null;
       const ensureLightGallery = () => {
@@ -3443,9 +3469,18 @@
         lg.openGallery(start);
       };
 
+      const step = (delta) => setIndex(index + delta);
+
       host.addEventListener("click", (e) => {
         const t = e.target;
         if (!(t instanceof Element)) return;
+
+        // Lightbox yalnız “Büyük Fotoğraf” linkinden açılır.
+        if (t.closest("[data-gallery-open]")) {
+          openLightboxAt(index);
+          return;
+        }
+
         if (t.closest("[data-gallery-prev]")) {
           step(-1);
           return;
@@ -3454,18 +3489,26 @@
           step(1);
           return;
         }
-        if (t.closest("[data-gallery-open]")) {
-          openLightboxAt(index);
+
+        const pageBtn = t.closest("[data-gallery-page]");
+        if (pageBtn) {
+          const p = Number(pageBtn.getAttribute("data-gallery-page"));
+          if (Number.isFinite(p)) setPage(p);
           return;
         }
+        if (t.closest("[data-gallery-page-prev]")) {
+          setPage(page - 1);
+          return;
+        }
+        if (t.closest("[data-gallery-page-next]")) {
+          setPage(page + 1);
+          return;
+        }
+
         const thumb = t.closest("[data-gallery-thumb]");
         if (thumb) {
           const i = Number(thumb.getAttribute("data-index"));
           if (Number.isFinite(i)) setIndex(i);
-          return;
-        }
-        if (t.closest(".gallery-main-wrap") && !t.closest(".gallery-hit, .gallery-expand, [data-gallery-lg-trigger]")) {
-          openLightboxAt(index);
         }
       });
 
@@ -3473,14 +3516,14 @@
         if (!(e instanceof KeyboardEvent)) return;
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
         if (document.activeElement !== host && !host.contains(document.activeElement)) return;
-        // Don't steal keys while lightGallery overlay is open.
         if (document.querySelector(".lg-container.lg-show")) return;
+        // Ok tuşları büyük görseli sağa/sola değiştirir.
         step(e.key === "ArrowRight" ? 1 : -1);
         e.preventDefault();
       });
 
       setIndex(index);
-      // Warm lightGallery after paint so first open is snappy.
+      setPage(page);
       requestAnimationFrame(() => ensureLightGallery());
       host.dataset.galleryReady = "1";
     });

@@ -44,6 +44,7 @@ public sealed class ListingDetailDto
     public long? CorporateAccountId { get; init; }
     public string? CorporateDisplayName { get; init; }
     public string? CorporateSlug { get; init; }
+    public string? CorporateLogoUrl { get; init; }
     public DateTimeOffset ListedAt { get; init; }
     public DateTimeOffset? ExpiresAt { get; init; }
     public string Status { get; init; } = Domain.Listings.ListingStatus.Published;

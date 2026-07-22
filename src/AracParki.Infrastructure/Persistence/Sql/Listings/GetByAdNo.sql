@@ -43,6 +43,7 @@ SELECT
     l.corporate_account_id AS CorporateAccountId,
     COALESCE(NULLIF(BTRIM(ca.display_name), ''), NULLIF(BTRIM(ca.trade_name), '')) AS CorporateDisplayName,
     CASE WHEN ca.status = 'approved' THEN ca.slug ELSE NULL END AS CorporateSlug,
+    CASE WHEN ca.status = 'approved' THEN ca.logo_url ELSE NULL END AS CorporateLogoUrl,
     l.listed_at AS ListedAt,
     l.expires_at AS ExpiresAt,
     l.status AS Status,

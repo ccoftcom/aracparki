@@ -294,7 +294,9 @@ public sealed class ListingRepository(
             CorporateAccountId = row.CorporateAccountId,
             CorporateDisplayName = row.CorporateDisplayName,
             CorporateSlug = row.CorporateSlug,
+            CorporateLogoUrl = row.CorporateLogoUrl,
             ListedAt = row.ListedAt,
+            ExpiresAt = row.ExpiresAt,
             Status = row.Status,
             RejectionReason = row.RejectionReason,
             SubmittedAt = row.SubmittedAt,
@@ -450,7 +452,9 @@ public sealed class ListingRepository(
         public long? CorporateAccountId { get; init; }
         public string? CorporateDisplayName { get; init; }
         public string? CorporateSlug { get; init; }
+        public string? CorporateLogoUrl { get; init; }
         public DateTimeOffset ListedAt { get; init; }
+        public DateTimeOffset? ExpiresAt { get; init; }
         public string Status { get; init; } = ListingStatus.Published;
         public string? RejectionReason { get; init; }
         public DateTimeOffset? SubmittedAt { get; init; }
