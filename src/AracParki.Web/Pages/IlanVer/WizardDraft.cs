@@ -81,14 +81,21 @@ public sealed class WizardDraft
                              && Intents.Count == 1
                              && Intents[0] == PrimaryIntent;
 
+    /// <summary>
+    /// Primary size metric for the category: kg capacity OR tons (weight / capacity_t).
+    /// </summary>
+    public bool HasPrimaryCapacity
+        => string.Equals(CapacityMetric, "capacity_kg", StringComparison.Ordinal)
+            ? CapacityKg is > 0
+            : Tons > 0;
+
     public bool HasMachine => HasCategory
                               && HasIntent
                               && BrandId > 0
                               && !string.IsNullOrWhiteSpace(ModelName)
                               && ModelYear is >= 1950 and <= 2100
                               && (HoursUnknown || Hours is >= 0)
-                              && Tons > 0
-                              && (CapacityMetric != "capacity_kg" || CapacityKg is > 0)
+                              && HasPrimaryCapacity
                               && (HorsepowerUnknown || Horsepower is >= 0)
                               && !string.IsNullOrWhiteSpace(Title)
                               && !ListingDescriptionHtml.IsBlank(Description)

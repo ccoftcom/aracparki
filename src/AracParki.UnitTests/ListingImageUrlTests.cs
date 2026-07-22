@@ -60,4 +60,30 @@ public sealed class ListingImageUrlTests
         Assert.False(ListingImageUrl.TryGetStorageKey("/uploads/listings/1/a.jpg", out _));
         Assert.False(ListingImageUrl.TryGetStorageKey("https://media.aracparki.com/m/../etc/passwd", out _));
     }
+
+    [Fact]
+    public void TryResolveStorageKey_prefers_asset_then_url_then_local()
+    {
+        var asset = new ListingImageAsset
+        {
+            DeliveryUrl = "https://media.aracparki.com/m/masters/1/abc/v1",
+            StorageKey = "masters/1/from-asset/v1"
+        };
+        Assert.True(ListingImageUrl.TryResolveStorageKey(asset, null, out var fromAsset));
+        Assert.Equal("masters/1/from-asset/v1", fromAsset);
+
+        Assert.True(ListingImageUrl.TryResolveStorageKey(
+            null,
+            "https://media.aracparki.com/m/masters/9/xyz/v1?v=card",
+            out var fromUrl));
+        Assert.Equal("masters/9/xyz/v1", fromUrl);
+
+        Assert.True(ListingImageUrl.TryResolveStorageKey(
+            null,
+            "/uploads/listings/1/a.jpg",
+            out var fromLocal));
+        Assert.Equal("/uploads/listings/1/a.jpg", fromLocal);
+
+        Assert.False(ListingImageUrl.TryResolveStorageKey(null, "https://evil.example/a.jpg", out _));
+    }
 }

@@ -125,12 +125,10 @@
 
 .gallery-hit--prev {
   left: 0;
-  cursor: w-resize;
 }
 
 .gallery-hit--next {
   right: 0;
-  cursor: e-resize;
 }
 
 .gallery-hit:focus-visible {

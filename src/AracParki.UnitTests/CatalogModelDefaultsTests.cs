@@ -62,6 +62,50 @@ public sealed class CatalogModelDefaultsTests
     }
 
     [Fact]
+    public void Apply_platform_model_without_weight_leaves_capacity_for_manual_entry()
+    {
+        var draft = new WizardDraft();
+        var model = new EquipmentModelOptionDto
+        {
+            Id = 230,
+            Name = "170 AETJ",
+            Slug = "170-aetj",
+            DefaultSpecsJson = """{"platform_height_m": 17.0}"""
+        };
+        var attrs = new List<CategoryAttributeDto>
+        {
+            new() { Id = 1, Key = "working_height_m", Label = "Çalışma yüksekliği", DataType = "number", Unit = "m" },
+            new() { Id = 2, Key = "platform_capacity_kg", Label = "Platform kapasitesi", DataType = "number", Unit = "kg", IsRequired = true }
+        };
+
+        CatalogModelDefaults.Apply(draft, model, "capacity_kg", attrs);
+
+        Assert.False(draft.TonsFromCatalog);
+        Assert.Equal(0, draft.Tons);
+        Assert.False(draft.CapacityKgFromCatalog);
+        Assert.Null(draft.CapacityKg);
+        Assert.Equal("17.0", draft.Specs["working_height_m"]);
+        Assert.False(draft.Specs.ContainsKey("platform_capacity_kg"));
+    }
+
+    [Fact]
+    public void ApplyCapacityKgToSpecs_fills_platform_capacity_and_derives_tons()
+    {
+        var draft = new WizardDraft { CapacityMetric = "capacity_kg" };
+        var specs = new Dictionary<string, string>(StringComparer.Ordinal);
+        var attrs = new List<CategoryAttributeDto>
+        {
+            new() { Id = 1, Key = "platform_capacity_kg", Label = "Platform kapasitesi", DataType = "number", Unit = "kg", IsRequired = true }
+        };
+
+        CatalogModelDefaults.ApplyCapacityKgToSpecs(draft, 230, specs, attrs);
+
+        Assert.Equal(230, draft.CapacityKg);
+        Assert.Equal("230", specs["platform_capacity_kg"]);
+        Assert.Equal(0.23m, CatalogModelDefaults.DeriveTonsFromCapacityKg(230));
+    }
+
+    [Fact]
     public void PruneSpecs_removes_keys_outside_category()
     {
         var draft = new WizardDraft

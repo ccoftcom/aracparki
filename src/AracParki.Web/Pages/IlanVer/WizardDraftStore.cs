@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AracParki.Application.Listings;
+using Microsoft.Extensions.Logging;
 
 namespace AracParki.Web.Pages.IlanVer;
 
@@ -94,6 +95,75 @@ public static class WizardDraftStore
         if (accountId is not null)
         {
             await store.ClearAsync(accountId.Value, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Hard-deletes the wizard draft row, session, and uploaded media blobs.
+    /// Skips blob deletion when the draft is editing an existing listing
+    /// (<see cref="WizardDraft.EditingAdNo"/>) so live listing images stay intact.
+    /// Use this for "new listing / discard draft"; use <see cref="ClearAllAsync"/> after publish.
+    /// </summary>
+    public static async Task DiscardHardAsync(
+        ISession session,
+        IWizardDraftStore store,
+        IListingImageStorage imageStorage,
+        long? accountId,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var draft = Get(session);
+        if (accountId is not null)
+        {
+            var (dbDraft, meta) = await PeekDbDraftAsync(store, accountId.Value, cancellationToken);
+            if (meta is not null)
+            {
+                draft = dbDraft;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(draft.EditingAdNo))
+        {
+            await DeleteDraftMediaAsync(draft, imageStorage, logger, cancellationToken);
+        }
+
+        await ClearAllAsync(session, store, accountId, cancellationToken);
+    }
+
+    private static async Task DeleteDraftMediaAsync(
+        WizardDraft draft,
+        IListingImageStorage imageStorage,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var asset in draft.ImageAssets)
+        {
+            if (ListingImageUrl.TryResolveStorageKey(asset, asset.DeliveryUrl, out var key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        foreach (var url in draft.ImageUrls)
+        {
+            if (ListingImageUrl.TryResolveStorageKey(null, url, out var key))
+            {
+                keys.Add(key);
+            }
+        }
+
+        foreach (var storageKey in keys)
+        {
+            try
+            {
+                await imageStorage.DeleteAsync(storageKey, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Hard-delete failed for draft media {StorageKey}", storageKey);
+            }
         }
     }
 

@@ -42,7 +42,7 @@ public sealed class WizardDraftTests
             ModelName = "MT1840",
             ModelYear = 2020,
             HoursUnknown = true,
-            Tons = 4,
+            Tons = 0,
             CapacityMetric = "capacity_kg",
             CapacityKg = null,
             HorsepowerUnknown = true,
@@ -53,6 +53,32 @@ public sealed class WizardDraftTests
 
         Assert.False(draft.HasMachine);
         draft.CapacityKg = 4000;
+        Assert.True(draft.HasMachine);
+        Assert.True(draft.HasPrimaryCapacity);
+    }
+
+    [Fact]
+    public void HasMachine_requires_tons_when_metric_is_weight()
+    {
+        var draft = new WizardDraft
+        {
+            CategoryId = 1,
+            PrimaryIntent = Domain.Listings.ListingIntent.Satilik,
+            Intents = [Domain.Listings.ListingIntent.Satilik],
+            BrandId = 1,
+            ModelName = "320D",
+            ModelYear = 2020,
+            HoursUnknown = true,
+            Tons = 0,
+            CapacityMetric = "weight",
+            HorsepowerUnknown = true,
+            Title = "Test",
+            Description = "Desc",
+            Condition = Domain.Listings.EquipmentCondition.Used
+        };
+
+        Assert.False(draft.HasMachine);
+        draft.Tons = 21.5m;
         Assert.True(draft.HasMachine);
     }
 }

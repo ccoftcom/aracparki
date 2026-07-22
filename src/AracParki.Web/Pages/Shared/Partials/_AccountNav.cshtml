@@ -1,9 +1,7 @@
-@using AracParki.Web.Infrastructure
 @{
     var path = ViewContext.HttpContext.Request.Path.Value ?? string.Empty;
     bool On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
     var isPanel = On("/panel");
-    var isAdmin = On("/admin");
     var isIlanlarim = On("/ilanlarim");
     var isIlanVer = On("/ilan-ver");
     var isFavorilerim = On("/favorilerim");
@@ -14,82 +12,80 @@
     var isKurumsal = On("/kurumsal-hesap");
     var isAyarlar = On("/ayarlar");
 }
-<div class="aside-card">
-  <h2 class="aside-title">Özet</h2>
-  <ul class="aside-list" aria-label="Panel">
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/panel", "Panel", "layout-dashboard", isPanel)' />
-    </li>
-    @if (AuthCookie.IsAdmin(User))
-    {
-      <li>
-        <partial name="Shared/Partials/_AccountNavItem" model='("/admin", "Admin", "shield-check", isAdmin)' />
-      </li>
-    }
-  </ul>
-</div>
+<div class="account-nav-panel">
+  <div class="account-nav-brand">
+    <span class="account-nav-brand-label">Hesabım</span>
+  </div>
 
-<div class="aside-card">
-  <h2 class="aside-title">İlanlar</h2>
-  <ul class="aside-list" aria-label="İlan işlemleri">
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/ilanlarim", "İlanlarım", "list", isIlanlarim)' />
-    </li>
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/ilan-ver", "İlan ver", "plus", isIlanVer)' />
-    </li>
-  </ul>
-</div>
+  <div class="account-nav-scroll">
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Özet</p>
+      <ul class="account-nav-list" aria-label="Panel">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/panel", "Panel", "layout-dashboard", isPanel)' />
+        </li>
+      </ul>
+    </div>
 
-<div class="aside-card">
-  <h2 class="aside-title">Takip</h2>
-  <ul class="aside-list" aria-label="Takip işlemleri">
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/favorilerim", "Favorilerim", "heart", isFavorilerim)' />
-    </li>
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/kayitli-aramalar", "Kayıtlı aramalar", "bookmark", isKayitli)' />
-    </li>
-  </ul>
-</div>
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">İlanlar</p>
+      <ul class="account-nav-list" aria-label="İlan işlemleri">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/ilanlarim", "İlanlarım", "list", isIlanlarim)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/ilan-ver", "İlan ver", "plus", isIlanVer)' />
+        </li>
+      </ul>
+    </div>
 
-<div class="aside-card">
-  <h2 class="aside-title">İletişim</h2>
-  <ul class="aside-list" aria-label="İletişim">
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/mesajlarim", "Mesajlarım", "message-circle", isMesajlarim)' />
-    </li>
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/bildirimler", "Bildirimler", "bell", isBildirimler)' />
-    </li>
-  </ul>
-</div>
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Takip</p>
+      <ul class="account-nav-list" aria-label="Takip işlemleri">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/favorilerim", "Favorilerim", "heart", isFavorilerim)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/kayitli-aramalar", "Kayıtlı aramalar", "bookmark", isKayitli)' />
+        </li>
+      </ul>
+    </div>
 
-<div class="aside-card">
-  <h2 class="aside-title">Hesabım</h2>
-  <ul class="aside-list" aria-label="Hesap işlemleri">
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/bilgilerim", "Bilgilerim", "circle-user", isBilgilerim)' />
-    </li>
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/kurumsal-hesap", "Kurumsal Hesap", "building-2", isKurumsal)' />
-    </li>
-    <li>
-      <partial name="Shared/Partials/_AccountNavItem" model='("/ayarlar", "Ayarlar", "settings", isAyarlar)' />
-    </li>
-  </ul>
-</div>
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">İletişim</p>
+      <ul class="account-nav-list" aria-label="İletişim">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/mesajlarim", "Mesajlarım", "message-circle", isMesajlarim)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/bildirimler", "Bildirimler", "bell", isBildirimler)' />
+        </li>
+      </ul>
+    </div>
 
-<div class="aside-card">
-  <ul class="aside-list account-aside-logout">
-    <li>
-      <form method="post" action="/cikis">
-        @Html.AntiForgeryToken()
-        <button type="submit">
-          <ap-icon name="log-out" size="18" class="ap-icon cat-ico" />
-          <span>Çıkış yap</span>
-        </button>
-      </form>
-    </li>
-  </ul>
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Hesap</p>
+      <ul class="account-nav-list" aria-label="Hesap işlemleri">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/bilgilerim", "Bilgilerim", "circle-user", isBilgilerim)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/kurumsal-hesap", "Kurumsal Hesap", "building-2", isKurumsal)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/ayarlar", "Ayarlar", "settings", isAyarlar)' />
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="account-nav-footer">
+    <form method="post" action="/cikis" class="account-nav-logout">
+      @Html.AntiForgeryToken()
+      <button type="submit">
+        <ap-icon name="log-out" size="18" class="ap-icon account-nav-ico" aria-hidden="true" />
+        <span>Çıkış yap</span>
+      </button>
+    </form>
+  </div>
 </div>

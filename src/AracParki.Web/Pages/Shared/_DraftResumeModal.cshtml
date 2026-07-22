@@ -1,7 +1,10 @@
 @model AracParki.Web.Pages.IlanVer.IndexModel
 @{
     var resume = Model.DraftResume;
-    var updated = resume?.UpdatedAt.ToLocalTime().ToString("d MMM yyyy HH:mm") ?? "";
+    var updated = resume is null ? "" : Formatters.DateTime(resume.UpdatedAt);
+    var step = resume?.Step ?? 1;
+    var stepLabel = resume?.StepLabel ?? "Taslak";
+    var progressPct = Math.Clamp(step, 1, 5) * 20;
 }
 <div class="ap-draft-gate"
      x-data="draftResumeModal"
@@ -15,20 +18,24 @@
 
   <div class="ap-draft-gate__dialog" @@click.stop>
     <header class="ap-draft-gate__header">
-      <h2 id="draft-resume-title" class="ap-draft-gate__title">Kayıtlı taslağın var</h2>
+      <p class="ap-draft-gate__kicker">Kayıtlı taslak</p>
+      <h2 id="draft-resume-title" class="ap-draft-gate__title">Kaldığın yerden devam et</h2>
       <p id="draft-resume-desc" class="ap-draft-gate__lead">
-        Yarım kalan ilanına devam edebilir veya sıfırdan yeni ilan başlatabilirsin.
+        Yarım kalan ilanın hazır. Devam edebilir veya taslağı (fotoğraflar dahil) kalıcı olarak silip sıfırdan başlayabilirsin.
       </p>
     </header>
 
     <div class="ap-draft-gate__body">
       @if (resume is not null)
       {
-        <dl class="ap-draft-gate__summary">
-          <div>
-            <dt>Adım</dt>
-            <dd>@resume.Step · @resume.StepLabel</dd>
+        <div class="ap-draft-gate__progress" aria-hidden="true">
+          <div class="ap-draft-gate__progress-track">
+            <span class="ap-draft-gate__progress-fill" style="width: @progressPct%"></span>
           </div>
+          <p class="ap-draft-gate__progress-label">Adım @step / 5 · @stepLabel</p>
+        </div>
+
+        <dl class="ap-draft-gate__summary">
           @if (!string.IsNullOrWhiteSpace(resume.CategoryName))
           {
             <div>
@@ -59,7 +66,7 @@
       <form method="post" asp-page-handler="StartNewDraft" class="ap-draft-gate__form-action">
         @Html.AntiForgeryToken()
         <button type="submit" class="btn btn-ghost ap-draft-gate__secondary">
-          Yeni ilan
+          Taslağı sil, yeni başlat
         </button>
       </form>
       <form method="post" asp-page-handler="ContinueDraft" class="ap-draft-gate__form-action">

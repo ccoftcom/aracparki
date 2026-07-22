@@ -135,7 +135,8 @@ public sealed class IndexModel(
 
         if (yeni == 1 && accountId is not null)
         {
-            await WizardDraftStore.ClearAllAsync(HttpContext.Session, wizardDrafts, accountId, cancellationToken);
+            await WizardDraftStore.DiscardHardAsync(
+                HttpContext.Session, wizardDrafts, imageStorage, accountId, logger, cancellationToken);
             WizardDraftStore.SetChoice(HttpContext.Session, WizardDraftStore.ChoiceNew);
             return RedirectToPage(new { adim = 1 });
         }
@@ -148,7 +149,7 @@ public sealed class IndexModel(
             return RedirectToPage(new { adim = step });
         }
 
-        await ResolveDraftGateAsync(cancellationToken);
+        await ResolveDraftGateAsync(adim, cancellationToken);
 
         if (ShowDraftResumeModal)
         {
@@ -193,7 +194,8 @@ public sealed class IndexModel(
             return Challenge();
         }
 
-        await WizardDraftStore.ClearAllAsync(HttpContext.Session, wizardDrafts, accountId, cancellationToken);
+        await WizardDraftStore.DiscardHardAsync(
+            HttpContext.Session, wizardDrafts, imageStorage, accountId, logger, cancellationToken);
         WizardDraftStore.SetChoice(HttpContext.Session, WizardDraftStore.ChoiceNew);
         return RedirectToPage(new { adim = 1 });
     }
@@ -424,7 +426,9 @@ public sealed class IndexModel(
         }
 
         Draft.Step = 2;
-        await PersistDraftAsync(cancellationToken);
+        await PersistDraftAsync(
+            cancellationToken,
+            notice: "Kategori seçimi kaydedildi · Sırada araç bilgileri");
         return RedirectToPage(new { adim = 2 });
     }
 
@@ -480,6 +484,23 @@ public sealed class IndexModel(
             }
         }
 
+        // Dedicated capacityKg field (or catalog value) must satisfy required kg-capacity specs
+        // such as platform_capacity_kg before SpecsJsonBuilder runs.
+        if (string.Equals(Draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal))
+        {
+            var resolvedKg = Draft.CapacityKgFromCatalog && Draft.CapacityKg is > 0
+                ? Draft.CapacityKg
+                : capacityKg is > 0
+                    ? capacityKg
+                    : CatalogModelDefaults.TryReadCapacityKgFromSpecs(mergedForBuild);
+
+            if (resolvedKg is > 0)
+            {
+                CatalogModelDefaults.ApplyCapacityKgToSpecs(
+                    Draft, resolvedKg.Value, mergedForBuild, categoryAttrs);
+            }
+        }
+
         var (specsOk, specsError, specsJson, storedRaw) = SpecsJsonBuilder.TryBuild(mergedForBuild, categoryAttrs);
         if (!specsOk)
         {
@@ -488,7 +509,16 @@ public sealed class IndexModel(
             {
                 if (!mergedForBuild.TryGetValue(attr.Key, out var raw) || string.IsNullOrWhiteSpace(raw))
                 {
-                    specGaps["spec:" + attr.Key] = $"{attr.Label} zorunlu.";
+                    // Point kg-capacity attribute gaps at the dedicated #field-capacityKg when shown.
+                    if (string.Equals(Draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal)
+                        && CatalogModelDefaults.CapacityKgSpecKeys.Contains(attr.Key, StringComparer.Ordinal))
+                    {
+                        specGaps["capacityKg"] = "Kapasite (kg) gir.";
+                    }
+                    else
+                    {
+                        specGaps["spec:" + attr.Key] = $"{attr.Label} zorunlu.";
+                    }
                 }
             }
 
@@ -521,11 +551,19 @@ public sealed class IndexModel(
             Draft.Tons = tons;
         }
 
-        if (Draft.CapacityMetric == "capacity_kg")
+        if (string.Equals(Draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal))
         {
             if (!Draft.CapacityKgFromCatalog)
             {
-                Draft.CapacityKg = capacityKg;
+                Draft.CapacityKg = capacityKg is > 0
+                    ? capacityKg
+                    : CatalogModelDefaults.TryReadCapacityKgFromSpecs(storedRaw);
+            }
+
+            // listings.tons CHECK (tons > 0): derive when catalog has no operating weight.
+            if (Draft.Tons <= 0 && Draft.CapacityKg is > 0)
+            {
+                Draft.Tons = CatalogModelDefaults.DeriveTonsFromCapacityKg(Draft.CapacityKg.Value);
             }
         }
         else
@@ -563,7 +601,9 @@ public sealed class IndexModel(
         }
 
         Draft.Step = 3;
-        await PersistDraftAsync(cancellationToken);
+        await PersistDraftAsync(
+            cancellationToken,
+            notice: "Araç bilgileri kaydedildi · Sırada fiyat ve konum");
         return RedirectToPage(new { adim = 3 });
     }
 
@@ -705,7 +745,9 @@ public sealed class IndexModel(
         }
 
         Draft.Step = 4;
-        await PersistDraftAsync(cancellationToken);
+        await PersistDraftAsync(
+            cancellationToken,
+            notice: "Fiyat ve konum kaydedildi · Sırada fotoğraflar");
         return RedirectToPage(new { adim = 4 });
     }
 
@@ -752,7 +794,9 @@ public sealed class IndexModel(
         }
 
         Draft.Step = 5;
-        await PersistDraftAsync(cancellationToken);
+        await PersistDraftAsync(
+            cancellationToken,
+            notice: "Fotoğraflar kaydedildi · Yayına hazırlığa geçildi");
         return RedirectToPage(new { adim = 5 });
     }
 
@@ -878,16 +922,7 @@ public sealed class IndexModel(
         var asset = Draft.ImageAssets.FirstOrDefault(a =>
             string.Equals(a.DeliveryUrl, target, StringComparison.OrdinalIgnoreCase));
 
-        var storageKey = asset?.StorageKey;
-        if (string.IsNullOrWhiteSpace(storageKey)
-            && !ListingImageUrl.TryGetStorageKey(target, out storageKey!))
-        {
-            storageKey = target.StartsWith(ListingImageUrl.UploadPrefix, StringComparison.OrdinalIgnoreCase)
-                ? target
-                : null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(storageKey))
+        if (ListingImageUrl.TryResolveStorageKey(asset, target, out var storageKey))
         {
             try
             {
@@ -1240,14 +1275,16 @@ public sealed class IndexModel(
             gaps["hours"] = "Çalışma saati gir veya “Bilmiyorum” seç.";
         }
 
-        if (draft.Tons <= 0)
+        if (string.Equals(draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal))
         {
-            gaps["tons"] = "Seçilen modelde tonaj/kapasite bilgisi yok. Katalogdan bir model seç.";
+            if (draft.CapacityKg is not > 0)
+            {
+                gaps["capacityKg"] = "Kapasite (kg) gir.";
+            }
         }
-
-        if (draft.CapacityMetric == "capacity_kg" && draft.CapacityKg is not > 0)
+        else if (draft.Tons <= 0)
         {
-            gaps["capacityKg"] = "Kapasite (kg) gir.";
+            gaps["tons"] = "Tonaj / kapasite (ton) gir.";
         }
 
         if (string.IsNullOrWhiteSpace(draft.Title))
@@ -1313,7 +1350,7 @@ public sealed class IndexModel(
         return gaps;
     }
 
-    private async Task ResolveDraftGateAsync(CancellationToken cancellationToken)
+    private async Task ResolveDraftGateAsync(int? adim, CancellationToken cancellationToken)
     {
         ShowDraftResumeModal = false;
         DraftResume = null;
@@ -1329,10 +1366,20 @@ public sealed class IndexModel(
             return;
         }
 
-        var choice = WizardDraftStore.GetChoice(HttpContext.Session);
-        if (!string.IsNullOrWhiteSpace(choice))
+        // Mid-wizard (?adim=N): keep the previous continue/new choice.
+        // Fresh entry (/ilan-ver): always re-ask when a saved draft exists.
+        var isFreshEntry = adim is null;
+        if (!isFreshEntry)
         {
-            return;
+            var choice = WizardDraftStore.GetChoice(HttpContext.Session);
+            if (!string.IsNullOrWhiteSpace(choice))
+            {
+                return;
+            }
+        }
+        else
+        {
+            WizardDraftStore.ClearChoice(HttpContext.Session);
         }
 
         var (dbDraft, meta) = await WizardDraftStore.PeekDbDraftAsync(
@@ -1355,7 +1402,7 @@ public sealed class IndexModel(
         };
     }
 
-    private async Task PersistDraftAsync(CancellationToken cancellationToken)
+    private async Task PersistDraftAsync(CancellationToken cancellationToken, string? notice = null)
     {
         if (WizardDraftStore.GetChoice(HttpContext.Session) is null && Draft.IsMeaningful)
         {
@@ -1368,6 +1415,11 @@ public sealed class IndexModel(
             GetAccountId(),
             Draft,
             cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(notice))
+        {
+            TempData["DraftNotice"] = notice.Trim();
+        }
     }
 
     private async Task LoadAccountPhoneAsync(CancellationToken cancellationToken)

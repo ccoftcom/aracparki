@@ -145,6 +145,39 @@ public static class ListingImageUrl
         storageKey = key;
         return true;
     }
+
+    /// <summary>
+    /// Resolves a hard-deletable storage key from asset metadata or a delivery/local URL.
+    /// </summary>
+    public static bool TryResolveStorageKey(ListingImageAsset? asset, string? url, out string storageKey)
+    {
+        storageKey = string.Empty;
+        if (!string.IsNullOrWhiteSpace(asset?.StorageKey))
+        {
+            storageKey = asset.StorageKey.Trim();
+            return true;
+        }
+
+        var target = !string.IsNullOrWhiteSpace(url) ? url.Trim() : asset?.DeliveryUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return false;
+        }
+
+        if (TryGetStorageKey(target, out storageKey))
+        {
+            return true;
+        }
+
+        if (target.StartsWith(UploadPrefix, StringComparison.OrdinalIgnoreCase)
+            && !target.Contains("..", StringComparison.Ordinal))
+        {
+            storageKey = target;
+            return true;
+        }
+
+        return false;
+    }
 }
 
 /// <summary>Injects media settings into static URL checks used by validators.</summary>

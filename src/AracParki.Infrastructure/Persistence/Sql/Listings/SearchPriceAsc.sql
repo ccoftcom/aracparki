@@ -19,7 +19,7 @@ SELECT
     l.price_unit AS PriceUnit,
     l.cover_image_url AS CoverImageUrl,
     s.seller_type AS SellerType,
-    s.is_verified AS IsVerified,
+    CASE WHEN ca.id IS NOT NULL AND ca.status = 'approved' THEN TRUE ELSE s.is_verified END AS IsVerified,
     l.listed_at AS ListedAt
 FROM listings l
 JOIN categories c ON c.id = l.category_id
@@ -27,6 +27,7 @@ JOIN brands b ON b.id = l.brand_id
 JOIN cities city ON city.id = l.city_id
 JOIN districts d ON d.id = l.district_id
 JOIN sellers s ON s.id = l.seller_id
+LEFT JOIN corporate_accounts ca ON ca.id = l.corporate_account_id
 WHERE l.status = 'published'
   AND (@Intent = 'all' OR l.intents @> ARRAY[@Intent]::text[])
   AND (@CategoryId IS NULL OR l.category_id = @CategoryId)
@@ -52,7 +53,7 @@ WHERE l.status = 'published'
   AND (@CapacityKgMax IS NULL OR COALESCE(l.capacity_kg, 2147483647) <= @CapacityKgMax)
   AND (@IncludesOperator IS NULL OR l.includes_operator = @IncludesOperator)
   AND (@PriceUnit IS NULL OR l.price_unit = @PriceUnit)
-  AND (NOT @VerifiedOnly OR s.is_verified = TRUE)
+  AND (NOT @VerifiedOnly OR s.is_verified = TRUE OR (ca.id IS NOT NULL AND ca.status = 'approved'))
   AND (
         NOT @HasAttachments
         OR EXISTS (

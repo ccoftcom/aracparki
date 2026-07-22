@@ -113,6 +113,7 @@
     <link rel="stylesheet" href="~/css/pages/ilan-ver.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/quill/quill.snow.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/cropperjs/cropper.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/toastify/toastify.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/tw-ui.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/legal.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/account.css" asp-append-version="true" />
@@ -146,7 +147,8 @@
     @RenderBody()
 
     <div class="toast" id="toast" hidden role="status" aria-live="polite"
-         data-boot-toast="@(TempData["AuthNotice"] as string)"></div>
+         data-boot-toast="@(TempData["AuthNotice"] as string)"
+         data-draft-toast="@(TempData["DraftNotice"] as string)"></div>
 
     @if (!isAuth)
     {
@@ -155,6 +157,7 @@
 
     <script src="~/lib/htmx/htmx.min.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/lib/toastify/toastify.min.js" asp-append-version="true" defer></script>
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     <script src="~/lib/alpine/focus.min.js" asp-append-version="true" defer></script>
     <script src="~/lib/alpine/alpine.min.js" asp-append-version="true" defer></script>

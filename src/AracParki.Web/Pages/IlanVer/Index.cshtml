@@ -31,18 +31,7 @@ else if (Model.ShowDraftResumeModal)
   }
 
   <header class="wizard-hero">
-    <div class="wizard-hero-copy">
-      <p class="wizard-kicker">Ücretsiz ilan</p>
-      <h1 class="wizard-title">Makine ilanı oluştur</h1>
-      <p class="wizard-subtitle">Birkaç adımda profesyonel bir ilan hazırla. Taslağın otomatik kaydedilir.</p>
-      @if (draft.IsMeaningful && !Model.ShowDraftResumeModal)
-      {
-        <p class="wizard-draft-chip" role="status">
-          <ap-icon name="check" size="14" aria-hidden="true" />
-          <span>Taslak kaydedildi · Adım @Math.Clamp(draft.Step is >= 1 and <= 5 ? draft.Step : step, 1, 5)</span>
-        </p>
-      }
-    </div>
+    <h1 class="sr-only">Makine ilanı oluştur</h1>
     <ol class="wizard-stepper" aria-label="İlan adımları">
       @for (var i = 1; i <= 5; i++)
       {
@@ -388,8 +377,12 @@ else if (Model.ShowDraftResumeModal)
 
           @* Durum cascader’da seçilir *@
           <input type="hidden" name="condition" value="@draft.Condition" />
-          @* Beygir / tonaj katalogdan gelir — kullanıcıya gösterme *@
-          <input type="hidden" name="tons" value="@(draft.Tons > 0 ? draft.Tons.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0")" />
+          @* Beygir katalogdan gelir — kullanıcıya gösterme *@
+          @if (draft is { TonsFromCatalog: true, Tons: > 0 }
+               || string.Equals(draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal))
+          {
+            <input type="hidden" name="tons" value="@(draft.Tons > 0 ? draft.Tons.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0")" />
+          }
           @if (draft is { HorsepowerFromCatalog: true, Horsepower: >= 0 })
           {
             <input type="hidden" name="horsepower" value="@draft.Horsepower" />
@@ -432,6 +425,25 @@ else if (Model.ShowDraftResumeModal)
                 }
               </div>
 
+              @if (!draft.TonsFromCatalog
+                   && !string.Equals(draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal))
+              {
+                <div class="form-row @Model.FieldInvalidClass("tons")" id="field-tons">
+                  <label for="tons">
+                    @(draft.CapacityMetric == "capacity_t" ? "Kapasite (ton)" : "Operasyon ağırlığı (ton)")
+                    <abbr class="field-req" title="Zorunlu">*</abbr>
+                  </label>
+                  <input id="tons" name="tons" type="number" required min="0.01" step="0.01"
+                         value="@(draft.Tons > 0 ? draft.Tons.ToString(System.Globalization.CultureInfo.InvariantCulture) : null)"
+                         aria-invalid="@(Model.AriaInvalid("tons"))"
+                         aria-describedby="@(Model.HasFieldError("tons") ? "err-tons" : null)" />
+                  @if (Model.HasFieldError("tons"))
+                  {
+                    <p class="field-error" id="err-tons" role="alert">@Model.FieldError("tons")</p>
+                  }
+                </div>
+              }
+
               @if (draft.CapacityMetric == "capacity_kg" && !draft.CapacityKgFromCatalog)
               {
                 <div class="form-row @Model.FieldInvalidClass("capacityKg")" id="field-capacityKg">
@@ -441,7 +453,8 @@ else if (Model.ShowDraftResumeModal)
                   <input id="capacityKg" name="capacityKg" type="number" required min="1"
                          value="@(draft.CapacityKg is > 0 ? draft.CapacityKg.Value.ToString() : null)"
                          aria-invalid="@(Model.AriaInvalid("capacityKg"))"
-                         aria-describedby="@(Model.HasFieldError("capacityKg") ? "err-capacityKg" : null)" />
+                         aria-describedby="hint-capacityKg@(Model.HasFieldError("capacityKg") ? " err-capacityKg" : "")" />
+                  <p class="field-hint" id="hint-capacityKg">Katalogda yoksa platform / kaldırma kapasitesini kg olarak gir.</p>
                   @if (Model.HasFieldError("capacityKg"))
                   {
                     <p class="field-error" id="err-capacityKg" role="alert">@Model.FieldError("capacityKg")</p>
@@ -450,7 +463,7 @@ else if (Model.ShowDraftResumeModal)
               }
 
               <div class="form-row">
-                <label for="serialNo">Seri numarası <span class="field-optional">(isteğe bağlı)</span></label>
+                <label for="serialNo">Seri numarası</label>
                 <input id="serialNo" name="serialNo" type="text" maxlength="80"
                        value="@draft.SerialNo" placeholder="Örn. ABC-12345" />
               </div>
@@ -482,15 +495,23 @@ else if (Model.ShowDraftResumeModal)
 
           @if (Model.Attributes.Count > 0)
           {
+            var isCapacityKgMetric = string.Equals(draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal);
             var visibleSpecCount = 0;
             foreach (var attr in Model.Attributes)
             {
               if (draft.HorsepowerFromCatalog && attr.Key == "engine_power_hp") { continue; }
+              // Dedicated Kapasite (kg) field covers these; avoid duplicate required inputs.
+              if (isCapacityKgMetric
+                  && CatalogModelDefaults.CapacityKgSpecKeys.Contains(attr.Key, StringComparer.Ordinal))
+              {
+                continue;
+              }
               var catalogVal = draft.Specs.TryGetValue(attr.Key, out var cv) ? cv : "";
               var locked = draft.CatalogLocked && !string.IsNullOrWhiteSpace(catalogVal)
                            && attr.Key is "lift_height_m" or "working_height_m" or "platform_height_m"
                                or "payload_t" or "max_lift_capacity_t" or "capacity_t"
                                or "capacity_kg" or "lift_capacity_kg" or "rated_operating_capacity_kg"
+                               or "platform_capacity_kg"
                                or "boom_length_m" or "vertical_reach_m" or "drum_volume_m3"
                                or "capacity_m3h" or "plant_capacity_m3h" or "engine_power_hp";
               if (!locked) { visibleSpecCount++; }
@@ -502,12 +523,18 @@ else if (Model.ShowDraftResumeModal)
               {
                 continue;
               }
+              if (isCapacityKgMetric
+                  && CatalogModelDefaults.CapacityKgSpecKeys.Contains(attr.Key, StringComparer.Ordinal))
+              {
+                continue;
+              }
               var key = $"specs[{attr.Key}]";
               var val = draft.Specs.TryGetValue(attr.Key, out var s) ? s : "";
               var fromCatalog = draft.CatalogLocked && !string.IsNullOrWhiteSpace(val)
                                 && attr.Key is "lift_height_m" or "working_height_m" or "platform_height_m"
                                     or "payload_t" or "max_lift_capacity_t" or "capacity_t"
                                     or "capacity_kg" or "lift_capacity_kg" or "rated_operating_capacity_kg"
+                                    or "platform_capacity_kg"
                                     or "boom_length_m" or "vertical_reach_m" or "drum_volume_m3"
                                     or "capacity_m3h" or "plant_capacity_m3h" or "engine_power_hp";
               if (fromCatalog)
@@ -530,6 +557,11 @@ else if (Model.ShowDraftResumeModal)
                     {
                       continue;
                     }
+                    if (isCapacityKgMetric
+                        && CatalogModelDefaults.CapacityKgSpecKeys.Contains(attr.Key, StringComparer.Ordinal))
+                    {
+                      continue;
+                    }
                     var key = $"specs[{attr.Key}]";
                     var fieldId = $"spec-{attr.Key}";
                     var labelId = $"spec-label-{attr.Key}";
@@ -539,6 +571,7 @@ else if (Model.ShowDraftResumeModal)
                                       && attr.Key is "lift_height_m" or "working_height_m" or "platform_height_m"
                                           or "payload_t" or "max_lift_capacity_t" or "capacity_t"
                                           or "capacity_kg" or "lift_capacity_kg" or "rated_operating_capacity_kg"
+                                          or "platform_capacity_kg"
                                           or "boom_length_m" or "vertical_reach_m" or "drum_volume_m3"
                                           or "capacity_m3h" or "plant_capacity_m3h" or "engine_power_hp";
                     if (fromCatalog)
@@ -553,10 +586,6 @@ else if (Model.ShowDraftResumeModal)
                         @if (attr.IsRequired)
                         {
                           <abbr class="field-req" title="Zorunlu">*</abbr>
-                        }
-                        else
-                        {
-                          <span class="field-optional">(isteğe bağlı)</span>
                         }
                       </label>
                       @if (opts.Count > 0)
@@ -701,7 +730,7 @@ else if (Model.ShowDraftResumeModal)
               novalidate>
           @Html.AntiForgeryToken()
 
-          <div class="wizard-section-grid">
+          <div class="wizard-section-grid wizard-section-grid--price-location">
           <section class="wizard-section" aria-labelledby="wizard-price-heading">
             <div class="wizard-section-head">
               <h3 class="wizard-section-title" id="wizard-price-heading">Fiyat</h3>
@@ -791,7 +820,7 @@ else if (Model.ShowDraftResumeModal)
                 }
               </div>
               <div class="ap-field">
-                <span class="ap-label" id="operator-label">Operatör <span class="field-optional">(isteğe bağlı)</span></span>
+                <span class="ap-label" id="operator-label">Operatör</span>
                 <div class="ap-tile-group ap-tile-group--bool" role="group" aria-labelledby="operator-label">
                   <label class="ap-tile">
                     <input type="checkbox" name="includesOperator" value="true"
@@ -806,75 +835,12 @@ else if (Model.ShowDraftResumeModal)
             }
           </section>
 
-          <section class="wizard-section @Model.FieldInvalidClass("sellerType")" id="field-sellerType" aria-labelledby="wizard-seller-heading">
-            <div class="wizard-section-head">
-              <h3 class="wizard-section-title" id="wizard-seller-heading">
-                İlan sahibi <abbr class="field-req" title="Zorunlu">*</abbr>
-              </h3>
-              <p class="wizard-section-hint">
-                @(Model.ApprovedCorporateAccounts.Count > 0
-                    ? "Sahibinden veya onaylı kurumsal hesaplarından birini seç."
-                    : "Satış veya kirayı kim yapıyor?")
-              </p>
-            </div>
-            <div class="ap-tile-group @(Model.ApprovedCorporateAccounts.Count > 0 ? null : "ap-tile-group--2")"
-                 role="radiogroup" aria-labelledby="wizard-seller-heading"
-                 aria-required="true"
-                 aria-invalid="@(Model.AriaInvalid("sellerType"))"
-                 aria-describedby="@(Model.HasFieldError("sellerType") ? "err-sellerType" : "sellerType-hint")">
-              <label class="ap-tile">
-                <input type="radio" name="corporateAccountId" value="" required
-                       @@change="onSellerChange"
-                       @(draft.CorporateAccountId is > 0 ? null : "checked") />
-                <span class="ap-tile-face">
-                  <span class="ap-tile-mark" aria-hidden="true"></span>
-                  <span>
-                    Sahibinden
-                    @if (!string.IsNullOrWhiteSpace(Model.OwnerDisplayName))
-                    {
-                      <span class="ap-hint">(@Model.OwnerDisplayName)</span>
-                    }
-                  </span>
-                </span>
-              </label>
-              @foreach (var corp in Model.ApprovedCorporateAccounts)
-              {
-                <label class="ap-tile">
-                  <input type="radio" name="corporateAccountId" value="@corp.Id" required
-                         @@change="onSellerChange"
-                         @(draft.CorporateAccountId == corp.Id ? "checked" : null) />
-                  <span class="ap-tile-face">
-                    <span class="ap-tile-mark" aria-hidden="true"></span>
-                    <span>
-                      @corp.DisplayName
-                      <span class="ap-hint">(@CompanyType.Label(corp.CompanyType) · Bayi)</span>
-                    </span>
-                  </span>
-                </label>
-              }
-            </div>
-            @if (Model.ApprovedCorporateAccounts.Count == 0)
-            {
-              <p class="ap-hint" id="sellerType-hint">
-                Bayi olarak ilan vermek için
-                <a href="/kurumsal-hesap">kurumsal hesap oluştur</a>
-                ve admin onayını bekle.
-              </p>
-            }
-            @if (Model.HasFieldError("sellerType"))
-            {
-              <p class="field-error" id="err-sellerType" role="alert">@Model.FieldError("sellerType")</p>
-            }
-          </section>
-          </div>
-
-          <div class="wizard-section-grid">
           <section class="wizard-section" aria-labelledby="wizard-location-heading">
             <div class="wizard-section-head">
               <h3 class="wizard-section-title" id="wizard-location-heading">Konum</h3>
               <p class="wizard-section-hint">İlanın görüneceği il ve ilçe.</p>
             </div>
-            <div class="ap-grid-2">
+            <div class="wizard-location-fields">
               <div class="ap-field @Model.FieldInvalidClass("cityId")" id="field-cityId">
                 <label class="ap-label" for="cityId">
                   İl <abbr class="field-req" title="Zorunlu">*</abbr>
@@ -925,72 +891,137 @@ else if (Model.ShowDraftResumeModal)
                   <p class="field-error" id="err-districtId" role="alert">@Model.FieldError("districtId")</p>
                 }
               </div>
-            </div>
-
-            <div class="ap-field">
-              <label class="ap-label" for="neighborhoodId">
-                Mahalle
-                <span class="ap-optional">isteğe bağlı</span>
-              </label>
-              <select class="ap-input"
-                      id="neighborhoodId"
-                      name="neighborhoodId"
-                      autocomplete="address-level3"
-                      x-ref="neighborhood"
-                      disabled>
-                <option value="">Önce ilçe seç</option>
-              </select>
+              <div class="ap-field">
+                <label class="ap-label" for="neighborhoodId">Mahalle</label>
+                <select class="ap-input"
+                        id="neighborhoodId"
+                        name="neighborhoodId"
+                        autocomplete="address-level3"
+                        x-ref="neighborhood"
+                        disabled>
+                  <option value="">Önce ilçe seç</option>
+                </select>
+              </div>
             </div>
 
             <p class="ap-hint" x-show="hasLocationStatus" x-text="locationStatus" x-cloak role="status" aria-live="polite"></p>
           </section>
+          </div>
+
+          <div class="wizard-section-grid wizard-section-grid--seller-contact">
+          <section class="wizard-section @Model.FieldInvalidClass("sellerType")" id="field-sellerType" aria-labelledby="wizard-seller-heading">
+            <div class="wizard-section-head">
+              <h3 class="wizard-section-title" id="wizard-seller-heading">
+                İlan sahibi <abbr class="field-req" title="Zorunlu">*</abbr>
+              </h3>
+              <p class="wizard-section-hint">
+                @(Model.ApprovedCorporateAccounts.Count > 0
+                    ? "Sahibinden veya onaylı kurumsal hesaplarından birini seç."
+                    : "Satış veya kirayı kim yapıyor?")
+              </p>
+            </div>
+            <div class="ap-tile-group ap-tile-group--2"
+                 role="radiogroup" aria-labelledby="wizard-seller-heading"
+                 aria-required="true"
+                 aria-invalid="@(Model.AriaInvalid("sellerType"))"
+                 aria-describedby="@(Model.HasFieldError("sellerType") ? "err-sellerType" : "sellerType-hint")">
+              <label class="ap-tile">
+                <input type="radio" name="corporateAccountId" value="" required
+                       @@change="onSellerChange"
+                       @(draft.CorporateAccountId is > 0 ? null : "checked") />
+                <span class="ap-tile-face">
+                  <span class="ap-tile-mark" aria-hidden="true"></span>
+                  <span class="ap-tile-copy">
+                    <span class="ap-tile-copy-title">Sahibinden</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.OwnerDisplayName))
+                    {
+                      <span class="ap-tile-copy-meta">@Model.OwnerDisplayName</span>
+                    }
+                  </span>
+                </span>
+              </label>
+              @foreach (var corp in Model.ApprovedCorporateAccounts)
+              {
+                <label class="ap-tile">
+                  <input type="radio" name="corporateAccountId" value="@corp.Id" required
+                         @@change="onSellerChange"
+                         @(draft.CorporateAccountId == corp.Id ? "checked" : null) />
+                  <span class="ap-tile-face">
+                    <span class="ap-tile-mark" aria-hidden="true"></span>
+                    <span class="ap-tile-copy">
+                      <span class="ap-tile-copy-title">@corp.DisplayName</span>
+                      <span class="ap-tile-copy-meta">@CompanyType.Label(corp.CompanyType) · Bayi</span>
+                    </span>
+                  </span>
+                </label>
+              }
+            </div>
+            @if (Model.ApprovedCorporateAccounts.Count == 0)
+            {
+              <p class="ap-hint" id="sellerType-hint">
+                Bayi olarak ilan vermek için
+                <a href="/kurumsal-hesap">kurumsal hesap oluştur</a>
+                ve admin onayını bekle.
+              </p>
+            }
+            @if (Model.HasFieldError("sellerType"))
+            {
+              <p class="field-error" id="err-sellerType" role="alert">@Model.FieldError("sellerType")</p>
+            }
+          </section>
 
           <section class="wizard-section @(Model.HasFieldError("phone") ? "is-invalid" : null)" id="field-phone" aria-labelledby="wizard-contact-heading">
-            <h3 class="wizard-section-title" id="wizard-contact-heading">İletişim</h3>
-            <p class="wizard-section-hint">İlanda görünecek telefon numarası.</p>
+            <div class="wizard-section-head">
+              <h3 class="wizard-section-title" id="wizard-contact-heading">İletişim</h3>
+              <p class="wizard-section-hint">İlanda görünecek telefon numarası.</p>
+            </div>
             <input type="hidden" name="contactPhoneSource" x-ref="contactPhoneSource"
                    value="@(string.IsNullOrWhiteSpace(draft.ContactPhoneSource) ? "account" : draft.ContactPhoneSource)" />
 
-            <div class="ap-tile-group" role="radiogroup" aria-labelledby="wizard-contact-heading"
-                 x-show="showPhoneChoices" x-cloak>
-              <label class="ap-tile">
-                <input type="radio" name="contactPhoneSourceUi" value="account"
-                       @@change="onContactPhoneSourceChange"
-                       :checked="isAccountPhoneSelected" />
-                <span class="ap-tile-face">
-                  <span class="ap-tile-mark" aria-hidden="true"></span>
-                  <span>
-                    Hesap telefonum
-                    <span class="ap-hint" x-text="accountPhoneLabel"></span>
+            <div class="wizard-contact-slot">
+              <div class="ap-tile-group ap-tile-group--2" role="radiogroup" aria-labelledby="wizard-contact-heading"
+                   x-show="showPhoneChoices" x-cloak>
+                <label class="ap-tile">
+                  <input type="radio" name="contactPhoneSourceUi" value="account"
+                         @@change="onContactPhoneSourceChange"
+                         :checked="isAccountPhoneSelected" />
+                  <span class="ap-tile-face">
+                    <span class="ap-tile-mark" aria-hidden="true"></span>
+                    <span class="ap-tile-copy">
+                      <span class="ap-tile-copy-title">Hesap telefonum</span>
+                      <span class="ap-tile-copy-meta" x-text="accountPhoneLabel"></span>
+                    </span>
                   </span>
-                </span>
-              </label>
-              <label class="ap-tile">
-                <input type="radio" name="contactPhoneSourceUi" value="corporate"
-                       @@change="onContactPhoneSourceChange"
-                       :checked="isCorporatePhoneSelected" />
-                <span class="ap-tile-face">
-                  <span class="ap-tile-mark" aria-hidden="true"></span>
-                  <span>
-                    Bayi telefonu
-                    <span class="ap-hint" x-text="corporatePhoneLabel"></span>
+                </label>
+                <label class="ap-tile">
+                  <input type="radio" name="contactPhoneSourceUi" value="corporate"
+                         @@change="onContactPhoneSourceChange"
+                         :checked="isCorporatePhoneSelected" />
+                  <span class="ap-tile-face">
+                    <span class="ap-tile-mark" aria-hidden="true"></span>
+                    <span class="ap-tile-copy">
+                      <span class="ap-tile-copy-title">Bayi telefonu</span>
+                      <span class="ap-tile-copy-meta" x-text="corporatePhoneLabel"></span>
+                    </span>
                   </span>
-                </span>
-              </label>
-            </div>
-
-            <div class="wizard-contact" x-show="showSinglePhone" x-cloak>
-              <div class="wizard-contact-icon" aria-hidden="true">
-                <ap-icon name="phone" size="18" />
+                </label>
               </div>
-              <div>
-                <p class="wizard-contact-label">İlanda görünecek telefon</p>
-                <p class="wizard-contact-value" x-text="activePhoneLabel"></p>
-                <p class="ap-hint">Alıcılar bu numaradan seni arayabilir.</p>
-              </div>
-            </div>
 
-            <p class="ap-hint" x-show="showPhoneFallback" x-cloak>Yayınlamadan önce telefon doğrulaması istenecek.</p>
+              <div class="wizard-contact" x-show="showSinglePhone" x-cloak>
+                <div class="wizard-contact-icon" aria-hidden="true">
+                  <ap-icon name="phone" size="14" />
+                </div>
+                <div class="wizard-contact-copy">
+                  <p class="wizard-contact-label">İlanda görünecek telefon</p>
+                  <p class="wizard-contact-value" x-text="activePhoneLabel"></p>
+                  <p class="ap-hint">Alıcılar bu numaradan arayabilir.</p>
+                </div>
+              </div>
+
+              <p class="ap-hint wizard-contact-fallback" x-show="showPhoneFallback" x-cloak>
+                Yayınlamadan önce telefon doğrulaması istenecek.
+              </p>
+            </div>
 
             @if (Model.HasFieldError("phone"))
             {
@@ -1048,7 +1079,7 @@ else if (Model.ShowDraftResumeModal)
             {
               var url = draft.ImageUrls[i];
               <figure class="wizard-gallery-item @(i == 0 ? "is-cover" : null)" data-url="@url">
-                <img src="@url" alt="" loading="lazy" width="480" height="480" />
+                <img src="@url" alt="" loading="lazy" width="240" height="240" />
                 <figcaption>@(i == 0 ? "Kapak" : (i + 1).ToString())</figcaption>
                 <div class="wizard-gallery-actions">
                   @if (i > 0)
@@ -1059,10 +1090,15 @@ else if (Model.ShowDraftResumeModal)
                       <button type="submit" class="wizard-gallery-action">Kapak yap</button>
                     </form>
                   }
-                  <form method="post" asp-page-handler="RemoveImage">
+                  <form method="post" asp-page-handler="RemoveImage" class="wizard-gallery-remove">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="url" value="@url" />
-                    <button type="submit" class="wizard-gallery-action wizard-gallery-action--danger">Kaldır</button>
+                    <button type="submit"
+                            class="wizard-gallery-action wizard-gallery-action--icon wizard-gallery-action--danger"
+                            aria-label="Kaldır"
+                            title="Kaldır">
+                      <ap-icon name="trash-2" size="14" />
+                    </button>
                   </form>
                 </div>
               </figure>
@@ -1073,7 +1109,7 @@ else if (Model.ShowDraftResumeModal)
                       :data-state="item.state"
                       x-show="item.isVisible"
                       x-cloak>
-                <img :src="item.previewUrl" alt="" width="480" height="480" />
+                <img :src="item.previewUrl" alt="" width="240" height="240" />
                 <div class="wizard-gallery-overlay"
                      x-show="item.showProgress"
                      role="status"
@@ -1099,38 +1135,40 @@ else if (Model.ShowDraftResumeModal)
             </template>
           </div>
 
-          <div class="wizard-crop-modal"
-               id="wizard-crop-modal"
-               x-show="cropOpen"
-               x-cloak
-               role="dialog"
-               aria-modal="true"
-               aria-labelledby="wizard-crop-title"
-               @@keydown.escape.window="cancelCrop">
-            <div class="wizard-crop-backdrop" @@click="cancelCrop"></div>
-            <div class="wizard-crop-panel" tabindex="-1">
-              <header class="wizard-crop-head">
-                <h2 id="wizard-crop-title">Kare kırp</h2>
-                <p class="wizard-crop-lead" x-text="cropFileName"></p>
-              </header>
-              <div class="wizard-crop-stage">
-                <img x-ref="cropImage" alt="Kırpılacak görsel" />
-              </div>
-              <p class="wizard-crop-hint" x-show="cropError" x-text="cropError" role="alert"></p>
-              <div class="wizard-crop-toolbar">
-                <button type="button" class="btn btn-ghost btn-sm" @@click="rotateCropLeft" :disabled="cropBusy">90° sola</button>
-                <button type="button" class="btn btn-ghost btn-sm" @@click="rotateCropRight" :disabled="cropBusy">90° sağa</button>
-                <button type="button" class="btn btn-ghost btn-sm" @@click="resetCrop" :disabled="cropBusy">Sıfırla</button>
-              </div>
-              <div class="wizard-crop-actions">
-                <button type="button" class="btn btn-ghost" @@click="cancelCrop" :disabled="cropBusy">Vazgeç</button>
-                <button type="button" class="btn btn-ghost" @@click="uploadWithoutCrop" :disabled="cropBusy" x-show="cropError">Kırpmadan yükle</button>
-                <button type="button" class="btn btn-machine" @@click="confirmCrop" :disabled="cropBusy">
-                  <span x-text="cropSubmitLabel">Kırp ve yükle</span>
-                </button>
+          <template x-teleport="body">
+            <div class="wizard-crop-modal"
+                 id="wizard-crop-modal"
+                 x-show="cropOpen"
+                 x-cloak
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="wizard-crop-title"
+                 @@keydown.escape.window="cancelCrop">
+              <div class="wizard-crop-backdrop" @@click="cancelCrop"></div>
+              <div class="wizard-crop-panel" x-ref="cropPanel" tabindex="-1">
+                <header class="wizard-crop-head">
+                  <h2 id="wizard-crop-title">Kare kırp</h2>
+                  <p class="wizard-crop-lead" x-text="cropFileName"></p>
+                </header>
+                <div class="wizard-crop-stage">
+                  <img x-ref="cropImage" alt="Kırpılacak görsel" />
+                </div>
+                <p class="wizard-crop-hint" x-show="cropError" x-text="cropError" role="alert"></p>
+                <div class="wizard-crop-toolbar">
+                  <button type="button" class="btn btn-ghost btn-sm" @@click="rotateCropLeft" :disabled="cropBusy">90° sola</button>
+                  <button type="button" class="btn btn-ghost btn-sm" @@click="rotateCropRight" :disabled="cropBusy">90° sağa</button>
+                  <button type="button" class="btn btn-ghost btn-sm" @@click="resetCrop" :disabled="cropBusy">Sıfırla</button>
+                </div>
+                <div class="wizard-crop-actions">
+                  <button type="button" class="btn btn-ghost" @@click="cancelCrop" :disabled="cropBusy">Vazgeç</button>
+                  <button type="button" class="btn btn-ghost" @@click="uploadWithoutCrop" :disabled="cropBusy" x-show="cropError">Kırpmadan yükle</button>
+                  <button type="button" class="btn btn-machine" @@click="confirmCrop" :disabled="cropBusy">
+                    <span x-text="cropSubmitLabel">Kırp ve yükle</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <form method="post" asp-page-handler="Images" class="wizard-form" id="wizard-form">
@@ -1149,96 +1187,247 @@ else if (Model.ShowDraftResumeModal)
         </form>
       }
 
-      @* ── Step 5: Preview ─────────────────────────────────────────── *@
+      @* ── Step 5: Preview & publish ──────────────────────────────── *@
       else
       {
-        <p class="wizard-lead">Son kontrol. Her şey doğruysa yayınla — taslağın zaten kayıtlı.</p>
-        <article class="wizard-preview">
-          @if (draft.ImageUrls.Count > 0)
-          {
-            <img class="wizard-preview-cover" src="@draft.ImageUrls[0]" alt="" />
-            @if (draft.ImageUrls.Count > 1)
-            {
-              <div class="wizard-thumb-grid wizard-preview-thumbs">
-                @foreach (var url in draft.ImageUrls.Skip(1))
-                {
-                  <img class="wizard-thumb" src="@url" alt="" loading="lazy" />
-                }
-              </div>
-            }
-          }
-          <div class="wizard-preview-body">
-            <p class="wizard-preview-meta">
-              @ListingIntent.Label(draft.PrimaryIntent)
-              · @(draft.CorporateAccountId is > 0
-                  ? (draft.CorporateName ?? "Bayi")
-                  : SellerType.Label(draft.SellerType))
-              · @draft.CategoryName
-              · @draft.CityName / @draft.DistrictName
-              @if (!string.IsNullOrWhiteSpace(draft.NeighborhoodName))
-              {
-                <span>/ @draft.NeighborhoodName</span>
+        var reviewPhone = string.IsNullOrWhiteSpace(draft.Phone) ? Model.AccountPhone : draft.Phone;
+        var reviewSeller = draft.CorporateAccountId is > 0
+            ? (draft.CorporateName ?? "Bayi")
+            : SellerType.Label(draft.SellerType);
+        var reviewLocation = string.IsNullOrWhiteSpace(draft.NeighborhoodName)
+            ? $"{draft.CityName} / {draft.DistrictName}"
+            : $"{draft.CityName} / {draft.DistrictName} / {draft.NeighborhoodName}";
+
+        <p class="wizard-lead">Yayınlamadan önce ilanı kontrol et. Eksik gördüğün yere geri dönüp düzeltebilirsin.</p>
+
+        <div class="wizard-review">
+          <article class="wizard-review-listing" aria-label="İlan önizlemesi">
+            <div class="wizard-review-media">
+              @{
+                var reviewTitleText = string.IsNullOrWhiteSpace(draft.Title) ? "Başlıksız ilan" : draft.Title;
+                var reviewPriceText = Formatters.Price(draft.Price, draft.PriceUnit, draft.Currency);
               }
-            </p>
-            <h2 class="wizard-preview-title">@draft.Title</h2>
-            <p class="wizard-preview-price">
-              @Formatters.Price(draft.Price, draft.PriceUnit, draft.Currency)
-            </p>
-            <p class="wizard-preview-specs">
-              @draft.BrandName @draft.ModelName · @draft.ModelYear
-              @if (draft.Tons > 0)
+              @if (draft.ImageUrls.Count > 0)
               {
-                <span> · @draft.Tons.ToString("0.##")t</span>
-              }
-              ·
-              @if (draft.HoursUnknown || draft.Hours is null)
-              {
-                <span>Saat: Belirtilmedi</span>
+                var reviewImages = draft.ImageUrls;
+                <div class="detail-gallery wizard-review-gallery" data-detail-gallery tabindex="0" aria-label="İlan görselleri">
+                  <div class="gallery-main-wrap">
+                    <img class="gallery-main"
+                         src="@reviewImages[0]"
+                         alt="@reviewTitleText"
+                         width="900"
+                         height="900"
+                         loading="eager"
+                         data-gallery-main
+                         data-gallery-src="@reviewImages[0]" />
+                    @if (reviewImages.Count > 1)
+                    {
+                      <button type="button" class="gallery-hit gallery-hit--prev" data-gallery-prev aria-label="Önceki görsel"></button>
+                      <button type="button" class="gallery-hit gallery-hit--next" data-gallery-next aria-label="Sonraki görsel"></button>
+                    }
+                    <div class="wizard-review-overlay">
+                      <h3 class="wizard-review-title">@reviewTitleText</h3>
+                      <p class="wizard-review-price">@reviewPriceText</p>
+                      <p class="wizard-review-place">
+                        <ap-icon name="map-pin" size="14" aria-hidden="true" />
+                        <span>@reviewLocation</span>
+                      </p>
+                    </div>
+                    <button type="button"
+                            class="gallery-expand"
+                            data-gallery-open
+                            aria-haspopup="dialog"
+                            aria-label="Büyük galeriyi aç">
+                      <ap-icon name="maximize" size="16" />
+                      <span>@reviewImages.Count fotoğraf</span>
+                    </button>
+                    <button type="button" class="sr-only" data-gallery-lg-trigger id="gallery-lg-wizard-review" tabindex="-1">Galeri</button>
+                  </div>
+
+                  <div class="gallery-thumbs" role="list">
+                    @for (var i = 0; i < reviewImages.Count; i++)
+                    {
+                      <button type="button"
+                              role="listitem"
+                              class="@(i == 0 ? "is-active" : null)"
+                              data-gallery-thumb
+                              data-src="@reviewImages[i]"
+                              data-index="@i"
+                              aria-label="Görsel @(i + 1)"
+                              aria-current="@(i == 0 ? "true" : "false")">
+                        <img src="@reviewImages[i]" alt="" width="88" height="88" loading="lazy" />
+                      </button>
+                    }
+                  </div>
+                  <div class="gallery-meta">
+                    <span data-gallery-counter>1 / @reviewImages.Count Fotoğraf</span>
+                  </div>
+                </div>
               }
               else
               {
-                <span>@draft.Hours.Value.ToString("N0") saat</span>
+                <div class="wizard-review-cover-wrap">
+                  <div class="wizard-review-cover is-empty" role="img" aria-label="Kapak fotoğrafı yok">
+                    <span>Fotoğraf yok</span>
+                  </div>
+                  <div class="wizard-review-overlay">
+                    <h3 class="wizard-review-title">@reviewTitleText</h3>
+                    <p class="wizard-review-price">@reviewPriceText</p>
+                    <p class="wizard-review-place">
+                      <ap-icon name="map-pin" size="14" aria-hidden="true" />
+                      <span>@reviewLocation</span>
+                    </p>
+                  </div>
+                </div>
               }
-              @if (draft is { HorsepowerFromCatalog: true, Horsepower: > 0 })
-              {
-                <span> · @draft.Horsepower.Value HP</span>
-              }
-              · @EquipmentCondition.Label(draft.Condition)
-            </p>
-            @if (!string.IsNullOrWhiteSpace(draft.SerialNo))
-            {
-              <p class="wizard-preview-serial">Seri No: @draft.SerialNo</p>
-            }
-            <div class="wizard-preview-desc detail-desc">@Html.Raw(ListingDescriptionHtml.ToSafeDisplayHtml(draft.Description))</div>
-            <p class="wizard-muted">
-              Görsel: @draft.ImageUrls.Count
-              · Telefon: @(string.IsNullOrWhiteSpace(draft.Phone) ? Model.AccountPhone : draft.Phone)
-              @if (draft.CorporateAccountId is > 0)
-              {
-                <span>· @(draft.ContactPhoneSource == "corporate" ? "Bayi hattı" : "Hesap hattı")</span>
-              }
-              @if (draft.AttachmentIds.Count > 0)
-              {
-                <span>· Ekipman: @draft.AttachmentIds.Count</span>
-              }
-              @if (draft.IncludesOperator)
-              {
-                <span>· Operatör dahil</span>
-              }
-            </p>
-          </div>
-        </article>
+            </div>
 
-        <div class="wizard-publish-bar wizard-actions--inline">
-          <a class="btn btn-ghost btn-lg" href="/">Taslağı sakla</a>
-          <form method="post" asp-page-handler="Publish" class="wizard-publish-form" id="wizard-publish-form">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="publishToken" value="@Model.PublishToken" />
-            <a class="link-quiet" href="/ilan-ver?adim=4">← Fotoğrafları düzenle</a>
-            <button class="btn btn-cta btn-lg" type="submit">Yayınla</button>
-          </form>
+            <div class="wizard-review-body">
+              <p class="wizard-review-badges">
+                <span class="wizard-review-badge">@ListingIntent.Label(draft.PrimaryIntent)</span>
+                <span class="wizard-review-badge">@reviewSeller</span>
+                <span class="wizard-review-badge">@EquipmentCondition.Label(draft.Condition)</span>
+              </p>
+
+              <dl class="wizard-review-specs">
+                <div>
+                  <dt>Kategori</dt>
+                  <dd>@draft.CategoryName</dd>
+                </div>
+                <div>
+                  <dt>Marka / Model</dt>
+                  <dd>@draft.BrandName @draft.ModelName</dd>
+                </div>
+                <div>
+                  <dt>Yıl</dt>
+                  <dd>@draft.ModelYear</dd>
+                </div>
+                <div>
+                  <dt>Çalışma saati</dt>
+                  <dd>
+                    @(draft.HoursUnknown || draft.Hours is null
+                        ? "Belirtilmedi"
+                        : draft.Hours.Value.ToString("N0") + " saat")
+                  </dd>
+                </div>
+                @if (string.Equals(draft.CapacityMetric, "capacity_kg", StringComparison.Ordinal) && draft.CapacityKg is > 0)
+                {
+                  <div>
+                    <dt>Kapasite</dt>
+                    <dd>@draft.CapacityKg.Value.ToString("N0") kg</dd>
+                  </div>
+                }
+                else if (draft.Tons > 0)
+                {
+                  <div>
+                    <dt>@(draft.CapacityMetric == "capacity_t" ? "Kapasite" : "Tonaj")</dt>
+                    <dd>@draft.Tons.ToString("0.##") t</dd>
+                  </div>
+                }
+                @if (draft is { HorsepowerFromCatalog: true, Horsepower: > 0 })
+                {
+                  <div>
+                    <dt>Güç</dt>
+                    <dd>@draft.Horsepower.Value HP</dd>
+                  </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(draft.SerialNo))
+                {
+                  <div>
+                    <dt>Seri no</dt>
+                    <dd>@draft.SerialNo</dd>
+                  </div>
+                }
+                @if (draft.AttachmentIds.Count > 0)
+                {
+                  <div>
+                    <dt>Ekipman</dt>
+                    <dd>@draft.AttachmentIds.Count adet</dd>
+                  </div>
+                }
+                @if (draft.IncludesOperator)
+                {
+                  <div>
+                    <dt>Operatör</dt>
+                    <dd>Dahil</dd>
+                  </div>
+                }
+                <div>
+                  <dt>İletişim</dt>
+                  <dd>@(string.IsNullOrWhiteSpace(reviewPhone) ? "—" : reviewPhone)</dd>
+                </div>
+              </dl>
+
+              @if (!string.IsNullOrWhiteSpace(draft.Description))
+              {
+                <section class="wizard-review-desc" aria-labelledby="wizard-review-desc-title">
+                  <h4 id="wizard-review-desc-title" class="wizard-review-section-title">Açıklama</h4>
+                  <div class="detail-desc">@Html.Raw(ListingDescriptionHtml.ToSafeDisplayHtml(draft.Description))</div>
+                </section>
+              }
+            </div>
+          </article>
+
+          <aside class="wizard-review-aside" aria-label="Yayın kontrolü">
+            <h3 class="wizard-review-aside-title">Kontrol listesi</h3>
+            <ul class="wizard-review-checks">
+              <li>
+                <div class="wizard-review-check-main">
+                  <span class="wizard-review-check-label">Kategori</span>
+                  <span class="wizard-review-check-value">@draft.CategoryName · @ListingIntent.Label(draft.PrimaryIntent)</span>
+                </div>
+                <a class="wizard-review-edit" href="/ilan-ver?adim=1">Düzenle</a>
+              </li>
+              <li>
+                <div class="wizard-review-check-main">
+                  <span class="wizard-review-check-label">Araç</span>
+                  <span class="wizard-review-check-value">@draft.BrandName @draft.ModelName · @draft.ModelYear</span>
+                </div>
+                <a class="wizard-review-edit" href="/ilan-ver?adim=2">Düzenle</a>
+              </li>
+              <li>
+                <div class="wizard-review-check-main">
+                  <span class="wizard-review-check-label">Fiyat ve konum</span>
+                  <span class="wizard-review-check-value">@Formatters.Price(draft.Price, draft.PriceUnit, draft.Currency) · @reviewLocation</span>
+                </div>
+                <a class="wizard-review-edit" href="/ilan-ver?adim=3">Düzenle</a>
+              </li>
+              <li>
+                <div class="wizard-review-check-main">
+                  <span class="wizard-review-check-label">Fotoğraflar</span>
+                  <span class="wizard-review-check-value">@draft.ImageUrls.Count görsel</span>
+                </div>
+                <a class="wizard-review-edit" href="/ilan-ver?adim=4">Düzenle</a>
+              </li>
+              <li>
+                <div class="wizard-review-check-main">
+                  <span class="wizard-review-check-label">İletişim</span>
+                  <span class="wizard-review-check-value">
+                    @(string.IsNullOrWhiteSpace(reviewPhone) ? "Telefon yok" : reviewPhone)
+                    @if (draft.CorporateAccountId is > 0)
+                    {
+                      <span>· @(draft.ContactPhoneSource == "corporate" ? "Bayi hattı" : "Hesap hattı")</span>
+                    }
+                  </span>
+                </div>
+                <a class="wizard-review-edit" href="/ilan-ver?adim=3">Düzenle</a>
+              </li>
+            </ul>
+
+            <div class="wizard-review-publish">
+              <form method="post" asp-page-handler="Publish" class="wizard-publish-form" id="wizard-publish-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="publishToken" value="@Model.PublishToken" />
+                <button class="btn btn-cta btn-lg wizard-review-publish-btn" type="submit">İlanı yayınla</button>
+              </form>
+              <p class="wizard-review-note">Yayın sonrası admin incelemesine gider. Taslağın hesabında kayıtlı kalır.</p>
+              <div class="wizard-review-secondary">
+                <a class="btn btn-ghost btn-sm" href="/ilan-ver?adim=4">← Geri</a>
+                <a class="link-quiet" href="/">Taslağı sakla ve çık</a>
+              </div>
+            </div>
+          </aside>
         </div>
-        <p class="wizard-warn">Taslak hesabına kaydedilir. Sayfadan çıksan da kaldığın yerden devam edebilirsin.</p>
       }
     </section>
 </main>
@@ -1251,5 +1440,11 @@ else if (Model.ShowDraftResumeModal)
   @if (step == 4)
   {
     <script src="~/lib/cropperjs/cropper.min.js" asp-append-version="true" defer></script>
+  }
+  @if (step == 5)
+  {
+    <script src="~/lib/lightgallery/lightgallery.umd.js" asp-append-version="true" defer></script>
+    <script src="~/lib/lightgallery/plugins/lg-thumbnail.umd.js" asp-append-version="true" defer></script>
+    <script src="~/lib/lightgallery/plugins/lg-zoom.umd.js" asp-append-version="true" defer></script>
   }
 }

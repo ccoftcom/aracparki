@@ -4,10 +4,35 @@
   const STORAGE_RECENT = "ap:recent";
 
   const toast = (message, durationMs = 2800) => {
+    const text = String(message || "").trim();
+    if (!text) return;
+
+    if (typeof window.Toastify === "function") {
+      window.Toastify({
+        text,
+        duration: durationMs,
+        gravity: "top",
+        position: "right",
+        stopOnFocus: true,
+        close: false,
+        style: {
+          background: "var(--ink, #0c0c0c)",
+          color: "#fff",
+          borderRadius: "8px",
+          fontFamily: "var(--font-sans, Manrope, system-ui, sans-serif)",
+          fontSize: "13px",
+          fontWeight: "700",
+          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.28)",
+          padding: "12px 16px",
+        },
+      }).showToast();
+      return;
+    }
+
     const el = document.getElementById("toast");
-    if (!el || !message) return;
+    if (!el) return;
     el.hidden = false;
-    el.textContent = String(message);
+    el.textContent = text;
     clearTimeout(toast._t);
     toast._t = setTimeout(() => {
       el.hidden = true;
@@ -1208,11 +1233,13 @@
         return this.contactPhoneSource === "corporate";
       },
       get accountPhoneLabel() {
-        return this.accountPhone ? "(" + this.accountPhone + ")" : "";
+        return this.accountPhone || "";
       },
       get corporatePhoneLabel() {
         if (!this.corporatePhone) return "";
-        return "(" + this.corporateName + " · " + this.corporatePhone + ")";
+        return this.corporateName
+          ? this.corporateName + " · " + this.corporatePhone
+          : this.corporatePhone;
       },
       get activePhone() {
         if (this.contactPhoneSource === "corporate" && this.corporatePhone) {
@@ -1941,6 +1968,7 @@
         this.currentCount = Number(this.$el.dataset.currentCount || 0);
         const tokenInput = this.$el.querySelector('input[name="__RequestVerificationToken"]');
         this._token = tokenInput ? tokenInput.value : "";
+        this.$watch("cropOpen", (open) => this.setCropBodyLock(open));
       },
       onDragEnter() {
         this.dragging = true;
@@ -2027,43 +2055,86 @@
           parent._cropObjectUrl = URL.createObjectURL(file);
           parent.cropOpen = true;
 
+          // x-show toggles display:none → Cropper must init only after the stage
+          // has a real layout box (nextTick alone is not enough on first open).
           parent.$nextTick(() => {
-            const img = parent.$refs.cropImage;
-            if (!(img instanceof HTMLImageElement)) {
-              parent.finishCropWithFile(file);
-              return;
-            }
-            img.onload = () => {
-              parent.destroyCropperInstanceOnly();
-              parent._cropper = new window.Cropper(img, {
-                aspectRatio: 1,
-                viewMode: 1,
-                dragMode: "move",
-                autoCropArea: 1,
-                responsive: true,
-                background: false,
-                guides: true,
-                center: true,
-                highlight: false,
-                cropBoxMovable: true,
-                cropBoxResizable: true,
-                toggleDragModeOnDblclick: false,
-                checkOrientation: true,
-              });
-              parent.focusCropPanel();
-            };
-            img.onerror = () => {
-              parent.cropError =
-                "Bu görsel tarayıcıda açılamadı. Kırpmadan yüklemek için “Kırpmadan yükle”ye bas.";
-              parent.focusCropPanel();
-            };
-            img.src = parent._cropObjectUrl;
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => parent.mountCropper(file));
+            });
           });
         });
       },
+      mountCropper(file) {
+        const parent = this;
+        const img = parent.$refs.cropImage;
+        if (!(img instanceof HTMLImageElement)) {
+          parent.finishCropWithFile(file);
+          return;
+        }
+
+        let started = false;
+        const start = () => {
+          if (started) return;
+          started = true;
+          parent.destroyCropperInstanceOnly();
+
+          const stage = img.parentElement;
+          if (!(stage instanceof HTMLElement) || stage.clientWidth < 32 || stage.clientHeight < 32) {
+            // Layout still not ready — one more frame, then fall back to raw upload.
+            requestAnimationFrame(() => {
+              if (stage instanceof HTMLElement && stage.clientWidth >= 32 && stage.clientHeight >= 32) {
+                started = false;
+                start();
+                return;
+              }
+              parent.finishCropWithFile(file);
+            });
+            return;
+          }
+
+          parent._cropper = new window.Cropper(img, {
+            aspectRatio: 1,
+            viewMode: 1,
+            dragMode: "move",
+            autoCropArea: 1,
+            responsive: true,
+            background: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+            checkOrientation: true,
+            ready() {
+              try {
+                parent._cropper?.resize();
+              } catch {
+                /* ignore */
+              }
+              parent.focusCropPanel();
+            },
+          });
+        };
+
+        img.onload = start;
+        img.onerror = () => {
+          parent.cropError =
+            "Bu görsel tarayıcıda açılamadı. Kırpmadan yüklemek için “Kırpmadan yükle”ye bas.";
+          parent.focusCropPanel();
+        };
+        img.src = parent._cropObjectUrl;
+        // Cached images may already be complete (onload may not fire again).
+        if (img.complete && img.naturalWidth > 0) {
+          start();
+        }
+      },
       focusCropPanel() {
-        const panel = this.$el.querySelector(".wizard-crop-panel");
+        const panel = this.$refs.cropPanel;
         if (panel instanceof HTMLElement) panel.focus({ preventScroll: true });
+      },
+      setCropBodyLock(locked) {
+        document.documentElement.classList.toggle("wizard-crop-open", !!locked);
       },
       destroyCropperInstanceOnly() {
         if (this._cropper) {
@@ -2095,7 +2166,14 @@
         if (this._cropper) this._cropper.rotate(90);
       },
       resetCrop() {
-        if (this._cropper) this._cropper.reset();
+        if (this._cropper) {
+          this._cropper.reset();
+          try {
+            this._cropper.resize();
+          } catch {
+            /* ignore */
+          }
+        }
       },
       cancelCrop() {
         // Skip this file entirely.
@@ -2128,6 +2206,7 @@
         this.cropBusy = false;
         this.cropError = "";
         this._pendingCropFile = null;
+        this.setCropBodyLock(false);
       },
       confirmCrop() {
         const parent = this;
@@ -2974,7 +3053,12 @@
     initDetailTabs();
     initShareListing();
     initPrintListing();
-    const boot = document.getElementById("toast")?.getAttribute("data-boot-toast");
+    const toastEl = document.getElementById("toast");
+    const draftToast = toastEl?.getAttribute("data-draft-toast");
+    if (draftToast) {
+      toast(draftToast, 4200);
+    }
+    const boot = toastEl?.getAttribute("data-boot-toast");
     if (boot) {
       // Auth / e-posta bildirimleri daha uzun kalsın — kullanıcı okusun.
       const longer = /mail|e-posta|doğrulama|onay/i.test(boot);

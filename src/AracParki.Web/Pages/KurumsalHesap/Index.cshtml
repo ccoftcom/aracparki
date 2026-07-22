@@ -21,8 +21,12 @@
 @if (Model.Accounts.Count == 0)
 {
   <div class="empty-state">
+    <span class="empty-state-icon" aria-hidden="true"><ap-icon name="building-2" size="22" class="ap-icon" /></span>
     <p>Henüz kurumsal hesabın yok.</p>
     <p class="ap-hint">Kurumsal hesap oluşturup evraklarını yükledikten sonra admin onayıyla ilanlarını firma adına yayınlayabilirsin.</p>
+    <div class="empty-state-actions">
+      <a class="btn btn-machine" href="/kurumsal-hesap/duzenle">+ Yeni kurumsal hesap</a>
+    </div>
   </div>
 }
 else

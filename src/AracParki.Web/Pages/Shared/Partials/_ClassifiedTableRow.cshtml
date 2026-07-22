@@ -1,12 +1,12 @@
 @using System.Globalization
-@using AracParki.Application.Common
 @using AracParki.Application.Listings.Dtos
 @model ListingCardDto
 @{
     var href = ListingRoutes.Detail(Model.AdNo);
-    var tr = CultureInfo.GetCultureInfo("tr-TR");
-    var hoursText = Model.Hours is not null ? Model.Hours.Value.ToString("N0", tr) : "—";
-    var dateText = Model.ListedAt.ToString("dd MMMM yyyy", tr);
+    var hoursText = Model.Hours is not null
+        ? Model.Hours.Value.ToString("N0", CultureInfo.GetCultureInfo("tr-TR"))
+        : "—";
+    var dateText = Formatters.ListedAt(Model.ListedAt);
     var priceText = Formatters.Price(Model.Price, Model.PriceUnit, Model.Currency);
 }
 <tr class="classified-table-row" data-href="@href">

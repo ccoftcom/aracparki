@@ -16,11 +16,11 @@
     var taxLabel = account.CompanyType == CompanyType.Sahis ? "TCKN" : "VKN";
 }
 <header class="page-account-head admin-corp-detail-head">
-  <p class="admin-corp-kicker">
+  <p class="page-account-kicker">
     <a class="link-quiet" href="/admin">Admin</a>
-    <span aria-hidden="true">/</span>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
     <a class="link-quiet" href="/admin/kurumsal?durum=@account.Status">Kurumsal</a>
-    <span aria-hidden="true">/</span>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
     <span>#@account.Id</span>
   </p>
   <div class="admin-corp-detail-hero">

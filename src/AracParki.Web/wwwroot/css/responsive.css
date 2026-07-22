@@ -214,14 +214,23 @@
   }
 
   .account-layout {
-    grid-template-columns: 248px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     align-items: start;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .account-aside {
     position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 72px);
+    top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 24px);
+  }
+
+  .account-nav-panel {
+    max-height: calc(100vh - var(--header-h) - 48px - env(safe-area-inset-top, 0px));
+  }
+
+  .account-nav-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .detail-layout {
@@ -239,6 +248,83 @@
 @media (max-width: 979px) {
   .home-main {
     order: -1;
+  }
+
+  /* Account shell: horizontal chip nav on mobile */
+  .account-aside {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + var(--header-h));
+    z-index: 20;
+    margin: 0 calc(-1 * 16px);
+    padding: 0 16px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .account-nav-panel {
+    flex-direction: row;
+    align-items: stretch;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .account-nav-brand,
+  .account-nav-footer,
+  .account-nav-section-title {
+    display: none;
+  }
+
+  .account-nav-scroll {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 0 0 10px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .account-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-nav-section {
+    display: contents;
+  }
+
+  .account-nav-section + .account-nav-section {
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .account-nav-list {
+    display: contents;
+  }
+
+  .account-nav-link {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-left-width: 1px;
+    border-radius: var(--radius);
+    background: var(--raised);
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .account-nav-link.is-current {
+    border-color: color-mix(in srgb, var(--machine) 70%, var(--ink));
+    background: var(--machine);
+    color: var(--machine-ink);
+  }
+
+  .account-nav-link.is-current .account-nav-ico {
+    color: var(--machine-ink);
   }
 
   .page-detail {
@@ -277,7 +363,8 @@
   }
 
   body:has(.mobile-cta) .toast {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    top: calc(var(--space-3) + env(safe-area-inset-top));
+    bottom: auto;
   }
 }
 

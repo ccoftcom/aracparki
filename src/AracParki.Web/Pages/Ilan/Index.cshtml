@@ -13,7 +13,7 @@
     var sellerLabel = isCorporateListing
         ? "Bayi"
         : SellerType.Label(listing.SellerType);
-    var sellerVerified = listing.IsVerified || isCorporateListing;
+    var sellerVerified = listing.IsVerified;
     var images = listing.ImageUrls.Count > 0
         ? listing.ImageUrls
         : string.IsNullOrWhiteSpace(listing.CoverImageUrl)

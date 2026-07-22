@@ -19,7 +19,7 @@ SELECT
     l.price_unit AS PriceUnit,
     l.cover_image_url AS CoverImageUrl,
     s.seller_type AS SellerType,
-    s.is_verified AS IsVerified,
+    CASE WHEN ca.id IS NOT NULL AND ca.status = 'approved' THEN TRUE ELSE s.is_verified END AS IsVerified,
     l.listed_at AS ListedAt,
     l.status AS Status,
     l.rejection_reason AS RejectionReason
@@ -29,6 +29,7 @@ JOIN brands b ON b.id = l.brand_id
 JOIN cities city ON city.id = l.city_id
 JOIN districts d ON d.id = l.district_id
 JOIN sellers s ON s.id = l.seller_id
+LEFT JOIN corporate_accounts ca ON ca.id = l.corporate_account_id
 WHERE s.account_id = @AccountId
   AND l.status IN ('pending_review', 'published', 'rejected', 'archived')
 ORDER BY COALESCE(l.submitted_at, l.listed_at) DESC, l.id DESC

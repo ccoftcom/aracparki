@@ -103,7 +103,11 @@ public sealed class ListingCommandService(
             Condition = command.Condition.Trim(),
             ModelYear = command.ModelYear,
             Hours = command.Hours is >= 0 ? command.Hours : null,
-            Tons = command.Tons,
+            Tons = command.Tons > 0
+                ? command.Tons
+                : command.CapacityKg is > 0
+                    ? Math.Max(0.01m, Math.Round(command.CapacityKg.Value / 1000m, 2, MidpointRounding.AwayFromZero))
+                    : command.Tons,
             CapacityKg = command.CapacityKg is > 0 ? command.CapacityKg : null,
             Horsepower = command.Horsepower is >= 0 ? command.Horsepower : null,
             CapacityMetric = string.IsNullOrWhiteSpace(command.CapacityMetric)

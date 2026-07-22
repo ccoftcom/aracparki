@@ -29,11 +29,11 @@
     var isPublished = listing.Status == ListingStatus.Published;
 }
 <header class="page-account-head admin-mod-head">
-  <p class="admin-corp-kicker">
+  <p class="page-account-kicker">
     <a class="link-quiet" href="/admin">Admin</a>
-    <span aria-hidden="true">/</span>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
     <a class="link-quiet" href="/admin/ilanlar?durum=@listing.Status">İlanlar</a>
-    <span aria-hidden="true">/</span>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
     <span class="admin-corp-mono">@listing.AdNo</span>
   </p>
   <div class="admin-mod-hero">
@@ -170,7 +170,7 @@
       <dl class="admin-corp-dl">
         <div><dt>@sellerFieldLabel</dt><dd>@sellerDisplay</dd></div>
         <div><dt>Tür</dt><dd>@sellerLabel</dd></div>
-        <div><dt>Doğrulama</dt><dd>@(listing.IsVerified || listing.CorporateAccountId is > 0 ? "Doğrulanmış" : "—")</dd></div>
+        <div><dt>Doğrulama</dt><dd>@(listing.IsVerified ? "Doğrulanmış" : "—")</dd></div>
         @if (listing.CorporateAccountId is > 0)
         {
           <div>

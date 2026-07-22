@@ -122,31 +122,25 @@
   }
 
   .ap-tile-group--bool {
-    @apply grid-cols-2 sm:max-w-md sm:grid-cols-3;
+    /* Single option (e.g. Operatör dahil) should match price-unit tile width */
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
   }
 
   .ap-tile-group--2 {
     @apply max-w-md grid-cols-2;
   }
 
+  /* Attachment / dense checkbox grids: keep a readable floor, wrap as needed */
   .ap-tile-group--6 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: 640px) {
-    .ap-tile-group--6 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 980px) {
-    .ap-tile-group--6 {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
   }
 
   .ap-tile {
-    @apply relative m-0 block h-full cursor-pointer;
+    @apply relative m-0 block h-full min-w-[9.5rem] cursor-pointer;
+  }
+
+  .ap-tile-group--2 .ap-tile {
+    @apply min-w-0;
   }
 
   .ap-tile input {
@@ -543,59 +537,113 @@
 }
 
 .ap-draft-gate__header {
-  padding: 20px 20px 12px;
+  padding: 22px 22px 14px;
   border-bottom: 1px solid var(--line, #e6e6e6);
+}
+
+.ap-draft-gate__kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #5a5a5a);
 }
 
 .ap-draft-gate__title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display, inherit);
+  font-size: 1.35rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--ink, #0c0c0c);
 }
 
 .ap-draft-gate__lead {
   margin: 8px 0 0;
-  font-size: 0.9375rem;
+  font-size: 0.9rem;
   line-height: 1.45;
   color: var(--muted, #5a5a5a);
 }
 
 .ap-draft-gate__body {
-  padding: 16px 20px;
+  padding: 16px 22px 18px;
   overflow: auto;
+  display: grid;
+  gap: 14px;
+}
+
+.ap-draft-gate__progress {
+  display: grid;
+  gap: 8px;
+}
+
+.ap-draft-gate__progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2, #ecece8);
+  overflow: hidden;
+}
+
+.ap-draft-gate__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--machine-deep, #c4a35a);
+}
+
+.ap-draft-gate__progress-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink, #0c0c0c);
 }
 
 .ap-draft-gate__summary {
   margin: 0;
   display: grid;
-  gap: 10px;
+  gap: 0;
+  border: 1px solid var(--line, #e6e6e6);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--raised, #fff);
 }
 
 .ap-draft-gate__summary > div {
   display: grid;
-  grid-template-columns: 7rem 1fr;
-  gap: 8px;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line, #e6e6e6);
   font-size: 0.875rem;
+}
+
+.ap-draft-gate__summary > div:last-child {
+  border-bottom: 0;
 }
 
 .ap-draft-gate__summary dt {
   margin: 0;
   color: var(--muted, #5a5a5a);
   font-weight: 600;
+  font-size: 12px;
 }
 
 .ap-draft-gate__summary dd {
   margin: 0;
   color: var(--ink, #0c0c0c);
   font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .ap-draft-gate__footer {
   display: flex;
   flex-direction: column-reverse;
   gap: 10px;
-  padding: 14px 20px 18px;
+  padding: 14px 22px 18px;
   border-top: 1px solid var(--line, #e6e6e6);
   background: var(--surface, #f4f4f2);
 }
@@ -611,25 +659,36 @@
 .ap-draft-gate__form-action {
   margin: 0;
   display: flex;
+  flex: 1 1 auto;
 }
 
 .ap-draft-gate__form-action .btn {
   min-height: 44px;
   width: 100%;
+  justify-content: center;
 }
 
 @media (min-width: 640px) {
+  .ap-draft-gate__form-action:first-child {
+    flex: 0 1 auto;
+  }
+
+  .ap-draft-gate__form-action:last-child {
+    flex: 0 1 auto;
+    margin-left: auto;
+  }
+
   .ap-draft-gate__form-action .btn {
     width: auto;
-    min-width: 9rem;
+    min-width: 10.5rem;
   }
 }
 
 .wizard-page.is-gated {
   pointer-events: none;
   user-select: none;
-  filter: grayscale(0.15);
-  opacity: 0.55;
+  filter: grayscale(0.12);
+  opacity: 0.5;
 }
 
 @keyframes ap-gate-fade {

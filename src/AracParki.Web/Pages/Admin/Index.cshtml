@@ -10,24 +10,28 @@
 
 <div class="account-dash">
   <a class="account-dash-card" href="/admin/ilanlar?durum=pending_review">
+    <span class="account-dash-icon" aria-hidden="true"><ap-icon name="eye" size="22" class="ap-icon" /></span>
     <span class="account-dash-body">
       <span class="account-dash-title">İncelemede</span>
       <span class="account-dash-meta">@Model.Counts.PendingReview bekleyen ilan</span>
     </span>
   </a>
   <a class="account-dash-card" href="/admin/ilanlar?durum=published">
+    <span class="account-dash-icon" aria-hidden="true"><ap-icon name="circle-check" size="22" class="ap-icon" /></span>
     <span class="account-dash-body">
       <span class="account-dash-title">Yayında</span>
       <span class="account-dash-meta">@Model.Counts.Published ilan</span>
     </span>
   </a>
   <a class="account-dash-card" href="/admin/ilanlar?durum=rejected">
+    <span class="account-dash-icon" aria-hidden="true"><ap-icon name="circle-alert" size="22" class="ap-icon" /></span>
     <span class="account-dash-body">
       <span class="account-dash-title">Reddedilen</span>
       <span class="account-dash-meta">@Model.Counts.Rejected ilan</span>
     </span>
   </a>
   <a class="account-dash-card" href="/admin/kurumsal?durum=pending">
+    <span class="account-dash-icon" aria-hidden="true"><ap-icon name="building-2" size="22" class="ap-icon" /></span>
     <span class="account-dash-body">
       <span class="account-dash-title">Kurumsal başvurular</span>
       <span class="account-dash-meta">@Model.CorporateCounts.Pending onay bekliyor</span>

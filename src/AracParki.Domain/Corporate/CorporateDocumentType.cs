@@ -39,7 +39,7 @@ public static class CorporateDocumentType
         ImzaSirkuleri => "Sermaye şirketlerinde noter onaylı imza sirküleri, şahıs şirketinde imza beyannamesi.",
         TicaretSicil => "Şirket kuruluş ve güncel sicil gazetesi.",
         FaaliyetBelgesi => "Ticaret/meslek odasından son 6 ay içinde alınmış belge.",
-        YetkiBelgesi => "İETTS üzerinden alınan yetki belgesi (varsa). Doğrulanmış bayi rozeti için değerlendirilir.",
+        YetkiBelgesi => "İETTS üzerinden alınan yetki belgesi (varsa). Kurumsal hesap onaylanınca doğrulanmış bayi rozeti görünür.",
         _ => ""
     };
 }

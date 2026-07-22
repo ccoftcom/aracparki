@@ -1,15 +1,15 @@
 @model (string Href, string Label, string Icon, bool Current)
 @if (Model.Current)
 {
-  <a href="@Model.Href" aria-current="page">
-    <ap-icon name="@Model.Icon" size="18" class="ap-icon cat-ico" />
+  <a class="account-nav-link is-current" href="@Model.Href" aria-current="page">
+    <ap-icon name="@Model.Icon" size="18" class="ap-icon account-nav-ico" aria-hidden="true" />
     <span>@Model.Label</span>
   </a>
 }
 else
 {
-  <a href="@Model.Href">
-    <ap-icon name="@Model.Icon" size="18" class="ap-icon cat-ico" />
+  <a class="account-nav-link" href="@Model.Href">
+    <ap-icon name="@Model.Icon" size="18" class="ap-icon account-nav-ico" aria-hidden="true" />
     <span>@Model.Label</span>
   </a>
 }

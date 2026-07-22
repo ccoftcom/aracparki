@@ -11,9 +11,9 @@
     };
 }
 <header class="page-account-head">
-  <p class="admin-corp-kicker">
+  <p class="page-account-kicker">
     <a class="link-quiet" href="/admin">Admin</a>
-    <span aria-hidden="true">/</span>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
     <span>Kurumsal hesaplar</span>
   </p>
   <h1>Kurumsal moderasyon</h1>
@@ -40,8 +40,8 @@
 
 @if (Model.Items.Count == 0)
 {
-  <div class="admin-corp-empty">
-    <span class="admin-corp-empty-icon" aria-hidden="true"><ap-icon name="building-2" size="28" /></span>
+  <div class="empty-state">
+    <span class="empty-state-icon" aria-hidden="true"><ap-icon name="building-2" size="22" class="ap-icon" /></span>
     <p>@emptyCopy</p>
   </div>
 }

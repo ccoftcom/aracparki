@@ -1,0 +1,55 @@
+@{
+    var path = ViewContext.HttpContext.Request.Path.Value ?? string.Empty;
+    bool On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    var isAdminHome = path.Equals("/admin", StringComparison.OrdinalIgnoreCase);
+    var isAdminIlanlar = On("/admin/ilanlar");
+    var isAdminKurumsal = On("/admin/kurumsal");
+}
+<div class="account-nav-panel">
+  <div class="account-nav-brand">
+    <span class="account-nav-brand-label">Admin</span>
+    <span class="account-nav-brand-badge">Moderasyon</span>
+  </div>
+
+  <div class="account-nav-scroll">
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Özet</p>
+      <ul class="account-nav-list" aria-label="Admin özet">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/admin", "Admin", "shield-check", isAdminHome)' />
+        </li>
+      </ul>
+    </div>
+
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Moderasyon</p>
+      <ul class="account-nav-list" aria-label="Admin moderasyon">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/admin/ilanlar?durum=pending_review", "İlanlar", "list", isAdminIlanlar)' />
+        </li>
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/admin/kurumsal?durum=pending", "Kurumsal", "building-2", isAdminKurumsal)' />
+        </li>
+      </ul>
+    </div>
+
+    <div class="account-nav-section">
+      <p class="account-nav-section-title">Hesap</p>
+      <ul class="account-nav-list" aria-label="Hesaba dön">
+        <li>
+          <partial name="Shared/Partials/_AccountNavItem" model='("/panel", "Panele dön", "layout-dashboard", false)' />
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="account-nav-footer">
+    <form method="post" action="/cikis" class="account-nav-logout">
+      @Html.AntiForgeryToken()
+      <button type="submit">
+        <ap-icon name="log-out" size="18" class="ap-icon account-nav-ico" aria-hidden="true" />
+        <span>Çıkış yap</span>
+      </button>
+    </form>
+  </div>
+</div>

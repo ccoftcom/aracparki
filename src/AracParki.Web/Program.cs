@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
 using AracParki.Application;
@@ -11,6 +12,7 @@ using AracParki.Infrastructure.Persistence;
 using AracParki.Web.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -41,6 +43,19 @@ try
     builder.Services.AddAntiforgery();
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddSingleton<SiteUrls>();
+    builder.Services.Configure<RequestLocalizationOptions>(options =>
+    {
+        var supported = new[] { "tr-TR", "en-US", "en-GB", "en" };
+        options.SetDefaultCulture("tr-TR")
+            .AddSupportedCultures(supported)
+            .AddSupportedUICultures(supported);
+        options.ApplyCurrentCultureToResponseHeaders = true;
+        options.RequestCultureProviders =
+        [
+            new AcceptLanguageHeaderRequestCultureProvider(),
+            new CookieRequestCultureProvider()
+        ];
+    });
     builder.Services.AddDistributedMemoryCache();
     builder.Services.AddSession(options =>
     {
@@ -155,6 +170,10 @@ try
 
     app.UseForwardedHeaders();
 
+    var defaultCulture = CultureInfo.GetCultureInfo("tr-TR");
+    CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+    CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
+
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Error");
@@ -186,6 +205,7 @@ try
         }
     });
     app.UseRouting();
+    app.UseRequestLocalization();
     app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();

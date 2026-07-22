@@ -271,6 +271,42 @@ public sealed class CreatePublishedListingValidatorTests
     }
 
     [Fact]
+    public void Capacity_kg_metric_allows_zero_tons_when_capacity_kg_present()
+    {
+        var baseCmd = ValidCommand();
+        var cmd = new CreatePublishedListingCommand
+        {
+            AccountId = baseCmd.AccountId,
+            SellerDisplayName = baseCmd.SellerDisplayName,
+            Phone = baseCmd.Phone,
+            SellerType = baseCmd.SellerType,
+            CategoryId = baseCmd.CategoryId,
+            BrandId = baseCmd.BrandId,
+            ModelName = baseCmd.ModelName,
+            CityId = baseCmd.CityId,
+            DistrictId = baseCmd.DistrictId,
+            PrimaryIntent = baseCmd.PrimaryIntent,
+            Intents = baseCmd.Intents,
+            Condition = baseCmd.Condition,
+            ModelYear = baseCmd.ModelYear,
+            Hours = baseCmd.Hours,
+            Tons = 0,
+            CapacityKg = 230,
+            CapacityMetric = "capacity_kg",
+            Horsepower = baseCmd.Horsepower,
+            Price = baseCmd.Price,
+            Title = baseCmd.Title,
+            Description = baseCmd.Description,
+            SpecsJson = baseCmd.SpecsJson,
+            ImageUrls = baseCmd.ImageUrls
+        };
+
+        var result = _validator.TestValidate(cmd);
+        result.ShouldNotHaveValidationErrorFor(x => x.Tons);
+        result.ShouldNotHaveValidationErrorFor(x => x.CapacityKg);
+    }
+
+    [Fact]
     public void Sale_rejects_includes_operator()
     {
         var baseCmd = ValidCommand();

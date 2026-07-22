@@ -5,13 +5,16 @@
     Layout = "Shared/_AccountLayout";
 }
 <header class="page-account-head">
-  <h1>İlan moderasyonu</h1>
-  <p class="page-account-lead">
-    <a class="link-quiet" href="/admin">← Admin</a>
+  <p class="page-account-kicker">
+    <a class="link-quiet" href="/admin">Admin</a>
+    <span class="account-kicker-sep" aria-hidden="true">/</span>
+    <span>İlanlar</span>
   </p>
+  <h1>İlan moderasyonu</h1>
+  <p class="page-account-lead">İnceleme kuyruğundaki ilanları onayla veya reddet.</p>
 </header>
 
-<nav class="admin-status-tabs" aria-label="Durum filtresi">
+<nav class="account-filter-tabs" aria-label="Durum filtresi">
   <a class="@(Model.Status == ListingStatus.PendingReview ? "is-active" : null)"
      href="/admin/ilanlar?durum=@ListingStatus.PendingReview">İncelemede</a>
   <a class="@(Model.Status == ListingStatus.Published ? "is-active" : null)"
@@ -23,6 +26,7 @@
 @if (Model.Items.Count == 0)
 {
   <div class="empty-state">
+    <span class="empty-state-icon" aria-hidden="true"><ap-icon name="list" size="22" class="ap-icon" /></span>
     <p>Bu durumda ilan yok.</p>
   </div>
 }

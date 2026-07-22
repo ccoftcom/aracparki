@@ -12,8 +12,11 @@
 @if (Model.Items.Count == 0)
 {
   <div class="empty-state">
+    <span class="empty-state-icon" aria-hidden="true"><ap-icon name="plus" size="22" class="ap-icon" /></span>
     <p>Henüz ilanın yok.</p>
-    <a class="btn btn-machine" href="/ilan-ver">Ücretsiz İlan Ver</a>
+    <div class="empty-state-actions">
+      <a class="btn btn-machine" href="/ilan-ver">Ücretsiz İlan Ver</a>
+    </div>
   </div>
 }
 else

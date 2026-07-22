@@ -12,7 +12,7 @@ public static class CatalogModelDefaults
 {
     private static readonly Dictionary<string, string[]> SpecKeyAliases = new(StringComparer.Ordinal)
     {
-        ["payload_t"] = ["lift_capacity_kg", "capacity_kg", "rated_operating_capacity_kg", "payload_t"],
+        ["payload_t"] = ["lift_capacity_kg", "capacity_kg", "rated_operating_capacity_kg", "platform_capacity_kg", "payload_t"],
         ["lift_height_m"] = ["lift_height_m"],
         ["platform_height_m"] = ["working_height_m", "platform_height_m"],
         ["max_lift_capacity_t"] = ["capacity_t", "max_lift_capacity_t"],
@@ -20,6 +20,15 @@ public static class CatalogModelDefaults
         ["drum_volume_m3"] = ["drum_volume_m3"],
         ["plant_capacity_m3h"] = ["capacity_m3h", "plant_capacity_m3h"]
     };
+
+    /// <summary>Category attribute keys that represent kg lift/platform capacity.</summary>
+    public static readonly string[] CapacityKgSpecKeys =
+    [
+        "capacity_kg",
+        "lift_capacity_kg",
+        "rated_operating_capacity_kg",
+        "platform_capacity_kg"
+    ];
 
     public static void Apply(
         WizardDraft draft,
@@ -134,9 +143,10 @@ public static class CatalogModelDefaults
 
         if (draft.CapacityKgFromCatalog)
         {
-            keys.Add("capacity_kg");
-            keys.Add("lift_capacity_kg");
-            keys.Add("rated_operating_capacity_kg");
+            foreach (var key in CapacityKgSpecKeys)
+            {
+                keys.Add(key);
+            }
         }
 
         foreach (var key in SpecKeyAliases.Values.SelectMany(static a => a))
@@ -169,9 +179,11 @@ public static class CatalogModelDefaults
 
         if (capacityKg is > 0)
         {
-            Put("capacity_kg", capacityKg.Value.ToString(CultureInfo.InvariantCulture));
-            Put("lift_capacity_kg", capacityKg.Value.ToString(CultureInfo.InvariantCulture));
-            Put("rated_operating_capacity_kg", capacityKg.Value.ToString(CultureInfo.InvariantCulture));
+            var kg = capacityKg.Value.ToString(CultureInfo.InvariantCulture);
+            foreach (var key in CapacityKgSpecKeys)
+            {
+                Put(key, kg);
+            }
         }
 
         if (string.IsNullOrWhiteSpace(defaultSpecsJson) || defaultSpecsJson is "{}")
@@ -222,6 +234,58 @@ public static class CatalogModelDefaults
             // ignore invalid catalog JSON
         }
     }
+
+    /// <summary>
+    /// Writes <paramref name="capacityKg"/> into every kg-capacity attribute present in the category
+    /// (and into the draft's CapacityKg). Used when the seller fills the dedicated capacity field.
+    /// </summary>
+    public static void ApplyCapacityKgToSpecs(
+        WizardDraft draft,
+        int capacityKg,
+        Dictionary<string, string> specs,
+        IReadOnlyList<CategoryAttributeDto>? attributes)
+    {
+        if (capacityKg <= 0)
+        {
+            return;
+        }
+
+        draft.CapacityKg = capacityKg;
+        var raw = capacityKg.ToString(CultureInfo.InvariantCulture);
+        var allowed = attributes?.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var key in CapacityKgSpecKeys)
+        {
+            if (allowed is null || allowed.Count == 0 || allowed.Contains(key))
+            {
+                specs[key] = raw;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads kg capacity from known spec keys when the dedicated field was left empty.
+    /// </summary>
+    public static int? TryReadCapacityKgFromSpecs(IReadOnlyDictionary<string, string> specs)
+    {
+        foreach (var key in CapacityKgSpecKeys)
+        {
+            if (specs.TryGetValue(key, out var raw)
+                && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var kg)
+                && kg > 0)
+            {
+                return kg;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// listings.tons has CHECK (tons &gt; 0). For capacity_kg categories without operating weight,
+    /// derive a positive tons value from kg so publish can succeed.
+    /// </summary>
+    public static decimal DeriveTonsFromCapacityKg(int capacityKg)
+        => Math.Max(0.01m, Math.Round(capacityKg / 1000m, 2, MidpointRounding.AwayFromZero));
 
     private static string FormatJsonValue(JsonElement value) => value.ValueKind switch
     {

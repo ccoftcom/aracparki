@@ -3,7 +3,6 @@ using AracParki.Application.Corporate.Services;
 using AracParki.Application.Listings.Services;
 using AracParki.Domain.Corporate;
 using AracParki.Domain.Listings;
-using AracParki.Web.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AracParki.Web.Pages.Panel;
@@ -21,7 +20,6 @@ public sealed class IndexModel(
     public int RejectedCount { get; private set; }
     public int CorporateApprovedCount { get; private set; }
     public int CorporatePendingCount { get; private set; }
-    public bool IsAdmin { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
@@ -45,7 +43,6 @@ public sealed class IndexModel(
         var corporateAccounts = await corporate.ListMineAsync(accountId, cancellationToken);
         CorporateApprovedCount = corporateAccounts.Count(c => c.Status == CorporateStatus.Approved);
         CorporatePendingCount = corporateAccounts.Count(c => c.Status == CorporateStatus.Pending);
-        IsAdmin = AuthCookie.IsAdmin(User);
 
         SetAccountMeta("Panel", "Hesap paneli");
         return Page();

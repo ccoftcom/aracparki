@@ -60,7 +60,11 @@ public sealed class CreatePublishedListingValidator : AbstractValidator<CreatePu
         RuleFor(x => x.ModelYear).InclusiveBetween(1950, 2100).WithMessage("Model yılı geçersiz.");
         RuleFor(x => x.Hours).GreaterThanOrEqualTo(0).When(x => x.Hours.HasValue)
             .WithMessage("Çalışma saati geçersiz.");
-        RuleFor(x => x.Tons).GreaterThan(0).WithMessage("Tonaj / kapasite 0'dan büyük olmalı.");
+        RuleFor(x => x.Tons)
+            .GreaterThan(0)
+            .When(x => !(string.Equals(x.CapacityMetric, "capacity_kg", StringComparison.Ordinal)
+                         && x.CapacityKg is > 0))
+            .WithMessage("Tonaj / kapasite 0'dan büyük olmalı.");
         RuleFor(x => x.Horsepower).GreaterThanOrEqualTo(0).When(x => x.Horsepower.HasValue)
             .WithMessage("Beygir gücü geçersiz.");
         RuleFor(x => x.CapacityKg).GreaterThan(0).When(x => x.CapacityKg.HasValue)
