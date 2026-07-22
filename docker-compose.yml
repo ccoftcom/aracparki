@@ -18,8 +18,37 @@ services:
     networks:
       - aracparki
 
+  redis:
+    image: redis:7-alpine
+    container_name: aracparki-redis
+    # Local-only: no auth. Production must set requirepass / ACL via managed Redis.
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --tcp-keepalive
+      - "60"
+    ports:
+      # Host 6380 avoids clash with a system Redis on 6379.
+      - "6380:6379"
+    volumes:
+      - aracparki_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - aracparki
+    restart: unless-stopped
+
 volumes:
   aracparki_pg:
+  aracparki_redis:
 
 networks:
   aracparki:

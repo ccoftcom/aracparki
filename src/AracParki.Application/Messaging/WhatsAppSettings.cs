@@ -33,9 +33,15 @@ public sealed class WhatsAppSettings
     public int OtpRateLimitWindowMinutes { get; set; } = 60;
 
     /// <summary>
-    /// When false (default), Development skips the Graph API call and exposes DevCode in UI.
+    /// When false (default), Development skips the Graph API call.
     /// </summary>
     public bool SendRealWhatsAppOtpInDevelopment { get; set; }
+
+    /// <summary>
+    /// When true (Development only), returns OTP in API response for local testing.
+    /// Never enable in production.
+    /// </summary>
+    public bool ExposeDevOtpCode { get; set; }
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(AccountSid) && !string.IsNullOrWhiteSpace(AuthToken);

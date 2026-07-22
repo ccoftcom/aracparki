@@ -9,13 +9,12 @@
         CorporateStatus.Rejected => "Reddedilmiş başvuru yok.",
         _ => "Onay bekleyen başvuru yok."
     };
+    ViewData[Breadcrumbs.ViewDataKey] = Breadcrumbs.Create(
+        new BreadcrumbItem("Admin", "/admin"),
+        new BreadcrumbItem("Kurumsal hesaplar"));
 }
 <header class="page-account-head">
-  <nav class="page-account-kicker" aria-label="Breadcrumb">
-    <a class="link-quiet" href="/admin">Admin</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <span aria-current="page">Kurumsal hesaplar</span>
-  </nav>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
   <div class="page-account-title-row">
     <div>
       <h1>Kurumsal moderasyon</h1>

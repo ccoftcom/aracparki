@@ -18,12 +18,14 @@
 }
 
 body[data-page="list"] .site-header,
-body[data-page="detail"] .site-header {
+body[data-page="detail"] .site-header,
+body[data-page="legal"] .site-header {
   border-bottom: none;
 }
 
 body[data-page="list"] .list-crumb-bar,
-body[data-page="detail"] .list-crumb-bar {
+body[data-page="detail"] .list-crumb-bar,
+body[data-page="legal"] .list-crumb-bar {
   margin-bottom: 0;
 }
 

@@ -1,5 +1,10 @@
 ﻿@using System.Text.Json
+@using Microsoft.AspNetCore.Antiforgery
+@using Microsoft.Extensions.Options
+@using AracParki.Application.Email
 @inject SiteUrls SiteUrls
+@inject IAntiforgery Antiforgery
+@inject IOptions<SeoSettings> SeoOptions
 @{
     var pageKey = ViewData["PageKey"] as string ?? "home";
     var isAuth = pageKey == "auth";
@@ -8,7 +13,7 @@
         ?? "Araç Parkı — Türkiye genelinde satılık, kiralık ve ikinci el iş makineleri.";
     var ogTitle = ViewData["OgTitle"] as string ?? title;
     var robots = ViewData["Robots"] as string ?? "index, follow, max-image-preview:large";
-    var includeQueryInCanonical = ViewData["CanonicalIncludeQuery"] as bool? ?? pageKey == "list";
+    var includeQueryInCanonical = ViewData["CanonicalIncludeQuery"] as bool? ?? false;
     var canonical = ViewData["CanonicalUrl"] as string
         ?? SiteUrls.CanonicalFromRequest(includeQueryInCanonical);
     var ogUrl = ViewData["OgUrl"] as string ?? canonical;
@@ -23,6 +28,9 @@
     var twitterCard = ViewData["TwitterCard"] as string ?? "summary_large_image";
     var cspNonce = Context.GetCspNonce();
     var jsonLdExtra = ViewData["JsonLd"] as string;
+    var breadcrumbJsonLd = ViewData[Breadcrumbs.JsonLdViewDataKey] as string;
+    var afTokens = Antiforgery.GetAndStoreTokens(Context);
+    var seo = SeoOptions.Value;
 
     var websiteLd = new Dictionary<string, object?>
     {
@@ -62,8 +70,13 @@
     <title>@title</title>
     <meta name="description" content="@description" />
     <meta name="robots" content="@robots" />
+    @if (!string.IsNullOrWhiteSpace(seo.GoogleSiteVerification))
+    {
+        <meta name="google-site-verification" content="@seo.GoogleSiteVerification" />
+    }
     <meta name="theme-color" content="#ffe600" />
     <meta name="color-scheme" content="light" />
+    <meta name="request-verification-token" content="@afTokens.RequestToken" />
     <link rel="canonical" href="@canonical" />
 
     <meta property="og:type" content="@ogType" />
@@ -127,6 +140,20 @@
         if (!string.IsNullOrWhiteSpace(jsonLdExtra))
         {
             <script type="application/ld+json" nonce="@cspNonce">@Html.Raw(jsonLdExtra)</script>
+        }
+        if (!string.IsNullOrWhiteSpace(breadcrumbJsonLd))
+        {
+            <script type="application/ld+json" nonce="@cspNonce">@Html.Raw(breadcrumbJsonLd)</script>
+        }
+        if (seo.HasGoogleAnalytics)
+        {
+            <script async src="https://www.googletagmanager.com/gtag/js?id=@seo.GoogleAnalyticsMeasurementId" nonce="@cspNonce"></script>
+            <script nonce="@cspNonce">
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '@seo.GoogleAnalyticsMeasurementId');
+            </script>
         }
     }
 </head>

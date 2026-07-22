@@ -427,11 +427,6 @@
   word-break: break-word;
 }
 
-.account-listings {
-  display: grid;
-  gap: 10px;
-}
-
 .account-dash {
   display: grid;
   gap: 12px;
@@ -631,6 +626,11 @@
   box-shadow: var(--shadow);
 }
 
+.admin-listing-row:has([aria-expanded="true"]) {
+  position: relative;
+  z-index: 5;
+}
+
 .account-result-media,
 .admin-listing-thumb,
 .admin-corp-avatar {
@@ -705,6 +705,13 @@
   line-height: 1.4;
 }
 
+div.admin-listing-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
 .admin-corp-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -755,10 +762,126 @@
 
 .account-result-cta,
 .admin-listing-row > .btn,
+.admin-listing-row > .account-listing-actions,
 .admin-corp-cta,
 .corp-card > .btn {
   flex-shrink: 0;
   justify-self: end;
+}
+
+.account-listing-actions {
+  position: relative;
+  display: inline-flex;
+  justify-self: end;
+}
+
+.account-action-trigger {
+  gap: 6px;
+}
+
+.account-action-trigger .ap-icon {
+  color: var(--muted);
+}
+
+.account-action-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: var(--shadow-md);
+}
+
+.account-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius) - 1px);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-action-item .ap-icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.account-action-item:hover,
+.account-action-item:focus-visible {
+  background: var(--tint);
+  color: var(--ink);
+  outline: none;
+}
+
+.account-action-item:hover .ap-icon,
+.account-action-item:focus-visible .ap-icon {
+  color: var(--ink);
+}
+
+.account-reject-pop {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+.account-reject-pop-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--signal, #b42318);
+  cursor: pointer;
+}
+
+.account-reject-pop-trigger:hover,
+.account-reject-pop-trigger:focus-visible,
+.account-reject-pop-trigger[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--signal, #b42318) 12%, transparent);
+  outline: none;
+}
+
+.account-reject-pop-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: min(280px, 72vw);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--signal, #b42318) 35%, var(--line));
+  border-radius: var(--radius);
+  background: var(--raised);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+}
+
+.account-reject-pop-panel strong {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--signal, #b42318);
+}
+
+.account-reject-pop-panel p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: normal;
 }
 
 @media (max-width: 720px) {
@@ -778,11 +901,31 @@
 
   .account-result-cta,
   .admin-listing-row > .btn,
+  .admin-listing-row > .account-listing-actions,
   .admin-corp-cta,
   .corp-card > .btn {
     grid-column: 1 / -1;
     justify-self: stretch;
     text-align: center;
+  }
+
+  .account-listing-actions {
+    display: block;
+  }
+
+  .account-action-trigger {
+    width: 100%;
+  }
+
+  .account-action-menu {
+    left: 0;
+    right: 0;
+    min-width: 0;
+  }
+
+  .account-reject-pop-panel {
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
@@ -794,27 +937,6 @@
   .admin-detail-grid {
     grid-template-columns: 1fr 280px;
   }
-}
-.account-listing-card {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.account-listing-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 0 4px 8px;
-}
-.account-reject-banner {
-  flex: 1 1 100%;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--signal, #b42318) 12%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--signal, #b42318) 35%, var(--line));
-  font-size: 14px;
-  line-height: 1.45;
 }
 .badge-warn {
   background: color-mix(in srgb, #b54708 18%, var(--surface));

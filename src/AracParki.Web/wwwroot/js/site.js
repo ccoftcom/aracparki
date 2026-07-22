@@ -121,10 +121,18 @@
     if (!adNo) return;
     btn.disabled = true;
     try {
+      const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute("content") || "";
       const res = await fetch(`/ilan/${encodeURIComponent(adNo)}/telefon`, {
         method: "POST",
-        headers: { Accept: "application/json" },
+        headers: {
+          Accept: "application/json",
+          RequestVerificationToken: token,
+        },
       });
+      if (res.status === 400) {
+        toast("İstek doğrulanamadı. Sayfayı yenileyip tekrar deneyin.");
+        return;
+      }
       if (res.status === 429) {
         toast("Çok fazla deneme. Bir dakika sonra tekrar deneyin.");
         return;
@@ -300,6 +308,20 @@
           document.querySelector(".site-header")?.classList.remove("is-search-open");
           this.syncAria();
         });
+      },
+    }));
+
+    // Simple open/close popover (listing actions, reject reason, etc.).
+    Alpine.data("accountPopover", () => ({
+      open: false,
+      get openAria() {
+        return this.open ? "true" : "false";
+      },
+      toggle() {
+        this.open = !this.open;
+      },
+      close() {
+        this.open = false;
       },
     }));
 

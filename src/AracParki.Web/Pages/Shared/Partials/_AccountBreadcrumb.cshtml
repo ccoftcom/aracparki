@@ -1,0 +1,29 @@
+@{
+    var items = ViewData[Breadcrumbs.ViewDataKey] as IReadOnlyList<BreadcrumbItem>;
+    if (items is null || items.Count == 0)
+    {
+        return;
+    }
+}
+<nav class="page-account-kicker" aria-label="Breadcrumb">
+  @for (var i = 0; i < items.Count; i++)
+  {
+    var crumb = items[i];
+    var isLast = i == items.Count - 1;
+    if (i > 0)
+    {
+      <span class="account-kicker-sep" aria-hidden="true">/</span>
+    }
+
+    if (!isLast && !string.IsNullOrWhiteSpace(crumb.Url))
+    {
+      <a class="link-quiet" href="@crumb.Url">@crumb.Name</a>
+    }
+    else
+    {
+      var isMono = crumb.Name.StartsWith('#')
+          || (crumb.Name.Length > 0 && char.IsDigit(crumb.Name[0]));
+      <span class="@(isMono ? "admin-corp-mono" : null)" aria-current="page">@crumb.Name</span>
+    }
+  }
+</nav>

@@ -10,6 +10,7 @@ public sealed class PhoneOtpRepository(IDbConnectionFactory connectionFactory) :
     {
         public required string Phone { get; init; }
         public required string CodeHash { get; init; }
+        public int AttemptCount { get; init; }
     }
 
     public async Task SaveAsync(
@@ -38,8 +39,8 @@ public sealed class PhoneOtpRepository(IDbConnectionFactory connectionFactory) :
             await connection.ExecuteAsync(
                 new CommandDefinition(
                     """
-                    INSERT INTO phone_otp_tokens (account_id, phone, code_hash, expires_at)
-                    VALUES (@AccountId, @Phone, @CodeHash, @ExpiresAt)
+                    INSERT INTO phone_otp_tokens (account_id, phone, code_hash, expires_at, attempt_count)
+                    VALUES (@AccountId, @Phone, @CodeHash, @ExpiresAt, 0)
                     """,
                     new
                     {
@@ -60,7 +61,7 @@ public sealed class PhoneOtpRepository(IDbConnectionFactory connectionFactory) :
         }
     }
 
-    public async Task<(string Phone, string CodeHash)?> GetLatestAsync(
+    public async Task<(string Phone, string CodeHash, int AttemptCount)?> GetLatestAsync(
         long accountId,
         CancellationToken cancellationToken)
     {
@@ -68,7 +69,7 @@ public sealed class PhoneOtpRepository(IDbConnectionFactory connectionFactory) :
         var row = await connection.QuerySingleOrDefaultAsync<OtpRow>(
             new CommandDefinition(
                 """
-                SELECT phone AS Phone, code_hash AS CodeHash
+                SELECT phone AS Phone, code_hash AS CodeHash, attempt_count AS AttemptCount
                 FROM phone_otp_tokens
                 WHERE account_id = @AccountId
                   AND consumed_at IS NULL
@@ -79,7 +80,50 @@ public sealed class PhoneOtpRepository(IDbConnectionFactory connectionFactory) :
                 new { AccountId = accountId },
                 cancellationToken: cancellationToken));
 
-        return row is null ? null : (row.Phone, row.CodeHash);
+        return row is null ? null : (row.Phone, row.CodeHash, row.AttemptCount);
+    }
+
+    public async Task<int> RegisterFailedAttemptAsync(
+        long accountId,
+        int maxAttempts,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var attempts = await connection.ExecuteScalarAsync<int?>(
+                new CommandDefinition(
+                    """
+                    UPDATE phone_otp_tokens
+                    SET attempt_count = attempt_count + 1,
+                        consumed_at = CASE
+                            WHEN attempt_count + 1 >= @MaxAttempts THEN NOW()
+                            ELSE consumed_at
+                        END
+                    WHERE id = (
+                        SELECT id
+                        FROM phone_otp_tokens
+                        WHERE account_id = @AccountId
+                          AND consumed_at IS NULL
+                          AND expires_at > NOW()
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    )
+                    RETURNING attempt_count
+                    """,
+                    new { AccountId = accountId, MaxAttempts = maxAttempts },
+                    transaction: tx,
+                    cancellationToken: cancellationToken));
+
+            await tx.CommitAsync(cancellationToken);
+            return attempts ?? maxAttempts;
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public async Task ConsumeLatestAsync(long accountId, CancellationToken cancellationToken)

@@ -14,15 +14,13 @@
         ? "?"
         : char.ToUpperInvariant(account.DisplayName.Trim()[0]).ToString();
     var taxLabel = account.CompanyType == CompanyType.Sahis ? "TCKN" : "VKN";
+    ViewData[Breadcrumbs.ViewDataKey] = Breadcrumbs.Create(
+        new BreadcrumbItem("Admin", "/admin"),
+        new BreadcrumbItem("Kurumsal", $"/admin/kurumsal?durum={account.Status}"),
+        new BreadcrumbItem($"#{account.Id}"));
 }
 <header class="page-account-head admin-corp-detail-head">
-  <nav class="page-account-kicker" aria-label="Breadcrumb">
-    <a class="link-quiet" href="/admin">Admin</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <a class="link-quiet" href="/admin/kurumsal?durum=@account.Status">Kurumsal</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <span aria-current="page">#@account.Id</span>
-  </nav>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
   <div class="admin-corp-detail-hero">
     <div class="admin-corp-avatar admin-corp-avatar--lg" aria-hidden="true">@initial</div>
     <div>

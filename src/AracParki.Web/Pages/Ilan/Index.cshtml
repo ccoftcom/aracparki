@@ -20,6 +20,12 @@
             ? Array.Empty<string>()
             : new[] { listing.CoverImageUrl };
     var mainImage = images.Count > 0 ? images[0] : "/assets/logo/icon-512.png";
+    var mainDisplay = ListingImageUrlVariants.WithVariant(mainImage, ListingImageVariants.Lg);
+    var mainSrcSet = ListingImageUrlVariants.SrcSet(
+        mainImage,
+        (ListingImageVariants.Md, 768),
+        (ListingImageVariants.Lg, 1280),
+        (ListingImageVariants.Xl, 1920));
     var isPreview = listing.Status != ListingStatus.Published;
     var locationText = $"{listing.City} / {listing.District}" +
         (string.IsNullOrWhiteSpace(listing.Neighborhood) ? "" : $" / {listing.Neighborhood}");
@@ -68,13 +74,15 @@
     <div class="detail-gallery" data-detail-gallery tabindex="0" aria-label="İlan görselleri">
       <div class="gallery-main-wrap">
         <img class="gallery-main"
-             src="@mainImage"
+             src="@mainDisplay"
+             srcset="@mainSrcSet"
+             sizes="(max-width:900px) 100vw, 640px"
              alt="@listing.Title"
              width="900"
              height="900"
              loading="eager"
              data-gallery-main
-             data-gallery-src="@mainImage" />
+             data-gallery-src="@mainDisplay" />
         @if (images.Count > 1)
         {
           <button type="button" class="gallery-hit gallery-hit--prev" data-gallery-prev aria-label="Önceki görsel"></button>
@@ -101,11 +109,15 @@
                     role="listitem"
                     class="@(i == 0 ? "is-active" : null)"
                     data-gallery-thumb
-                    data-src="@images[i]"
+                    data-src="@ListingImageUrlVariants.WithVariant(images[i], ListingImageVariants.Lg)"
                     data-index="@i"
                     aria-label="Görsel @(i + 1)"
                     aria-current="@(i == 0 ? "true" : "false")">
-              <img src="@images[i]" alt="" width="88" height="88" loading="lazy" />
+              <img src="@ListingImageUrlVariants.WithVariant(images[i], ListingImageVariants.Thumb)"
+                   alt="@(listing.Title) — görsel @(i + 1)"
+                   width="88"
+                   height="88"
+                   loading="lazy" />
             </button>
           }
         </div>
@@ -323,7 +335,7 @@
 </main>
 
 @section CrumbBar {
-  <partial name="Shared/Partials/_DetailBreadcrumb" model="Model" />
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="Model.BreadcrumbTrail" />
 }
 
 @section Scripts {

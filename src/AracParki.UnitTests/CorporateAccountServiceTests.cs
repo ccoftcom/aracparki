@@ -1,3 +1,5 @@
+using AracParki.Application.Accounts;
+using AracParki.Application.Accounts.Dtos;
 using AracParki.Application.Catalog;
 using AracParki.Application.Catalog.Dtos;
 using AracParki.Application.Catalog.Services;
@@ -12,7 +14,10 @@ using AracParki.Application.Listings.Validation;
 using AracParki.Application.Media;
 using AracParki.Domain.Corporate;
 using AracParki.Domain.Listings;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 
 namespace AracParki.UnitTests;
 
@@ -59,7 +64,7 @@ public sealed class CorporateAccountServiceTests
         {
             Account = MakeAccount(CorporateStatus.Draft, CompanyType.Sahis)
         };
-        var svc = new CorporateAccountService(store, new FakeDocStorage());
+        var svc = CreateService(store);
 
         var (ok, error) = await svc.SubmitAsync(1, 10, CancellationToken.None);
 
@@ -80,7 +85,7 @@ public sealed class CorporateAccountServiceTests
                 MakeDoc(CorporateDocumentType.ImzaSirkuleri)
             ]
         };
-        var svc = new CorporateAccountService(store, new FakeDocStorage());
+        var svc = CreateService(store);
 
         var (ok, error) = await svc.SubmitAsync(1, 10, CancellationToken.None);
 
@@ -90,13 +95,34 @@ public sealed class CorporateAccountServiceTests
     }
 
     [Fact]
+    public async Task Submit_fails_when_email_unconfirmed()
+    {
+        var store = new FakeCorporateStore
+        {
+            Account = MakeAccount(CorporateStatus.Draft, CompanyType.Sahis),
+            Documents =
+            [
+                MakeDoc(CorporateDocumentType.VergiLevhasi),
+                MakeDoc(CorporateDocumentType.ImzaSirkuleri)
+            ]
+        };
+        var svc = CreateService(store, emailConfirmed: false);
+
+        var (ok, error) = await svc.SubmitAsync(1, 10, CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.Contains("E-posta", error);
+        Assert.False(store.Submitted);
+    }
+
+    [Fact]
     public async Task Approve_and_reject_require_pending_status()
     {
         var store = new FakeCorporateStore
         {
             Account = MakeAccount(CorporateStatus.Pending, CompanyType.Sahis)
         };
-        var svc = new CorporateAccountService(store, new FakeDocStorage());
+        var svc = CreateService(store);
 
         var (okApprove, _) = await svc.ApproveAsync(1, 99, CancellationToken.None);
         Assert.True(okApprove);
@@ -130,7 +156,7 @@ public sealed class CorporateAccountServiceTests
             },
             ApprovedOptionOwnerId = 10
         };
-        var svc = new CorporateAccountService(store, new FakeDocStorage());
+        var svc = CreateService(store);
 
         var own = await svc.GetApprovedOptionAsync(5, 10, CancellationToken.None);
         Assert.NotNull(own);
@@ -225,7 +251,9 @@ public sealed class CorporateAccountServiceTests
     public async Task ListingCommandService_preserves_corporate_account_id_on_create()
     {
         var store = new CapturingListingStore();
-        var catalog = new CatalogService(new EmptyCatalogQuery());
+        var catalog = new CatalogService(
+            new EmptyCatalogQuery(),
+            new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions())));
         var svc = new ListingCommandService(
             store,
             new CreatePublishedListingValidator(
@@ -281,6 +309,25 @@ public sealed class CorporateAccountServiceTests
         34,
         1,
         "Caferağa Mah. Örnek Sk. No:1");
+
+    private static CorporateAccountService CreateService(
+        ICorporateAccountStore store,
+        bool emailConfirmed = true)
+    {
+        var accounts = Substitute.For<IAccountStore>();
+        accounts.FindByIdAsync(Arg.Any<long>(), Arg.Any<CancellationToken>())
+            .Returns(new AccountDto
+            {
+                Id = 10,
+                Email = "user@example.com",
+                PasswordHash = "x",
+                FirstName = "Ada",
+                LastName = "Yılmaz",
+                SecurityStamp = "stamp",
+                EmailConfirmedAt = emailConfirmed ? DateTimeOffset.UtcNow : null
+            });
+        return new CorporateAccountService(store, new FakeDocStorage(), accounts);
+    }
 
     private static CorporateAccountDto MakeAccount(string status, string companyType) => new()
     {
@@ -409,6 +456,9 @@ public sealed class CorporateAccountServiceTests
             Rejected = RejectResult;
             return Task.FromResult(RejectResult);
         }
+
+        public Task SoftDeleteDocumentsByTypeAsync(long corporateAccountId, string docType, CancellationToken cancellationToken)
+            => Task.CompletedTask;
 
         public Task<bool> SoftDeleteDocumentAsync(long documentId, long corporateAccountId, CancellationToken cancellationToken)
             => Task.FromResult(true);

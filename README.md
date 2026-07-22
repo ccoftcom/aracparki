@@ -18,7 +18,7 @@ database/                      Schema + seed (SQL) — applied on app startup
 Repo kökünden (`aracparki.com/`):
 
 ```bash
-# Postgres volume’u silip temiz başlat
+# Postgres + Redis volume’u silip temiz başlat
 docker compose down -v
 docker compose up -d
 
@@ -34,7 +34,10 @@ docker compose up -d
 Yapılandırma: `src/AracParki.Web/appsettings.json` (+ `appsettings.Development.json`).
 
 - Uygulama: https://localhost:7133 (HTTP: http://localhost:5245)  
-- Health: https://localhost:7133/health  
+- Health: https://localhost:7133/health (`postgres` + `redis`)  
+- Redis: `localhost:6380` → container `6379` (docker compose `redis:7-alpine`, AOF + `allkeys-lru`)
+
+Session, catalog/listing cache, auth stamp revalidation ve WhatsApp OTP rate-limit Redis üzerinden çalışır (`ConnectionStrings:Redis`, key prefix `aracparki:`).
 
 Şema/seed dosyaları `database/01`…`07` — uygulama her başlangıçta `schema_migrations` tablosuna bakıp yeni veya içeriği değişmiş script’leri uygular. `Database:MigrateOnStartup` ile kapatılabilir.
 

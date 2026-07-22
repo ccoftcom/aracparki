@@ -3,7 +3,9 @@ namespace AracParki.Application.Accounts;
 public interface IPhoneOtpStore
 {
     Task SaveAsync(long accountId, string phone, string codeHash, DateTimeOffset expiresAt, CancellationToken cancellationToken);
-    Task<(string Phone, string CodeHash)?> GetLatestAsync(long accountId, CancellationToken cancellationToken);
+    Task<(string Phone, string CodeHash, int AttemptCount)?> GetLatestAsync(long accountId, CancellationToken cancellationToken);
+    /// <summary>Increments attempt_count; consumes token when attempts reach <paramref name="maxAttempts"/>.</summary>
+    Task<int> RegisterFailedAttemptAsync(long accountId, int maxAttempts, CancellationToken cancellationToken);
     Task ConsumeLatestAsync(long accountId, CancellationToken cancellationToken);
 }
 

@@ -65,6 +65,15 @@ public sealed class ListingService(
         return listingQuery.GetOwnedForEditAsync(adNo.Trim(), accountId, cancellationToken);
     }
 
+    public Task<int> CountPublishedAsync(CancellationToken cancellationToken)
+        => listingQuery.CountPublishedAsync(cancellationToken);
+
+    public Task<IReadOnlyList<SitemapListingEntry>> ListPublishedForSitemapAsync(
+        int skip,
+        int take,
+        CancellationToken cancellationToken)
+        => listingQuery.ListPublishedForSitemapAsync(Math.Max(0, skip), Math.Clamp(take, 1, 50_000), cancellationToken);
+
     private static ListingSearchQuery Normalize(ListingSearchQuery query)
     {
         var specValues = query.SpecValues

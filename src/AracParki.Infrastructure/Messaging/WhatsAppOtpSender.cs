@@ -2,26 +2,27 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using AracParki.Application.Messaging;
-using Microsoft.Extensions.Caching.Memory;
+using AracParki.Infrastructure.Caching;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 
 namespace AracParki.Infrastructure.Messaging;
 
 /// <summary>
 /// Meta WhatsApp Cloud API sender — Turkish OTP template payload mirrors waponi-api WhatsAppService.
+/// Send rate-limit uses Redis INCR + EXPIRE (fixed window) shared across app instances.
 /// </summary>
 public sealed class WhatsAppOtpSender(
     IHttpClientFactory httpClientFactory,
     IOptions<WhatsAppSettings> options,
-    IMemoryCache memoryCache,
+    IConnectionMultiplexer redis,
     ILogger<WhatsAppOtpSender> logger) : IWhatsAppOtpSender
 {
     public const string HttpClientName = nameof(WhatsAppOtpSender);
-    private const string RateLimitCacheKeyPrefix = "whatsapp-otp-send-";
+    private const string RateLimitKeyPrefix = RedisServiceCollectionExtensions.InstanceName + "whatsapp-otp-send:";
 
     private static readonly JsonSerializerOptions JsonOptions = new();
-
 
     private readonly WhatsAppSettings _settings = options.Value;
 
@@ -47,7 +48,7 @@ public sealed class WhatsAppOtpSender(
             return (false, "WhatsApp için telefon numarası geçersiz.");
         }
 
-        var rateLimitError = CheckOtpRateLimit(toNumber);
+        var rateLimitError = await TryAcquireOtpSendSlotAsync(toNumber);
         if (rateLimitError is not null)
         {
             return (false, rateLimitError);
@@ -70,6 +71,7 @@ public sealed class WhatsAppOtpSender(
             using var response = await client.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                await ReleaseOtpSendSlotAsync(toNumber);
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 logger.LogError(
                     "WhatsApp OTP failed. Status {StatusCode}, To {To}, Template {Template}, Body {Body}",
@@ -80,7 +82,6 @@ public sealed class WhatsAppOtpSender(
                 return (false, $"WhatsApp doğrulama kodu gönderilemedi. ({(int)response.StatusCode})");
             }
 
-            RecordOtpSend(toNumber);
             logger.LogInformation(
                 "WhatsApp OTP sent via {Template} to …{Suffix}",
                 _settings.TurkishTemplateName,
@@ -89,6 +90,7 @@ public sealed class WhatsAppOtpSender(
         }
         catch (Exception ex)
         {
+            await ReleaseOtpSendSlotAsync(toNumber);
             logger.LogError(ex, "WhatsApp OTP send exception");
             return (false, "WhatsApp doğrulama kodu gönderilemedi.");
         }
@@ -171,53 +173,64 @@ public sealed class WhatsAppOtpSender(
         return $"{baseUrl}/{apiVersion}/{_settings.AccountSid.Trim()}/messages";
     }
 
-    private string? CheckOtpRateLimit(string phoneNumber)
+    /// <summary>
+    /// Fixed-window limit via Redis INCR + EXPIRE (atomic, multi-instance safe).
+    /// Slot is reserved before the HTTP call; released on send failure.
+    /// </summary>
+    private async Task<string?> TryAcquireOtpSendSlotAsync(string phoneNumber)
     {
         var maxRequests = Math.Max(1, _settings.OtpRateLimitMaxRequests);
         var window = TimeSpan.FromMinutes(Math.Max(1, _settings.OtpRateLimitWindowMinutes));
-        var cacheKey = RateLimitCacheKeyPrefix + phoneNumber;
+        var key = RateLimitKeyPrefix + phoneNumber;
 
-        if (!memoryCache.TryGetValue(cacheKey, out List<DateTimeOffset>? requests) || requests is null)
+        try
         {
+            var db = redis.GetDatabase();
+            var count = await db.StringIncrementAsync(key);
+            if (count == 1)
+            {
+                await db.KeyExpireAsync(key, window);
+            }
+
+            if (count <= maxRequests)
+            {
+                return null;
+            }
+
+            await db.StringDecrementAsync(key);
+            var ttl = await db.KeyTimeToLiveAsync(key);
+            var retryAfterSeconds = Math.Max(1, (int)Math.Ceiling((ttl ?? window).TotalSeconds));
+
+            logger.LogWarning(
+                "WhatsApp OTP rate limit for …{Suffix}: {Count}/{Max}",
+                phoneNumber[^4..],
+                count - 1,
+                maxRequests);
+
+            return $"Bu numaraya çok fazla kod gönderildi. {retryAfterSeconds} sn sonra tekrar dene.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis OTP rate-limit acquire failed; allowing send");
             return null;
         }
-
-        var cutoff = DateTimeOffset.UtcNow - window;
-        var valid = requests.Where(r => r > cutoff).ToList();
-        if (valid.Count < maxRequests)
-        {
-            return null;
-        }
-
-        var oldest = valid.Min();
-        var retryAfterSeconds = Math.Max(
-            1,
-            (int)Math.Ceiling((oldest + window - DateTimeOffset.UtcNow).TotalSeconds));
-
-        logger.LogWarning(
-            "WhatsApp OTP rate limit for …{Suffix}: {Count}/{Max}",
-            phoneNumber[^4..],
-            valid.Count,
-            maxRequests);
-
-        return $"Bu numaraya çok fazla kod gönderildi. {retryAfterSeconds} sn sonra tekrar dene.";
     }
 
-    private void RecordOtpSend(string phoneNumber)
+    private async Task ReleaseOtpSendSlotAsync(string phoneNumber)
     {
-        var window = TimeSpan.FromMinutes(Math.Max(1, _settings.OtpRateLimitWindowMinutes));
-        var cacheKey = RateLimitCacheKeyPrefix + phoneNumber;
-        var now = DateTimeOffset.UtcNow;
-        var cutoff = now - window;
-
-        if (memoryCache.TryGetValue(cacheKey, out List<DateTimeOffset>? requests) && requests is not null)
+        var key = RateLimitKeyPrefix + phoneNumber;
+        try
         {
-            var valid = requests.Where(r => r > cutoff).ToList();
-            valid.Add(now);
-            memoryCache.Set(cacheKey, valid, window);
-            return;
+            var db = redis.GetDatabase();
+            var value = await db.StringDecrementAsync(key);
+            if (value < 0)
+            {
+                await db.KeyDeleteAsync(key);
+            }
         }
-
-        memoryCache.Set(cacheKey, new List<DateTimeOffset> { now }, window);
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis OTP rate-limit release failed");
+        }
     }
 }

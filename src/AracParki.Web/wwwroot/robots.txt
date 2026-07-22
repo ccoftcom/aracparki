@@ -19,6 +19,8 @@ Disallow: /mesajlarim
 Disallow: /kayitli-aramalar
 Disallow: /bildirimler
 Disallow: /ayarlar
+Disallow: /kurumsal-hesap
+Disallow: /admin
 Disallow: /Error
 Disallow: /health
 Disallow: /api/

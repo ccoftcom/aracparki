@@ -281,6 +281,25 @@ public sealed class CorporateAccountRepository(IDbConnectionFactory connectionFa
         return affected > 0;
     }
 
+    public async Task SoftDeleteDocumentsByTypeAsync(
+        long corporateAccountId,
+        string docType,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        await connection.ExecuteAsync(
+            new CommandDefinition(
+                """
+                UPDATE corporate_documents
+                SET deleted_at = NOW()
+                WHERE corporate_account_id = @CorporateAccountId
+                  AND doc_type = @DocType
+                  AND deleted_at IS NULL
+                """,
+                new { CorporateAccountId = corporateAccountId, DocType = docType },
+                cancellationToken: cancellationToken));
+    }
+
     public async Task<CorporateModerationCountsDto> GetModerationCountsAsync(CancellationToken cancellationToken)
     {
         await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
+using AracParki.Application.Email;
 using AracParki.Application;
 using AracParki.Application.Authorization;
 using AracParki.Application.Catalog.Services;
@@ -32,9 +33,12 @@ try
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        // Reverse proxy (Cloudflare / nginx) sits in front in production.
-        options.KnownIPNetworks.Clear();
-        options.KnownProxies.Clear();
+        // Default: only loopback is trusted. Opt-in TrustAllProxies only behind a known edge proxy.
+        if (builder.Configuration.GetValue("ForwardedHeaders:TrustAllProxies", false))
+        {
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+        }
     });
 
     builder.Services.AddApplication();
@@ -42,7 +46,13 @@ try
     builder.Services.AddRazorPages();
     builder.Services.AddAntiforgery();
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddResponseCompression(options =>
+    {
+        options.EnableForHttps = true;
+    });
     builder.Services.AddSingleton<SiteUrls>();
+    builder.Services.Configure<SeoSettings>(builder.Configuration.GetSection(SeoSettings.SectionName));
+    builder.Services.AddMemoryCache();
     builder.Services.Configure<RequestLocalizationOptions>(options =>
     {
         var supported = new[] { "tr-TR", "en-US", "en-GB", "en" };
@@ -56,13 +66,16 @@ try
             new CookieRequestCultureProvider()
         ];
     });
-    builder.Services.AddDistributedMemoryCache();
+    var cookieSecure = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
     builder.Services.AddSession(options =>
     {
         options.Cookie.Name = "aracparki.session";
         options.Cookie.HttpOnly = true;
         options.Cookie.IsEssential = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = cookieSecure;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.IdleTimeout = TimeSpan.FromHours(4);
     });
 
@@ -77,7 +90,7 @@ try
             options.ExpireTimeSpan = TimeSpan.FromDays(14);
             options.Cookie.Name = "aracparki.auth";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SecurePolicy = cookieSecure;
             options.Cookie.SameSite = SameSiteMode.Lax;
             AuthCookie.ConfigureSecurityStampValidation(options);
         });
@@ -94,12 +107,29 @@ try
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         options.AddPolicy("phone-reveal", httpContext =>
-            RateLimitPartition.GetFixedWindowLimiter(
-                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        {
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var adNo = httpContext.Request.RouteValues.TryGetValue("adNo", out var raw)
+                ? raw?.ToString() ?? ""
+                : "";
+            return RateLimitPartition.GetFixedWindowLimiter(
+                $"{ip}:{adNo}",
                 _ => new FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 5,
                     Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0
+                });
+        });
+        options.AddPolicy("phone-otp-verify", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(15),
                     QueueLimit = 0
                 }));
         options.AddPolicy("auth-sensitive", httpContext =>
@@ -159,9 +189,12 @@ try
 
     var pg = builder.Configuration.GetConnectionString("PostgreSQL")
         ?? throw new InvalidOperationException("Connection string 'PostgreSQL' is missing.");
+    var redis = builder.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Connection string 'Redis' is missing.");
 
     builder.Services.AddHealthChecks()
-        .AddNpgSql(pg, name: "postgres");
+        .AddNpgSql(pg, name: "postgres")
+        .AddRedis(redis, name: "redis");
 
     var app = builder.Build();
     Lucide.Configure(app.Environment);
@@ -182,6 +215,7 @@ try
 
     app.UseSerilogRequestLogging();
     app.UseSecurityHeaders();
+    app.UseResponseCompression();
     app.UseHttpsRedirection();
     var contentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider
     {
@@ -207,12 +241,13 @@ try
     app.UseRouting();
     app.UseRequestLocalization();
     app.UseRateLimiter();
+    app.UseSession();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.UseSession();
     app.UseAntiforgery();
 
     app.MapHealthChecks("/health");
+    app.MapSitemaps();
     app.MapRazorPages();
 
     app.MapPost("/ilan/{adNo}/telefon", async (
@@ -228,8 +263,7 @@ try
 
             return Results.Json(new { phone });
         })
-        .RequireRateLimiting("phone-reveal")
-        .DisableAntiforgery();
+        .RequireRateLimiting("phone-reveal");
 
     var locations = app.MapGroup("/api/locations");
     locations.MapGet("/cities", async (CatalogService catalog, CancellationToken ct) =>

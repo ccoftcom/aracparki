@@ -27,15 +27,13 @@
     var isPending = listing.Status == ListingStatus.PendingReview;
     var isRejected = listing.Status == ListingStatus.Rejected;
     var isPublished = listing.Status == ListingStatus.Published;
+    ViewData[Breadcrumbs.ViewDataKey] = Breadcrumbs.Create(
+        new BreadcrumbItem("Admin", "/admin"),
+        new BreadcrumbItem("İlanlar", $"/admin/ilanlar?durum={listing.Status}"),
+        new BreadcrumbItem(listing.AdNo));
 }
 <header class="page-account-head admin-mod-head">
-  <nav class="page-account-kicker" aria-label="Breadcrumb">
-    <a class="link-quiet" href="/admin">Admin</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <a class="link-quiet" href="/admin/ilanlar?durum=@listing.Status">İlanlar</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <span class="admin-corp-mono" aria-current="page">@listing.AdNo</span>
-  </nav>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
   <div class="admin-mod-hero">
     <div class="admin-mod-hero-text">
       <div class="admin-corp-title-row">

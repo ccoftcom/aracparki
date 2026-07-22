@@ -5,8 +5,16 @@
     Layout = "Shared/_AccountLayout";
 }
 <header class="page-account-head">
-  <h1>İlanlarım</h1>
-  <p class="page-account-lead">Yayındaki, incelemedeki ve reddedilen ilanların</p>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
+  <div class="page-account-title-row">
+    <div>
+      <h1>İlanlarım</h1>
+      <p class="page-account-lead">Yayındaki, incelemedeki ve reddedilen ilanların</p>
+    </div>
+    <div class="page-account-actions">
+      <a class="btn btn-machine btn-sm" href="/ilan-ver">Ücretsiz İlan Ver</a>
+    </div>
+  </div>
 </header>
 
 @if (Model.Items.Count == 0)
@@ -21,34 +29,97 @@
 }
 else
 {
-  <div class="account-listings">
+  <div class="admin-listing-list">
     @foreach (var item in Model.Items)
     {
-      <article class="account-listing-card">
-        <partial name="Shared/Partials/_ClassifiedRow" model="item" />
-        <div class="account-listing-status">
-          <span class="@ListingStatus.BadgeClass(item.Status)">@ListingStatus.Label(item.Status)</span>
-          @if (item.Status == ListingStatus.Rejected && !string.IsNullOrWhiteSpace(item.RejectionReason))
-          {
-            <div class="account-reject-banner" role="status">
-              <strong>Red notu:</strong> @item.RejectionReason
-            </div>
-          }
-          @if (item.Status is ListingStatus.Rejected or ListingStatus.PendingReview or ListingStatus.Published)
-          {
-            <a class="btn btn-ghost btn-sm" href="/ilan-ver?duzenle=@item.AdNo">
-              @(item.Status == ListingStatus.Published ? "Düzenle (yeniden incelemeye gider)" : "Düzenle ve tekrar gönder")
-            </a>
-            @if (item.Status is ListingStatus.PendingReview or ListingStatus.Rejected)
+      var canEdit = ListingStatus.IsOwnerEditable(item.Status);
+      var canPreview = item.Status is ListingStatus.PendingReview or ListingStatus.Rejected;
+      var isPublished = item.Status == ListingStatus.Published;
+      var isRejected = item.Status == ListingStatus.Rejected;
+      var hasRejectReason = isRejected && !string.IsNullOrWhiteSpace(item.RejectionReason);
+      var detailHref = $"/ilan/{item.AdNo}";
+      var editHref = $"/ilan-ver?duzenle={item.AdNo}";
+
+      <article class="admin-listing-row">
+        <a class="admin-listing-thumb" href="@detailHref">
+          <img src="@item.CoverImageUrl" alt="" width="120" height="90" loading="lazy" />
+        </a>
+        <div class="admin-listing-body">
+          <h2><a href="@detailHref">@item.Title</a></h2>
+          <div class="admin-listing-meta">
+            <span class="@ListingStatus.BadgeClass(item.Status)">@ListingStatus.Label(item.Status)</span>
+            @if (hasRejectReason)
             {
-              <a class="btn btn-ghost btn-sm" href="/ilan/@item.AdNo">Önizleme</a>
+              <span class="account-reject-pop"
+                    x-data="accountPopover"
+                    @@keydown.escape.window="close"
+                    @@click.outside="close">
+                <button type="button"
+                        class="account-reject-pop-trigger"
+                        @@click="toggle"
+                        :aria-expanded="openAria"
+                        aria-haspopup="dialog"
+                        aria-label="Red nedenini göster">
+                  <ap-icon name="circle-alert" size="14" class="ap-icon" aria-hidden="true" />
+                </button>
+                <div class="account-reject-pop-panel"
+                     role="dialog"
+                     aria-label="Red nedeni"
+                     x-show="open"
+                     x-cloak
+                     x-transition.opacity.duration.120ms>
+                  <strong>Red nedeni</strong>
+                  <p>@item.RejectionReason</p>
+                </div>
+              </span>
             }
-          }
-          @if (item.Status == ListingStatus.Published)
-          {
-            <a class="btn btn-ghost btn-sm" href="/ilan/@item.AdNo">İlanı görüntüle</a>
-          }
+            <span>· @item.AdNo · @item.City@(string.IsNullOrWhiteSpace(item.District) ? "" : $" / {item.District}")</span>
+          </div>
         </div>
+        @if (canEdit || canPreview || isPublished)
+        {
+          <div class="account-listing-actions"
+               x-data="accountPopover"
+               @@keydown.escape.window="close"
+               @@click.outside="close">
+            <button type="button"
+                    class="btn btn-ghost btn-sm account-action-trigger"
+                    @@click="toggle"
+                    :aria-expanded="openAria"
+                    aria-haspopup="menu">
+              <span>İşlemler</span>
+              <ap-icon name="chevron-down" size="14" class="ap-icon" aria-hidden="true" />
+            </button>
+            <div class="account-action-menu"
+                 role="menu"
+                 aria-label="İlan işlemleri"
+                 x-show="open"
+                 x-cloak
+                 x-transition.opacity.duration.120ms>
+              @if (canEdit)
+              {
+                <a class="account-action-item" role="menuitem" href="@editHref" @@click="close">
+                  <ap-icon name="settings" size="14" class="ap-icon" aria-hidden="true" />
+                  <span>@(isPublished ? "Düzenle" : "Düzenle ve tekrar gönder")</span>
+                </a>
+              }
+              @if (canPreview)
+              {
+                <a class="account-action-item" role="menuitem" href="@detailHref" @@click="close">
+                  <ap-icon name="eye" size="14" class="ap-icon" aria-hidden="true" />
+                  <span>Önizleme</span>
+                </a>
+              }
+              @if (isPublished)
+              {
+                <a class="account-action-item" role="menuitem" href="@detailHref" @@click="close">
+                  <ap-icon name="eye" size="14" class="ap-icon" aria-hidden="true" />
+                  <span>İlanı görüntüle</span>
+                </a>
+              }
+            </div>
+          </div>
+        }
       </article>
     }
   </div>

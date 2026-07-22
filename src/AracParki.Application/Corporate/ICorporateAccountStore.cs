@@ -31,6 +31,7 @@ public interface ICorporateAccountStore
     Task<IReadOnlyList<CorporateDocumentDto>> ListDocumentsAsync(long corporateAccountId, CancellationToken cancellationToken);
     Task<CorporateDocumentDto?> GetDocumentAsync(long documentId, CancellationToken cancellationToken);
     Task<bool> SoftDeleteDocumentAsync(long documentId, long corporateAccountId, CancellationToken cancellationToken);
+    Task SoftDeleteDocumentsByTypeAsync(long corporateAccountId, string docType, CancellationToken cancellationToken);
 
     Task<CorporateModerationCountsDto> GetModerationCountsAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<CorporateAccountDto>> ListForModerationAsync(string status, int take, CancellationToken cancellationToken);

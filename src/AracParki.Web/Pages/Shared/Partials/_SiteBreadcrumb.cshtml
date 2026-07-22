@@ -1,0 +1,39 @@
+@model IReadOnlyList<BreadcrumbItem>
+@{
+    var items = Model ?? [];
+    if (items.Count == 0)
+    {
+        return;
+    }
+
+    var crumbSep = $"<span class=\"bc-sep\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-sep-icon", 12)}</span>";
+}
+<div id="site-crumb-bar" class="list-crumb-bar">
+  <div class="list-crumb-inner">
+    <nav class="list-crumb" aria-label="Sayfa yolu">
+      <ol class="breadcrumb">
+        @for (var i = 0; i < items.Count; i++)
+        {
+          var crumb = items[i];
+          var isLast = i == items.Count - 1;
+          <li>
+            @if (isLast)
+            {
+              <span class="bc-current bc-truncate" title="@crumb.Name" aria-current="page">@crumb.Name</span>
+            }
+            else if (!string.IsNullOrWhiteSpace(crumb.Url))
+            {
+              <a class="@(crumb.Name.Length > 28 ? "bc-truncate" : null)" href="@crumb.Url" title="@crumb.Name">@crumb.Name</a>
+              @Html.Raw(crumbSep)
+            }
+            else
+            {
+              <span>@crumb.Name</span>
+              @Html.Raw(crumbSep)
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+  </div>
+</div>

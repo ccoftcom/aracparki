@@ -10,13 +10,12 @@
     var docsByType = Model.Documents
         .GroupBy(d => d.DocType)
         .ToDictionary(g => g.Key, g => g.OrderByDescending(d => d.UploadedAt).First());
+    ViewData[Breadcrumbs.ViewDataKey] = Breadcrumbs.Create(
+        new BreadcrumbItem("Kurumsal hesaplar", "/kurumsal-hesap"),
+        new BreadcrumbItem(isNew ? "Yeni" : "Düzenle"));
 }
 <header class="page-account-head">
-  <nav class="page-account-kicker" aria-label="Breadcrumb">
-    <a class="link-quiet" href="/kurumsal-hesap">Kurumsal hesaplar</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <span aria-current="page">@(isNew ? "Yeni" : "Düzenle")</span>
-  </nav>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
   <div class="page-account-title-row">
     <div>
       <h1>@(isNew ? "Yeni kurumsal hesap" : account!.DisplayName)</h1>

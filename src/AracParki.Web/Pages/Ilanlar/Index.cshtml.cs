@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace AracParki.Web.Pages.Ilanlar;
 
-public sealed class IndexModel(ListingService listingService, CatalogService catalogService) : PageModel
+public sealed class IndexModel(ListingService listingService, CatalogService catalogService, SiteUrls siteUrls) : PageModel
 {
     public ListingSearchQuery Filter { get; private set; } = new();
     public ListingSearchResult Result { get; private set; } = new()
@@ -111,18 +111,69 @@ public sealed class IndexModel(ListingService listingService, CatalogService cat
         ActiveFilters = BuildActiveFilters();
         ClearAllUrl = BuildClearAllUrl();
 
-        var categoryName = Categories.FirstOrDefault(c => c.Id == Filter.CategoryId)?.Name ?? Filter.Category;
-        var heading = string.IsNullOrWhiteSpace(categoryName)
-            ? "İş Makinesi İlanları"
-            : $"{categoryName} İlanları";
-
         ViewData["PageKey"] = "list";
-        ViewData["Title"] = $"{categoryName ?? "İş Makinesi"} İlanları | Araç Parkı";
-        ViewData["Description"] =
-            $"{heading} — satılık ve kiralık iş makinelerini Araç Parkı’nda karşılaştır.";
+        var categoryName = Categories.FirstOrDefault(c => c.Id == Filter.CategoryId)?.Name ?? Filter.Category;
+        var brandName = Brands.FirstOrDefault(b => b.Id == Filter.BrandId)?.Name;
+        var cityName = Filter.CityIds.Count == 1
+            ? Cities.FirstOrDefault(c => c.Id == Filter.CityIds[0])?.Name
+            : Filter.City;
+
+        var (seoTitle, seoDescription, heading) = ListingSeo.BuildListMeta(
+            Filter,
+            categoryName,
+            brandName,
+            cityName,
+            Result.TotalCount);
+
+        ViewData["Title"] = seoTitle;
+        ViewData["Description"] = seoDescription;
         ViewData["SearchQuery"] = Filter.Query;
         ViewData["ListHeading"] = heading;
-        ViewData["CanonicalIncludeQuery"] = true;
+        ViewData["CanonicalIncludeQuery"] = false;
+        ViewData["CanonicalUrl"] = siteUrls.Absolute(ListingSeo.BuildCanonicalListPath(Filter));
+        ViewData["Robots"] = ListingSeo.IsIndexableList(Filter)
+            ? ListingSeo.IndexRobots
+            : ListingSeo.NoIndexRobots;
+        Breadcrumbs.Set(ViewData, siteUrls, BuildBreadcrumbTrail());
+    }
+
+    /// <summary>Linear trail matching <c>_ListBreadcrumb</c> (without hover menus).</summary>
+    public IReadOnlyList<BreadcrumbItem> BuildBreadcrumbTrail()
+    {
+        var items = new List<BreadcrumbItem>
+        {
+            new("Anasayfa", "/")
+        };
+
+        var groupLabel = RootNavLabel;
+        var showGroup = !string.Equals(groupLabel, "İş Makineleri", StringComparison.Ordinal);
+        var rootUrl = RootNavUrl();
+        var hasIntent = Filter.Intent is not ListingIntent.All;
+        var hasCategory = Filter.CategoryId is > 0 && !string.IsNullOrWhiteSpace(CurrentCategoryName);
+        var hasBrand = Filter.BrandId is > 0 && !string.IsNullOrWhiteSpace(CurrentBrandName);
+
+        items.Add(new BreadcrumbItem(groupLabel, rootUrl));
+        if (showGroup)
+        {
+            items.Add(new BreadcrumbItem("İş Makineleri", rootUrl));
+        }
+
+        if (hasIntent)
+        {
+            items.Add(new BreadcrumbItem(ListingIntent.Label(Filter.Intent), IntentNavUrl(Filter.Intent)));
+        }
+
+        if (hasCategory)
+        {
+            items.Add(new BreadcrumbItem(CurrentCategoryName!, CategoryNavUrl(Filter.CategoryId!.Value)));
+        }
+
+        if (hasBrand)
+        {
+            items.Add(new BreadcrumbItem(CurrentBrandName!, BrandNavUrl(Filter.BrandId!.Value)));
+        }
+
+        return items;
     }
 
     public string SpecValue(string key)

@@ -13,6 +13,10 @@ public sealed class AccountService(
 {
     private readonly PasswordHasher<string> _hasher = new();
 
+    /// <summary>Dummy hash so missing-user login still runs PBKDF2 (timing parity).</summary>
+    private static readonly string DummyPasswordHash =
+        new PasswordHasher<string>().HashPassword("__timing__", "not-a-real-password-value");
+
     /// <summary>
     /// Creates account and issues verification token.
     /// <paramref name="VerificationEmailSent"/> is false when the account exists but SMTP failed.
@@ -78,13 +82,9 @@ public sealed class AccountService(
     {
         email = NormalizeEmail(email);
         var account = await store.FindByEmailAsync(email, cancellationToken);
-        if (account is null)
-        {
-            return (false, "E-posta veya şifre hatalı.", null);
-        }
-
-        var result = _hasher.VerifyHashedPassword(email, account.PasswordHash, password);
-        if (result == PasswordVerificationResult.Failed)
+        var hash = account?.PasswordHash ?? DummyPasswordHash;
+        var result = _hasher.VerifyHashedPassword(email, hash, password);
+        if (account is null || result == PasswordVerificationResult.Failed)
         {
             return (false, "E-posta veya şifre hatalı.", null);
         }

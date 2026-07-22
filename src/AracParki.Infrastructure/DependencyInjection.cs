@@ -7,6 +7,7 @@ using AracParki.Application.Media;
 using AracParki.Application.Messaging;
 using AracParki.Application.Corporate;
 using AracParki.Infrastructure.Accounts;
+using AracParki.Infrastructure.Caching;
 using AracParki.Infrastructure.Catalog;
 using AracParki.Infrastructure.Corporate;
 using AracParki.Infrastructure.Email;
@@ -27,7 +28,7 @@ public static class DependencyInjection
         services.Configure<WhatsAppSettings>(configuration.GetSection(WhatsAppSettings.SectionName));
         services.Configure<CloudflareMediaSettings>(configuration.GetSection(CloudflareMediaSettings.SectionName));
 
-        services.AddMemoryCache();
+        services.AddAracParkiRedis(configuration);
         services.AddHttpClient(WhatsAppOtpSender.HttpClientName);
 
         var media = configuration.GetSection(CloudflareMediaSettings.SectionName).Get<CloudflareMediaSettings>()

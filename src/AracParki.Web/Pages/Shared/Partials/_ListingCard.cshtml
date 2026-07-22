@@ -1,3 +1,4 @@
+@using AracParki.Application.Listings
 @using AracParki.Application.Listings.Dtos
 @model ListingCardDto
 @{
@@ -5,12 +6,24 @@
     var badgeText = ListingIntent.Label(Model.PrimaryIntent);
     var sellerLabel = SellerType.Label(Model.SellerType);
     var href = ListingRoutes.Detail(Model.AdNo);
+    var imgSrc = ListingImageUrlVariants.WithVariant(Model.CoverImageUrl, ListingImageVariants.Card);
+    var imgSrcSet = ListingImageUrlVariants.SrcSet(
+        Model.CoverImageUrl,
+        (ListingImageVariants.Thumb, 160),
+        (ListingImageVariants.Card, 480),
+        (ListingImageVariants.Md, 768));
 }
 <article class="listing-card" data-id="@Model.Id">
   <a class="listing-card-link" href="@href">
     <div class="listing-media">
       <span class="@badgeClass">@badgeText</span>
-      <img src="@Model.CoverImageUrl" alt="@Model.Title" loading="lazy" width="900" height="620" />
+      <img src="@imgSrc"
+           srcset="@imgSrcSet"
+           sizes="(max-width:720px) 90vw, 320px"
+           alt="@Model.Title"
+           loading="lazy"
+           width="900"
+           height="620" />
     </div>
     <div class="listing-body">
       <h3>@Model.Title</h3>

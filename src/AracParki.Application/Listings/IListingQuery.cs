@@ -15,4 +15,11 @@ public interface IListingQuery
     Task<IReadOnlyList<ListingCardDto>> GetByAccountIdAsync(long accountId, int take, CancellationToken cancellationToken);
 
     Task<ListingEditDto?> GetOwnedForEditAsync(string adNo, long accountId, CancellationToken cancellationToken);
+
+    Task<int> CountPublishedAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<SitemapListingEntry>> ListPublishedForSitemapAsync(
+        int skip,
+        int take,
+        CancellationToken cancellationToken);
 }

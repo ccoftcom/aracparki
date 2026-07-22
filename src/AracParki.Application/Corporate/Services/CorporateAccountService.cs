@@ -1,4 +1,6 @@
+using AracParki.Application.Accounts;
 using AracParki.Application.Accounts.Services;
+using AracParki.Application.Common;
 using AracParki.Application.Corporate.Dtos;
 using AracParki.Domain.Corporate;
 
@@ -6,7 +8,8 @@ namespace AracParki.Application.Corporate.Services;
 
 public sealed class CorporateAccountService(
     ICorporateAccountStore store,
-    ICorporateDocumentStorage documentStorage)
+    ICorporateDocumentStorage documentStorage,
+    IAccountStore accounts)
 {
     public const int RejectionReasonMaxLength = 1000;
     public const long MaxDocumentBytes = 10 * 1024 * 1024;
@@ -83,6 +86,17 @@ public sealed class CorporateAccountService(
     /// <summary>Zorunlu evraklar tamamsa draft/rejected → pending.</summary>
     public async Task<(bool Ok, string? Error)> SubmitAsync(long id, long accountId, CancellationToken cancellationToken)
     {
+        var account = await accounts.FindByIdAsync(accountId, cancellationToken);
+        if (account is null)
+        {
+            return (false, "Hesap bulunamadı.");
+        }
+
+        if (!account.EmailConfirmed)
+        {
+            return (false, "E-posta adresini doğrulamadan kurumsal başvuru gönderilemez.");
+        }
+
         var current = await GetOwnedAsync(id, accountId, cancellationToken);
         if (current is null)
         {
@@ -141,14 +155,32 @@ public sealed class CorporateAccountService(
             return (false, "Evrak türü geçersiz.");
         }
 
-        if (!AllowedDocumentTypes.ContainsKey(contentType))
+        if (byteSize is <= 0 or > MaxDocumentBytes)
+        {
+            return (false, "Dosya boyutu en fazla 10 MB olabilir.");
+        }
+
+        var (sigOk, detectedType, sigError) =
+            await FileSignatures.DetectDocumentAsync(content, cancellationToken);
+        if (!sigOk || string.IsNullOrWhiteSpace(detectedType))
+        {
+            return (false, sigError ?? "Dosya içeriği doğrulanamadı.");
+        }
+
+        if (!AllowedDocumentTypes.ContainsKey(detectedType))
         {
             return (false, "Yalnızca PDF, JPG veya PNG yükleyebilirsin.");
         }
 
-        if (byteSize is <= 0 or > MaxDocumentBytes)
+        contentType = detectedType;
+
+        if (content.CanSeek)
         {
-            return (false, "Dosya boyutu en fazla 10 MB olabilir.");
+            content.Position = 0;
+        }
+        else
+        {
+            return (false, "Dosya okunamadı. Tekrar dene.");
         }
 
         var storageKey = await documentStorage.SaveAsync(
@@ -159,11 +191,7 @@ public sealed class CorporateAccountService(
             cancellationToken);
 
         // Aynı türdeki eski evrak pasife alınır — en güncel olan geçerli.
-        var existingDocs = await store.ListDocumentsAsync(corporateAccountId, cancellationToken);
-        foreach (var old in existingDocs.Where(d => d.DocType == docType))
-        {
-            await store.SoftDeleteDocumentAsync(old.Id, corporateAccountId, cancellationToken);
-        }
+        await store.SoftDeleteDocumentsByTypeAsync(corporateAccountId, docType, cancellationToken);
 
         await store.AddDocumentAsync(
             corporateAccountId,

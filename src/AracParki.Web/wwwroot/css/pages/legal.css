@@ -1,6 +1,6 @@
 /* —— Legal / static content pages —— */
 .legal-page {
-  padding: var(--space-4) 0 var(--space-6);
+  padding: var(--space-2) 0 var(--space-6);
   background:
     linear-gradient(180deg, var(--tint) 0%, transparent 180px),
     var(--surface);

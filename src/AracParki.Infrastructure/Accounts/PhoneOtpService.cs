@@ -18,6 +18,7 @@ public sealed class PhoneOtpService(
     ILogger<PhoneOtpService> logger) : IPhoneOtpService
 {
     private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(10);
+    public const int MaxVerifyAttempts = 5;
 
     public async Task<(bool Ok, string? Error, string? DevCode)> SendAsync(
         long accountId,
@@ -61,13 +62,11 @@ public sealed class PhoneOtpService(
             normalized[^4..],
             skipWhatsApp ? "dev" : "whatsapp");
 
-        var devCode = environment.IsDevelopment() ? code : null;
-        if (devCode is not null)
-        {
-            logger.LogWarning("DEV phone OTP code for account {AccountId}: {Code}", accountId, devCode);
-        }
-
-        return (true, null, devCode);
+        // Never log the code. Only expose to UI when explicitly enabled in Development.
+        var exposeDevCode = environment.IsDevelopment()
+                            && settings.ExposeDevOtpCode
+                            && skipWhatsApp;
+        return (true, null, exposeDevCode ? code : null);
     }
 
     public async Task<(bool Ok, string? Error)> VerifyAsync(
@@ -93,10 +92,22 @@ public sealed class PhoneOtpService(
             return (false, "Önce doğrulama kodu iste.");
         }
 
+        if (latest.Value.AttemptCount >= MaxVerifyAttempts)
+        {
+            await otpStore.ConsumeLatestAsync(accountId, cancellationToken);
+            return (false, "Çok fazla hatalı deneme. Yeni kod iste.");
+        }
+
         if (!string.Equals(latest.Value.Phone, normalized, StringComparison.Ordinal)
             || !FixedTimeEquals(latest.Value.CodeHash, Hash(code.Trim())))
         {
-            return (false, "Doğrulama kodu hatalı veya süresi dolmuş.");
+            var attempts = await otpStore.RegisterFailedAttemptAsync(
+                accountId,
+                MaxVerifyAttempts,
+                cancellationToken);
+            return attempts >= MaxVerifyAttempts
+                ? (false, "Çok fazla hatalı deneme. Yeni kod iste.")
+                : (false, "Doğrulama kodu hatalı veya süresi dolmuş.");
         }
 
         await otpStore.ConsumeLatestAsync(accountId, cancellationToken);

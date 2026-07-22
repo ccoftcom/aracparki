@@ -76,7 +76,7 @@ WHERE l.status = 'published'
         OR l.title ILIKE ('%' || @Query || '%')
         OR l.ad_no ILIKE ('%' || @Query || '%')
         OR l.model_name ILIKE ('%' || @Query || '%')
-        OR COALESCE(l.serial_no, '') ILIKE ('%' || @Query || '%')
+        OR (l.serial_no IS NOT NULL AND l.serial_no ILIKE ('%' || @Query || '%'))
         OR b.name ILIKE ('%' || @Query || '%')
       )
 ORDER BY l.hours ASC, l.id ASC

@@ -4,6 +4,7 @@ using AracParki.Application.Accounts;
 using AracParki.Application.Accounts.Services;
 using AracParki.Application.Catalog.Dtos;
 using AracParki.Application.Catalog.Services;
+using AracParki.Application.Common;
 using AracParki.Application.Corporate.Dtos;
 using AracParki.Application.Corporate.Services;
 using AracParki.Application.Listings;
@@ -249,7 +250,7 @@ public sealed class IndexModel(
         });
     }
 
-    [EnableRateLimiting("phone-otp")]
+    [EnableRateLimiting("phone-otp-verify")]
     public async Task<IActionResult> OnPostVerifyPhoneOtpAsync(
         string? phone,
         string? otpCode,
@@ -992,11 +993,6 @@ public sealed class IndexModel(
             return "Görsel en fazla 10 MB olabilir.";
         }
 
-        if (!ListingImageUrl.IsAllowedContentType(file.ContentType))
-        {
-            return "Yalnızca JPEG, PNG, WebP veya HEIC yükleyebilirsin.";
-        }
-
         if (Draft.ImageUrls.Count >= ListingImageUrl.MaxCount)
         {
             return $"En fazla {ListingImageUrl.MaxCount} görsel ekleyebilirsin.";
@@ -1004,11 +1000,24 @@ public sealed class IndexModel(
 
         try
         {
+            string detectedType;
+            await using (var probe = file.OpenReadStream())
+            {
+                var (sigOk, type, sigError) =
+                    await FileSignatures.DetectImageAsync(probe, cancellationToken);
+                if (!sigOk || string.IsNullOrWhiteSpace(type))
+                {
+                    return sigError ?? "Dosya geçerli bir görsel değil.";
+                }
+
+                detectedType = type;
+            }
+
             await using var stream = file.OpenReadStream();
             var saved = await imageStorage.SaveAsync(
                 accountId,
                 stream,
-                file.ContentType,
+                detectedType,
                 file.FileName,
                 cancellationToken);
             Draft.ImageUrls.Add(saved.DeliveryUrl);
@@ -1063,6 +1072,14 @@ public sealed class IndexModel(
         if (account is null)
         {
             return Challenge();
+        }
+
+        if (!account.EmailConfirmed)
+        {
+            return await FailAsync(
+                5,
+                "E-posta adresini doğrulamadan ilan yayınlanamaz. Gelen kutundaki bağlantıyı aç.",
+                cancellationToken);
         }
 
         var listingPhone = AccountService.NormalizePhone(Draft.Phone)

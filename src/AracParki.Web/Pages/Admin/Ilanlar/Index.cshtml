@@ -3,13 +3,12 @@
 @using AracParki.Domain.Listings
 @{
     Layout = "Shared/_AccountLayout";
+    ViewData[Breadcrumbs.ViewDataKey] = Breadcrumbs.Create(
+        new BreadcrumbItem("Admin", "/admin"),
+        new BreadcrumbItem("İlanlar"));
 }
 <header class="page-account-head">
-  <nav class="page-account-kicker" aria-label="Breadcrumb">
-    <a class="link-quiet" href="/admin">Admin</a>
-    <span class="account-kicker-sep" aria-hidden="true">/</span>
-    <span aria-current="page">İlanlar</span>
-  </nav>
+  <partial name="Shared/Partials/_AccountBreadcrumb" />
   <div class="page-account-title-row">
     <div>
       <h1>İlan moderasyonu</h1>

@@ -1,23 +1,34 @@
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using AracParki.Application.Abstractions;
+using AracParki.Application.Common;
 using AracParki.Application.Listings;
 using AracParki.Application.Listings.Dtos;
 using AracParki.Application.Listings.Queries;
 using AracParki.Domain.Listings;
 using Dapper;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace AracParki.Infrastructure.Listings;
 
-public sealed class ListingRepository(IDbConnectionFactory connectionFactory, ISqlQueryLoader sql)
-    : IListingQuery
+public sealed class ListingRepository(
+    IDbConnectionFactory connectionFactory,
+    ISqlQueryLoader sql,
+    IDistributedCache cache) : IListingQuery
 {
+    private static readonly TimeSpan CountCacheTtl = TimeSpan.FromSeconds(30);
+    private const int MaxOffsetRows = 5_000;
+
     public async Task<ListingSearchResult> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken)
     {
         var parameters = BuildFilter(query);
         var useKeyset = query is { Sort: ListingSort.Newest, CursorListedAt: not null, CursorId: not null };
 
+        var skip = useKeyset ? 0 : Math.Min((query.Page - 1) * query.PageSize, MaxOffsetRows);
         parameters.Add("Take", query.PageSize);
-        parameters.Add("Skip", useKeyset ? 0 : (query.Page - 1) * query.PageSize);
+        parameters.Add("Skip", skip);
         parameters.Add("CursorListedAt", query.CursorListedAt, DbType.DateTimeOffset);
         parameters.Add("CursorId", query.CursorId, DbType.Int64);
 
@@ -28,8 +39,19 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
         var items = (await connection.QueryAsync<ListingCardDto>(
             new CommandDefinition(sql.Get(sqlPath), parameters, cancellationToken: cancellationToken))).AsList();
 
-        var total = await connection.ExecuteScalarAsync<int>(
-            new CommandDefinition(sql.Get("Listings/CountSearch.sql"), parameters, cancellationToken: cancellationToken));
+        var countKey = "listings:count:" + FilterCacheKey(query);
+        var cachedTotal = await cache.GetJsonAsync<int?>(countKey, cancellationToken);
+        int total;
+        if (cachedTotal is int hit)
+        {
+            total = hit;
+        }
+        else
+        {
+            total = await connection.ExecuteScalarAsync<int>(
+                new CommandDefinition(sql.Get("Listings/CountSearch.sql"), parameters, cancellationToken: cancellationToken));
+            await cache.SetJsonAsync(countKey, total, CountCacheTtl, cancellationToken);
+        }
 
         var last = items.Count > 0 ? items[^1] : null;
 
@@ -151,6 +173,27 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
         };
     }
 
+    public async Task<int> CountPublishedAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<int>(
+            new CommandDefinition(sql.Get("Listings/CountPublished.sql"), cancellationToken: cancellationToken));
+    }
+
+    public async Task<IReadOnlyList<SitemapListingEntry>> ListPublishedForSitemapAsync(
+        int skip,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var items = await connection.QueryAsync<SitemapListingEntry>(
+            new CommandDefinition(
+                sql.Get("Listings/SitemapPublished.sql"),
+                new { Skip = Math.Max(0, skip), Take = Math.Clamp(take, 1, 50_000) },
+                cancellationToken: cancellationToken));
+        return items.AsList();
+    }
+
     public async Task<ListingDetailDto?> GetByAdNoAsync(
         string adNo,
         ListingAccessContext access,
@@ -254,6 +297,44 @@ public sealed class ListingRepository(IDbConnectionFactory connectionFactory, IS
         ListingSort.HoursAsc => "Listings/SearchHoursAsc.sql",
         _ => "Listings/SearchNewest.sql"
     };
+
+    private static string FilterCacheKey(ListingSearchQuery query)
+    {
+        var payload = JsonSerializer.Serialize(new
+        {
+            query.Intent,
+            query.CategoryId,
+            query.Category,
+            query.BrandId,
+            query.ModelId,
+            query.CityIds,
+            query.City,
+            query.DistrictIds,
+            query.Condition,
+            query.SellerType,
+            query.YearMin,
+            query.YearMax,
+            query.HoursMin,
+            query.HoursMax,
+            query.WeightMin,
+            query.WeightMax,
+            query.PriceMin,
+            query.PriceMax,
+            query.HorsepowerMin,
+            query.HorsepowerMax,
+            query.CapacityKgMin,
+            query.CapacityKgMax,
+            query.IncludesOperator,
+            query.PriceUnit,
+            query.VerifiedOnly,
+            query.AttachmentIds,
+            query.Query,
+            query.SpecsFilterJson,
+            query.SpecMinJson
+        });
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash.AsSpan(0, 16));
+    }
 
     private static DynamicParameters BuildFilter(ListingSearchQuery query)
     {

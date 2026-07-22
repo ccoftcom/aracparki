@@ -1,13 +1,21 @@
 @page "/gizlilik"
+@inject SiteUrls SiteUrls
 @{
     ViewData["PageKey"] = "legal";
     ViewData["Title"] = "Gizlilik Bildirimi | Araç Parkı";
     ViewData["Description"] = "Araç Parkı gizlilik bildirimi.";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Gizlilik bildirimi", "/gizlilik"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
 }
 
 <main class="legal-page" id="main">
   <article class="legal-article container">
-    <p class="legal-eyebrow">Yasal</p>
     <h1>Gizlilik bildirimi</h1>
     <p class="legal-updated">Son güncelleme: 19 Temmuz 2026</p>
 

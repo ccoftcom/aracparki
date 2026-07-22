@@ -1,13 +1,21 @@
 @page "/guvenli-alisveris"
+@inject SiteUrls SiteUrls
 @{
     ViewData["PageKey"] = "legal";
     ViewData["Title"] = "Güvenli Alışveriş | Araç Parkı";
     ViewData["Description"] = "İş makinesi alım-satım ve kiralamada güvenlik ipuçları.";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Güvenli alışveriş", "/guvenli-alisveris"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
 }
 
 <main class="legal-page" id="main">
   <article class="legal-article container">
-    <p class="legal-eyebrow">Güven</p>
     <h1>Güvenli alışveriş ipuçları</h1>
     <p class="legal-updated">İş makinesi alım, satım ve kiralama için pratik kontrol listesi.</p>
 

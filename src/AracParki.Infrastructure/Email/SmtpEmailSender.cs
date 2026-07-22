@@ -44,6 +44,7 @@ public sealed class SmtpEmailSender(
         // macOS/.NET often fails OCSP/CRL ("incomplete certificate revocation check") against
         // public SMTP relays; chain trust is still validated.
         client.CheckCertificateRevocation = false;
+        client.Timeout = 15_000;
         try
         {
             var secure = _settings.SmtpPort == 465
