@@ -3,7 +3,9 @@
 @{
     ViewData["PageKey"] = "legal";
     ViewData["Title"] = "KVKK Aydınlatma Metni | Araç Parkı";
-    ViewData["Description"] = "6698 sayılı KVKK kapsamında Araç Parkı aydınlatma metni.";
+    ViewData["Description"] = "6698 sayılı KVKK kapsamında Araç Parkı aydınlatma metni: veri sorumlusu, işlenen veriler, amaçlar ve haklarınız.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/kvkk");
+    ViewData["OgTitle"] = "KVKK Aydınlatma | Araç Parkı";
     var crumbs = Breadcrumbs.Create(
         new BreadcrumbItem("Anasayfa", "/"),
         new BreadcrumbItem("KVKK aydınlatma metni", "/kvkk"));
@@ -49,10 +51,10 @@
       haklarınızı kullanabilirsiniz. Taleplerinizi yazılı olarak iletebilirsiniz.
     </p>
 
-    <p class="legal-related">
-      İlgili:
-      <a href="/gizlilik">Gizlilik</a> ·
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/gizlilik">Gizlilik</a>
+      <a href="/cerez-politikasi">Çerez politikası</a>
       <a href="/kullanim-kosullari">Kullanım koşulları</a>
-    </p>
+    </nav>
   </article>
 </main>

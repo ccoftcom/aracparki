@@ -3,7 +3,9 @@
 @{
     ViewData["PageKey"] = "legal";
     ViewData["Title"] = "Kullanım Koşulları | Araç Parkı";
-    ViewData["Description"] = "Araç Parkı kullanım koşulları.";
+    ViewData["Description"] = "Araç Parkı kullanım koşulları: platformun rolü, ilan sorumluluğu, yasaklı kullanımlar ve hizmet kuralları.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/kullanim-kosullari");
+    ViewData["OgTitle"] = "Kullanım Koşulları | Araç Parkı";
     var crumbs = Breadcrumbs.Create(
         new BreadcrumbItem("Anasayfa", "/"),
         new BreadcrumbItem("Kullanım koşulları", "/kullanim-kosullari"));
@@ -55,11 +57,11 @@
       Güncel metin her zaman bu sayfada yayımlanır.
     </p>
 
-    <p class="legal-related">
-      İlgili:
-      <a href="/gizlilik">Gizlilik</a> ·
-      <a href="/kvkk">KVKK aydınlatma</a> ·
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/gizlilik">Gizlilik</a>
+      <a href="/kvkk">KVKK aydınlatma</a>
+      <a href="/ilan-kurallari">İlan kuralları</a>
       <a href="/guvenli-alisveris">Güvenli alışveriş</a>
-    </p>
+    </nav>
   </article>
 </main>

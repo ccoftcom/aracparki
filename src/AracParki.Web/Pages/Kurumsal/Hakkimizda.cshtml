@@ -1,0 +1,106 @@
+@page "/hakkimizda"
+@using System.Text.Json
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "Hakkımızda | Araç Parkı — İş Makineleri İlan Platformu";
+    ViewData["Description"] = "Araç Parkı; Türkiye genelinde satılık, kiralık ve ikinci el iş makinelerini alıcı ve satıcılarla buluşturan ilan platformudur. Güvenli, şeffaf ve sektör odaklı.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/hakkimizda");
+    ViewData["OgTitle"] = "Hakkımızda | Araç Parkı";
+    ViewData["OgType"] = "website";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Hakkımızda", "/hakkimizda"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+    ViewData["JsonLd"] = JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "AboutPage",
+        ["name"] = "Hakkımızda — Araç Parkı",
+        ["url"] = SiteUrls.Absolute("/hakkimizda"),
+        ["description"] = ViewData["Description"],
+        ["isPartOf"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "WebSite",
+            ["name"] = "Araç Parkı",
+            ["url"] = SiteUrls.Origin + "/"
+        }
+    });
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article legal-article--wide container">
+    <header class="legal-hero">
+      <p class="legal-eyebrow">Kurumsal</p>
+      <h1>İş makineleri için güvenilir buluşma noktası</h1>
+      <p class="legal-lead">
+        Araç Parkı; satılık, kiralık ve ikinci el iş makinelerini Türkiye genelinde
+        tek çatı altında toplayan uzman bir ilan platformudur. Amacımız alıcı ile satıcıyı
+        hızlı, net ve sorumlu bir deneyimle buluşturmaktır.
+      </p>
+      <div class="legal-hero-actions">
+        <a class="btn btn-machine" href="/ilanlar">İlanları keşfet</a>
+        <a class="btn btn-ghost" href="/ilan-ver">Ücretsiz ilan ver</a>
+      </div>
+    </header>
+
+    <div class="legal-highlights" role="list">
+      <div class="legal-highlight" role="listitem">
+        <strong>Sektöre özel</strong>
+        <span>Ekskavatörden forklifte, iş makineleri dilinde arama ve filtreleme.</span>
+      </div>
+      <div class="legal-highlight" role="listitem">
+        <strong>Şeffaf yayın</strong>
+        <span>Moderasyon, doğrulanmış telefon ve kurumsal satıcı görünümü.</span>
+      </div>
+      <div class="legal-highlight" role="listitem">
+        <strong>Türkiye geneli</strong>
+        <span>İl ve kategori bazlı keşif; alıcı ile satıcıyı konumla eşleştirme.</span>
+      </div>
+    </div>
+
+    <h2>Ne sunuyoruz?</h2>
+    <ul class="legal-check">
+      <li>Kategori, marka, model, saat, tonaj ve konum filtreleriyle güçlü arama</li>
+      <li>Ücretsiz ilan yayınlama; fotoğraf, teknik özellik ve kiralama detayları</li>
+      <li>Telefon doğrulama ve onaylı kurumsal (bayi) mağaza sayfaları</li>
+      <li>Favoriler, kayıtlı aramalar ve satıcı profili ile takip kolaylığı</li>
+    </ul>
+
+    <h2>Nasıl çalışır?</h2>
+    <p>
+      İlanlar kullanıcılar tarafından oluşturulur. Araç Parkı aracı, mal sahibi veya
+      finansman sağlayıcı değildir. Fiyat, özellik ve durum bilgilerinin doğruluğundan
+      ilan sahipleri sorumludur. Alım-satım veya kiralama öncesi makineyi yerinde
+      görmenizi ve belgeleri kontrol etmenizi öneririz.
+    </p>
+
+    <h2>Güven yaklaşımımız</h2>
+    <p>
+      Güven, tek bir özellik değil; süreçlerin toplamıdır. İlan moderasyonu, kural ihlali
+      bildirimleri, talep üzerine telefon gösterimi ve
+      <a href="/guvenli-alisveris">güvenli alışveriş</a> rehberi bu yaklaşımın parçasıdır.
+    </p>
+
+    <div class="legal-cta-band">
+      <div>
+        <strong>Birlikte büyütelim</strong>
+        <p>İş birliği, reklam veya destek için ekibimize yazın.</p>
+      </div>
+      <div class="legal-cta-band-actions">
+        <a class="btn btn-machine" href="/iletisim">İletişime geç</a>
+        <a class="btn btn-ghost" href="/reklam">Reklam ver</a>
+      </div>
+    </div>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/yardim">Yardım merkezi</a>
+      <a href="/ilan-kurallari">İlan kuralları</a>
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
+    </nav>
+  </article>
+</main>

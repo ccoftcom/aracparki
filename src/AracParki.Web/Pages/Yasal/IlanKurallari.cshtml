@@ -1,0 +1,78 @@
+@page "/ilan-kurallari"
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "İlan Kuralları | Araç Parkı Yayın ve Moderasyon";
+    ViewData["Description"] = "Araç Parkı ilan kuralları: doğru içerik, fotoğraf, fiyat, kiralama bilgisi, yasaklı içerikler ve moderasyon süreci.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/ilan-kurallari");
+    ViewData["OgTitle"] = "İlan Kuralları | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("İlan kuralları", "/ilan-kurallari"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article container">
+    <header class="legal-hero legal-hero--compact">
+      <p class="legal-eyebrow">Yasal · Yayın politikası</p>
+      <h1>İlan kuralları</h1>
+      <p class="legal-lead">
+        Kaliteli ve güvenilir bir pazar yeri için tüm ilanlar bu kurallara uyar.
+        Hukuki çerçeve için <a href="/kullanim-kosullari">kullanım koşulları</a>na bakın.
+      </p>
+    </header>
+
+    <h2>Genel ilkeler</h2>
+    <ul class="legal-check">
+      <li>İlan, gerçek bir makineyi veya hizmeti yansıtmalıdır</li>
+      <li>Başlık, açıklama, fiyat ve özellikler doğru ve güncel olmalıdır</li>
+      <li>Yanlış kategori veya yanıltıcı fotoğraf kullanılmamalıdır</li>
+      <li>Telefon doğrulaması tamamlanmadan ilan yayınlanmaz</li>
+    </ul>
+
+    <h2>Fotoğraflar</h2>
+    <ul>
+      <li>Kendi yüklediğiniz gerçek görselleri kullanın</li>
+      <li>Dış URL ile görsel eklenemez</li>
+      <li>Başka ilan veya stok fotoğrafla yanıltıcı sunum yasaktır</li>
+    </ul>
+
+    <h2>Fiyat ve kiralama</h2>
+    <ul>
+      <li>Fiyat Türk Lirası cinsinden net belirtilmelidir</li>
+      <li>Kiralık ilanlarda birim (günlük/haftalık vb.) ve operatör bilgisi doğru olmalıdır</li>
+      <li>Sahte “tıklama tuzağı” fiyatlar reddedilebilir</li>
+    </ul>
+
+    <h2>Yasaklı içerikler</h2>
+    <ul>
+      <li>Yasa dışı makine veya belge sahteciliği teşviki</li>
+      <li>Hakaret, ayrımcılık, spam ve üçüncü taraf kişisel veri ifşası</li>
+      <li>Platform dışı ödeme / kapora dayatması ile dolandırıcılık kalıpları</li>
+      <li>Kopya veya mükerrer spam ilanlar</li>
+    </ul>
+
+    <h2>Moderasyon</h2>
+    <p>
+      İlanlar inceleme sonrası yayınlanabilir, reddedilebilir veya yayından kaldırılabilir.
+      Red nedeni hesap sahibine iletilir. Tekrarlayan ihlallerde hesap kısıtlanabilir.
+    </p>
+
+    <h2>Bildirim</h2>
+    <p>
+      Kural ihlali görürseniz ilan detayındaki şikayet bağlantısını veya
+      <a href="/iletisim">iletişim</a> sayfasını kullanın.
+    </p>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/yardim/ilan-ver">Nasıl ilan verilir</a>
+      <a href="/guvenli-alisveris">Güvenli alışveriş</a>
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
+    </nav>
+  </article>
+</main>

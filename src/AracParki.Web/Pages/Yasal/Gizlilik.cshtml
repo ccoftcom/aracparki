@@ -3,7 +3,9 @@
 @{
     ViewData["PageKey"] = "legal";
     ViewData["Title"] = "Gizlilik Bildirimi | Araç Parkı";
-    ViewData["Description"] = "Araç Parkı gizlilik bildirimi.";
+    ViewData["Description"] = "Araç Parkı gizlilik bildirimi: hangi kişisel verileri topladığımız, çerezler, paylaşım ilkeleri ve haklarınız.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/gizlilik");
+    ViewData["OgTitle"] = "Gizlilik Bildirimi | Araç Parkı";
     var crumbs = Breadcrumbs.Create(
         new BreadcrumbItem("Anasayfa", "/"),
         new BreadcrumbItem("Gizlilik bildirimi", "/gizlilik"));
@@ -34,8 +36,9 @@
 
     <h2>Çerezler</h2>
     <p>
-      Oturum (giriş), güvenlik ve temel analitik için zorunlu çerezler kullanılır. Pazarlama
-      çerezleri için ileride ayrı tercih yönetimi sunulacaktır.
+      Oturum (giriş), güvenlik ve temel analitik için zorunlu çerezler kullanılır.
+      Ayrıntılar için <a href="/cerez-politikasi">çerez politikası</a>na bakın.
+      Pazarlama çerezleri için ileride ayrı tercih yönetimi sunulacaktır.
     </p>
 
     <h2>Paylaşım</h2>
@@ -44,10 +47,10 @@
       sağlayıcıları dışında üçüncü taraflarla satmayız / pazarlamayız.
     </p>
 
-    <p class="legal-related">
-      İlgili:
-      <a href="/kullanim-kosullari">Kullanım koşulları</a> ·
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
       <a href="/kvkk">KVKK</a>
-    </p>
+      <a href="/cerez-politikasi">Çerez politikası</a>
+    </nav>
   </article>
 </main>

@@ -2,8 +2,10 @@
 @inject SiteUrls SiteUrls
 @{
     ViewData["PageKey"] = "legal";
-    ViewData["Title"] = "Güvenli Alışveriş | Araç Parkı";
-    ViewData["Description"] = "İş makinesi alım-satım ve kiralamada güvenlik ipuçları.";
+    ViewData["Title"] = "Güvenli Alışveriş | İş Makinesi Alım-Satım İpuçları";
+    ViewData["Description"] = "İş makinesi alım, satım ve kiralamada güvenli alışveriş: yerinde kontrol, belge doğrulama, kapora riski ve satıcı için dürüst ilan ipuçları.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/guvenli-alisveris");
+    ViewData["OgTitle"] = "Güvenli Alışveriş | Araç Parkı";
     var crumbs = Breadcrumbs.Create(
         new BreadcrumbItem("Anasayfa", "/"),
         new BreadcrumbItem("Güvenli alışveriş", "/guvenli-alisveris"));
@@ -16,33 +18,42 @@
 
 <main class="legal-page" id="main">
   <article class="legal-article container">
-    <h1>Güvenli alışveriş ipuçları</h1>
-    <p class="legal-updated">İş makinesi alım, satım ve kiralama için pratik kontrol listesi.</p>
+    <header class="legal-hero legal-hero--compact">
+      <p class="legal-eyebrow">Yardım · Güvenlik</p>
+      <h1>Güvenli alışveriş ipuçları</h1>
+      <p class="legal-lead">
+        İş makinesi alım, satım ve kiralama yüksek tutarlı işlemlerdir.
+        Aşağıdaki kontrol listesi riskleri azaltmanıza yardımcı olur.
+      </p>
+    </header>
 
     <h2>Alıcılar için</h2>
-    <ul>
-      <li>Makineyi yerinde görün; çalışır durumda test edin.</li>
-      <li>Seri no, saat, bakım geçmişi ve fatura/ruhsat belgelerini isteyin.</li>
-      <li>Görmeden kapora / peşinat göndermeyin.</li>
-      <li>Şüpheli ilanları bildirin; aşırı düşük fiyatlara temkinli yaklaşın.</li>
+    <ul class="legal-check">
+      <li>Makineyi yerinde görün; mümkünse çalışır durumda test edin</li>
+      <li>Seri no, saat, bakım geçmişi ve fatura / ruhsat belgelerini isteyin</li>
+      <li>Görmeden kapora veya peşinat göndermeyin</li>
+      <li>Aşırı düşük fiyatlara temkinli yaklaşın; şüpheli ilanları bildirin</li>
     </ul>
 
     <h2>Satıcılar için</h2>
-    <ul>
-      <li>Doğru kategori, net fotoğraf ve dürüst arıza beyanı kullanın.</li>
-      <li>Telefon doğrulamasını tamamlayın; güven rozetleri alıcıyı ikna eder.</li>
-      <li>Ödemeyi güvenli kanallardan alın; nakit riskini bilin.</li>
+    <ul class="legal-check">
+      <li>Doğru kategori, net fotoğraf ve dürüst arıza beyanı kullanın</li>
+      <li>Telefon doğrulamasını tamamlayın; güven sinyalleri alıcıyı ikna eder</li>
+      <li>Ödemeyi güvenli kanallardan alın; nakit riskini bilin</li>
     </ul>
 
-    <h2>Platform notu</h2>
-    <p>
-      Araç Parkı ilanları kullanıcılar tarafından oluşturulur. Anlaşmazlıklarda taraflar kendi
-      hukuki yollarını kullanır; acil güvenlik şüphesinde en yakın yetkili mercilere başvurun.
-    </p>
+    <aside class="legal-note" aria-label="Platform notu">
+      <strong>Platform notu</strong>
+      Araç Parkı ilanları kullanıcılar tarafından oluşturulur; platform aracı veya mal sahibi
+      değildir. Anlaşmazlıklarda taraflar kendi hukuki yollarını kullanır. Acil güvenlik
+      şüphesinde en yakın yetkili mercilere başvurun.
+    </aside>
 
-    <p class="legal-related">
-      <a href="/ilanlar">İlanlara dön</a> ·
-      <a href="/kullanim-kosullari">Kullanım koşulları</a>
-    </p>
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/ilanlar">İlanlara dön</a>
+      <a href="/yardim">Yardım merkezi</a>
+      <a href="/iletisim">İletişim</a>
+      <a href="/ilan-kurallari">İlan kuralları</a>
+    </nav>
   </article>
 </main>

@@ -1,0 +1,100 @@
+@page "/iletisim"
+@using System.Text.Json
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "İletişim | Araç Parkı Destek ve İş Birliği";
+    ViewData["Description"] = "Araç Parkı iletişim: hesap ve ilan desteği, şikayet bildirimi, reklam ve kurumsal iş birliği. İş günlerinde hızlı dönüş.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/iletisim");
+    ViewData["OgTitle"] = "İletişim | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Yardım", "/yardim"),
+        new BreadcrumbItem("İletişim", "/iletisim"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+    ViewData["JsonLd"] = JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "ContactPage",
+        ["name"] = "İletişim — Araç Parkı",
+        ["url"] = SiteUrls.Absolute("/iletisim"),
+        ["description"] = ViewData["Description"],
+        ["mainEntity"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["name"] = "Araç Parkı",
+            ["url"] = SiteUrls.Origin + "/",
+            ["email"] = "destek@aracparki.com",
+            ["contactPoint"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ContactPoint",
+                ["contactType"] = "customer support",
+                ["email"] = "destek@aracparki.com",
+                ["availableLanguage"] = new[] { "Turkish" }
+            }
+        }
+    });
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article legal-article--wide container">
+    <header class="legal-hero">
+      <p class="legal-eyebrow">Yardım · Destek</p>
+      <h1>Size nasıl yardımcı olabiliriz?</h1>
+      <p class="legal-lead">
+        Hesap, ilan yayınlama, güvenlik bildirimi veya iş birliği taleplerinizi doğru
+        kanaldan iletin. İş günlerinde genellikle 1–2 gün içinde dönüş sağlarız.
+      </p>
+    </header>
+
+    <div class="legal-cards" role="list">
+      <section class="legal-card" role="listitem">
+        <p class="legal-card-kicker">Destek</p>
+        <h2>Genel destek</h2>
+        <p>Giriş, telefon doğrulama, ilan durumu ve teknik sorunlar için yazın.</p>
+        <a class="btn btn-machine" href="mailto:destek@aracparki.com?subject=@Uri.EscapeDataString("Destek talebi")">
+          destek@aracparki.com
+        </a>
+      </section>
+      <section class="legal-card" role="listitem">
+        <p class="legal-card-kicker">Güvenlik</p>
+        <h2>İlan şikayeti</h2>
+        <p>Yanıltıcı içerik, kural ihlali veya dolandırıcılık şüphesini bildirin.</p>
+        <a class="btn btn-ghost" href="mailto:destek@aracparki.com?subject=@Uri.EscapeDataString("İlan şikayeti")">
+          Şikayet e-postası gönder
+        </a>
+      </section>
+      <section class="legal-card" role="listitem">
+        <p class="legal-card-kicker">Kurumsal</p>
+        <h2>Reklam ve iş birliği</h2>
+        <p>Sponsorlu görünürlük, bayi tanıtımı ve kurumsal kampanya talepleri.</p>
+        <a class="btn btn-ghost" href="/reklam">Reklam sayfasına git</a>
+      </section>
+    </div>
+
+    <aside class="legal-note" aria-label="Önemli bilgi">
+      <strong>Acil güvenlik durumu:</strong>
+      Platform hukuki bir taraf veya aracı değildir. Acil dolandırıcılık veya güvenlik
+      şüphesinde yetkili mercilere de başvurun.
+    </aside>
+
+    <h2>Önce buraya bakın</h2>
+    <ul class="legal-link-list">
+      <li><a href="/yardim">Sık sorulan sorular</a> — hesap, ilan ve güvenlik</li>
+      <li><a href="/yardim/ilan-ver">Nasıl ilan verilir?</a> — adım adım yayın rehberi</li>
+      <li><a href="/guvenli-alisveris">Güvenli alışveriş</a> — alıcı ve satıcı kontrol listesi</li>
+      <li><a href="/ilan-kurallari">İlan kuralları</a> — moderasyon ve yasaklı içerikler</li>
+    </ul>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/yardim">Yardım merkezi</a>
+      <a href="/hakkimizda">Hakkımızda</a>
+      <a href="/kvkk">KVKK</a>
+      <a href="/gizlilik">Gizlilik</a>
+    </nav>
+  </article>
+</main>

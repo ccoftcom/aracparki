@@ -1,41 +1,47 @@
 @model string
-@{
-    var page = Model ?? "home";
-}
 <footer class="site-footer">
   <div class="container">
-    <div class="footer-grid">
+    <div class="footer-grid footer-grid--5">
       <div class="footer-brand">
         <a class="logo" href="/" aria-label="Araç Parkı">
           <span class="logo-arac">Araç</span><span class="logo-parki">Parkı</span>
         </a>
-        <p>Satılık, kiralık ve ikinci el iş makineleri için Türkiye genelinde ilan platformu.</p>
+        <p>Türkiye genelinde satılık, kiralık ve ikinci el iş makineleri için uzman ilan platformu.</p>
       </div>
       <div class="footer-col">
         <h3>Keşfet</h3>
         <ul>
-          <li><a href="/ilanlar?tip=satilik">Satılık</a></li>
-          <li><a href="/ilanlar?tip=kiralik">Kiralık</a></li>
-          <li><a href="/ilanlar?durum=used">İkinci El</a></li>
+          <li><a href="/ilanlar?tip=satilik">Satılık iş makineleri</a></li>
+          <li><a href="/ilanlar?tip=kiralik">Kiralık iş makineleri</a></li>
+          <li><a href="/ilanlar?durum=used">İkinci el</a></li>
           <li><a href="/ilanlar">Tüm ilanlar</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h3>Kurumsal</h3>
         <ul>
-          <li><a href="@(page == "home" ? "#guven" : "/#guven")">Güven</a></li>
-          <li><a href="/ilan-ver">İlan ver</a></li>
-          <li><a href="@(page == "home" ? "#sehirler" : "/#sehirler")">Popüler iller</a></li>
-          <li><a href="/ilanlar">Tüm kategoriler</a></li>
+          <li><a href="/hakkimizda">Hakkımızda</a></li>
+          <li><a href="/iletisim">İletişim</a></li>
+          <li><a href="/reklam">Reklam ver</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h3>Gizlilik ve kullanım</h3>
+        <h3>Yardım</h3>
+        <ul>
+          <li><a href="/yardim">Yardım merkezi</a></li>
+          <li><a href="/yardim/ilan-ver">Nasıl ilan verilir?</a></li>
+          <li><a href="/guvenli-alisveris">Güvenli alışveriş</a></li>
+          <li><a href="/ilan-kurallari">İlan kuralları</a></li>
+          <li><a href="/ilan-ver">Ücretsiz ilan ver</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>Yasal</h3>
         <ul>
           <li><a href="/kullanim-kosullari">Kullanım koşulları</a></li>
           <li><a href="/gizlilik">Gizlilik bildirimi</a></li>
           <li><a href="/kvkk">KVKK aydınlatma</a></li>
-          <li><a href="/guvenli-alisveris">Güvenli alışveriş</a></li>
+          <li><a href="/cerez-politikasi">Çerez politikası</a></li>
         </ul>
       </div>
     </div>
@@ -54,6 +60,8 @@
         <a href="/kullanim-kosullari">Koşullar</a>
         <a href="/gizlilik">Gizlilik</a>
         <a href="/kvkk">KVKK</a>
+        <a href="/cerez-politikasi">Çerezler</a>
+        <a href="/iletisim">İletişim</a>
       </nav>
     </div>
   </div>

@@ -1,0 +1,176 @@
+@page "/yardim"
+@using System.Text.Json
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "Yardım Merkezi ve SSS | Araç Parkı";
+    ViewData["Description"] = "Araç Parkı yardım merkezi: üyelik, ücretsiz ilan verme, moderasyon, telefon güvenliği, şikayet ve reklam hakkında sık sorulan sorular.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/yardim");
+    ViewData["OgTitle"] = "Yardım Merkezi | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Yardım merkezi", "/yardim"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+
+    var faqEntities = new object[]
+    {
+        Qa("Nasıl üye olurum?", "Kayıt sayfasından e-posta ve şifre ile hesap oluşturabilirsiniz. İlan vermek için telefon doğrulaması gerekir."),
+        Qa("Şifremi unuttum, ne yapmalıyım?", "Şifremi unuttum sayfasından e-posta adresinize sıfırlama bağlantısı gönderilir."),
+        Qa("Kurumsal (bayi) hesap nedir?", "Onaylı kurumsal hesaplar mağaza sayfası, logo ve doğrulanmış satıcı görünümü sunar. Başvuru Kurumsal hesap bölümünden yapılır."),
+        Qa("İlan vermek ücretli mi?", "Temel ilan yayınlama ücretsizdir. Sponsorlu görünürlük ve reklam alanları için reklam sayfasına bakın."),
+        Qa("İlanım neden incelemede veya reddedildi?", "Yeni ve güncellenen ilanlar moderasyondan geçer. Red nedeni İlanlarım ekranında görünür; kurallara uygun düzenleyip yeniden gönderebilirsiniz."),
+        Qa("İlan ne kadar süre yayında kalır?", "Yayınlanan ilanların geçerlilik süresi vardır. Süre dolunca ilan arşive alınabilir; yeniden yayın için İlanlarım kullanılır."),
+        Qa("Telefon numarası herkese açık mı?", "Hayır. İlan detayında Telefonu Göster ile talep üzerine açılır; spam ve kötüye kullanımı azaltmak için bu yapı kullanılır."),
+        Qa("Şüpheli bir ilanı nasıl bildiririm?", "İlan detayındaki şikayet bağlantısını veya iletişim sayfasını kullanın. Acil dolandırıcılık şüphesinde yetkili mercilere de başvurun.")
+    };
+    ViewData["JsonLd"] = JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "FAQPage",
+        ["mainEntity"] = faqEntities
+    });
+
+    static Dictionary<string, object?> Qa(string q, string a) => new()
+    {
+        ["@type"] = "Question",
+        ["name"] = q,
+        ["acceptedAnswer"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "Answer",
+            ["text"] = a
+        }
+    };
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article legal-article--wide container">
+    <header class="legal-hero">
+      <p class="legal-eyebrow">Yardım merkezi</p>
+      <h1>Sık sorulan sorular</h1>
+      <p class="legal-lead">
+        Hesap, ilan, güvenlik ve reklam konularında kısa ve net yanıtlar.
+        Bulamadığınız bir konu varsa <a href="/iletisim">iletişim</a> sayfasından yazın.
+      </p>
+    </header>
+
+    <nav class="legal-toc" aria-label="Konu başlıkları">
+      <a href="#hesap">Hesap</a>
+      <a href="#ilan">İlan</a>
+      <a href="#guvenlik">Güvenlik</a>
+      <a href="#reklam">Reklam</a>
+    </nav>
+
+    <h2 id="hesap">Hesap</h2>
+    <div class="legal-faq">
+      <details>
+        <summary>Nasıl üye olurum?</summary>
+        <p>
+          <a href="/kayit">Kayıt</a> sayfasından e-posta ve şifre ile hesap oluşturabilirsiniz.
+          İlan yayınlamak için telefon doğrulaması gerekir.
+        </p>
+      </details>
+      <details>
+        <summary>Şifremi unuttum, ne yapmalıyım?</summary>
+        <p>
+          <a href="/sifremi-unuttum">Şifremi unuttum</a> sayfasından e-posta adresinize
+          sıfırlama bağlantısı gönderilir. Bağlantı kısa süreli geçerlidir.
+        </p>
+      </details>
+      <details>
+        <summary>Kurumsal (bayi) hesap nedir?</summary>
+        <p>
+          Onaylı kurumsal hesaplar mağaza sayfası, logo ve doğrulanmış satıcı görünümü sunar.
+          Başvuru için <a href="/kurumsal-hesap">Kurumsal hesap</a> bölümüne gidin.
+        </p>
+      </details>
+    </div>
+
+    <h2 id="ilan">İlan</h2>
+    <div class="legal-faq">
+      <details>
+        <summary>İlan vermek ücretli mi?</summary>
+        <p>
+          Temel ilan yayınlama ücretsizdir. Sponsorlu görünürlük ve reklam yerleşimleri için
+          <a href="/reklam">reklam ver</a> sayfasına bakın.
+        </p>
+      </details>
+      <details>
+        <summary>İlanım neden incelemede veya reddedildi?</summary>
+        <p>
+          Yeni ve güncellenen ilanlar moderasyondan geçer. Red durumunda nedeni
+          <a href="/ilanlarim">İlanlarım</a> ekranında görürsünüz; kurallara uygun şekilde
+          düzenleyip yeniden gönderebilirsiniz. Ayrıntı:
+          <a href="/ilan-kurallari">İlan kuralları</a>.
+        </p>
+      </details>
+      <details>
+        <summary>İlan ne kadar süre yayında kalır?</summary>
+        <p>
+          Yayınlanan ilanların bir geçerlilik süresi vardır. Süre dolunca ilan arşive alınabilir;
+          yeniden yayınlamak için <a href="/ilanlarim">İlanlarım</a> üzerinden işlem yapın.
+        </p>
+      </details>
+      <details>
+        <summary>Adım adım nasıl ilan veririm?</summary>
+        <p>
+          <a href="/yardim/ilan-ver">Nasıl ilan verilir?</a> rehberini izleyin veya doğrudan
+          <a href="/ilan-ver">Ücretsiz İlan Ver</a> sihirbazını açın.
+        </p>
+      </details>
+    </div>
+
+    <h2 id="guvenlik">Güvenlik</h2>
+    <div class="legal-faq">
+      <details>
+        <summary>Telefon numarası herkese açık mı?</summary>
+        <p>
+          Hayır. İlan detayında “Telefonu Göster” ile talep üzerine açılır; spam ve kötüye
+          kullanımı azaltmak için bu yapı kullanılır.
+        </p>
+      </details>
+      <details>
+        <summary>Şüpheli bir ilanı nasıl bildiririm?</summary>
+        <p>
+          İlan detayındaki şikayet bağlantısını veya <a href="/iletisim">iletişim</a>
+          sayfasını kullanın. Acil dolandırıcılık şüphesinde yetkili mercilere de başvurun.
+        </p>
+      </details>
+      <details>
+        <summary>Güvenli alışveriş için neye dikkat etmeliyim?</summary>
+        <p>
+          <a href="/guvenli-alisveris">Güvenli alışveriş</a> sayfasındaki kontrol listesini
+          izleyin: yerinde kontrol, kapora riski ve belge doğrulama.
+        </p>
+      </details>
+    </div>
+
+    <h2 id="reklam">Reklam</h2>
+    <div class="legal-faq">
+      <details>
+        <summary>İlan detayındaki reklam alanına nasıl başvururum?</summary>
+        <p>
+          <a href="/reklam">Reklam ver</a> sayfasından brief gönderin; size uygun yerleşim
+          ve takvim önerisini iletelim.
+        </p>
+      </details>
+    </div>
+
+    <div class="legal-cta-band">
+      <div>
+        <strong>Hâlâ yardıma mı ihtiyacınız var?</strong>
+        <p>Destek ekibimize yazın; en kısa sürede dönüş yapalım.</p>
+      </div>
+      <a class="btn btn-machine" href="/iletisim">İletişime geç</a>
+    </div>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/yardim/ilan-ver">Nasıl ilan verilir</a>
+      <a href="/guvenli-alisveris">Güvenli alışveriş</a>
+      <a href="/ilan-kurallari">İlan kuralları</a>
+    </nav>
+  </article>
+</main>

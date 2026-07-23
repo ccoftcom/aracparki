@@ -166,6 +166,10 @@
     grid-template-columns: 1.5fr 1fr 1fr 1fr;
   }
 
+  .footer-grid--5 {
+    grid-template-columns: 1.35fr repeat(4, minmax(0, 1fr));
+  }
+
   .classified-row-link {
     grid-template-columns: 180px 1fr auto;
     align-items: stretch;

@@ -1,0 +1,107 @@
+@page "/reklam"
+@using System.Text.Json
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "Reklam Ver | Araç Parkı İş Birliği ve Sponsorluk";
+    ViewData["Description"] = "İş makineleri alıcılarına ulaşın: Araç Parkı’nda ilan detay paneli, sponsorlu görünürlük ve kurumsal tanıtım için reklam ve iş birliği.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/reklam");
+    ViewData["OgTitle"] = "Reklam Ver | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Reklam ver", "/reklam"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+    ViewData["JsonLd"] = JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "WebPage",
+        ["name"] = "Reklam ve iş birliği — Araç Parkı",
+        ["url"] = SiteUrls.Absolute("/reklam"),
+        ["description"] = ViewData["Description"]
+    });
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article legal-article--wide container">
+    <header class="legal-hero">
+      <p class="legal-eyebrow">Kurumsal · Reklam</p>
+      <h1>Satın alma niyeti yüksek bir kitleye görünür olun</h1>
+      <p class="legal-lead">
+        Araç Parkı ziyaretçileri, iş makinesi alım veya kiralama araştırması yapan
+        profesyonel bir kitledir. Doğru yerleşimde markanızı, stoğunuzu veya
+        hizmetinizi doğru bağlamda gösterin.
+      </p>
+      <div class="legal-hero-actions">
+        <a class="btn btn-machine"
+           href="mailto:destek@aracparki.com?subject=@Uri.EscapeDataString("Reklam teklifi")&amp;body=@Uri.EscapeDataString("Merhaba,\n\nReklam / iş birliği için teklif almak istiyorum.\n\nŞirket:\nHedef kitle / ürün:\nTahmini süre ve bütçe:\n\n")">
+          Teklif e-postası gönder
+        </a>
+        <a class="btn btn-ghost" href="/iletisim">İletişim</a>
+      </div>
+    </header>
+
+    <h2>Öne çıkan yerleşimler</h2>
+    <div class="legal-cards legal-cards--2" role="list">
+      <section class="legal-card" role="listitem">
+        <p class="legal-card-kicker">Aktif</p>
+        <h2>İlan detay paneli</h2>
+        <p>
+          Güvenlik kutusu altında, alıcının karar anına yakın konumda sponsorlu alan.
+          Marka ve stok mesajınız için yüksek dikkat.
+        </p>
+      </section>
+      <section class="legal-card" role="listitem">
+        <p class="legal-card-kicker">Planlanan</p>
+        <h2>Liste ve kategori</h2>
+        <p>
+          Arama sonuçları ve hub sayfalarında sponsorlu görünürlük ile
+          keşif aşamasında öne çıkma.
+        </p>
+      </section>
+    </div>
+
+    <h2>Kimler için uygun?</h2>
+    <ul class="legal-check">
+      <li>İş makinesi bayi, kiralama ve ikinci el satış firmaları</li>
+      <li>Yedek parça, ekipman, finansman ve lojistik çözümleri</li>
+      <li>Sektör etkinlikleri ve B2B hizmet sağlayıcıları</li>
+    </ul>
+
+    <h2>Teklif süreci</h2>
+    <ol class="legal-steps">
+      <li>
+        <strong>Brief gönderin</strong>
+        <span>Hedef, süre, bütçe aralığı ve mesajınızı e-posta ile iletin.</span>
+      </li>
+      <li>
+        <strong>Yerleşim önerisi alın</strong>
+        <span>Size uygun alan ve yayın takvimini birlikte netleştiririz.</span>
+      </li>
+      <li>
+        <strong>Yayına alın</strong>
+        <span>Onay sonrası yerleşim canlıya alınır; performans için geri bildirim paylaşılır.</span>
+      </li>
+    </ol>
+
+    <div class="legal-cta-band">
+      <div>
+        <strong>Hazır mısınız?</strong>
+        <p>Kısa bir brief yeterli; size uygun seçenekleri iletelim.</p>
+      </div>
+      <a class="btn btn-machine"
+         href="mailto:destek@aracparki.com?subject=@Uri.EscapeDataString("Reklam teklifi")">
+        Teklif iste
+      </a>
+    </div>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/hakkimizda">Hakkımızda</a>
+      <a href="/iletisim">İletişim</a>
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
+    </nav>
+  </article>
+</main>

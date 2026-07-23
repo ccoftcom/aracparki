@@ -64,10 +64,17 @@ public static class SitemapEndpoints
                 (ListingRoutes.List, "daily", "0.9"),
                 (ListingRoutes.HubUrl(ListingIntent.Satilik), "daily", "0.85"),
                 (ListingRoutes.HubUrl(ListingIntent.Kiralik), "daily", "0.85"),
+                ("/hakkimizda", "monthly", "0.5"),
+                ("/iletisim", "monthly", "0.5"),
+                ("/yardim", "monthly", "0.5"),
+                ("/yardim/ilan-ver", "monthly", "0.4"),
+                ("/reklam", "monthly", "0.45"),
                 ("/guvenli-alisveris", "yearly", "0.3"),
+                ("/ilan-kurallari", "yearly", "0.3"),
                 ("/kullanim-kosullari", "yearly", "0.2"),
                 ("/gizlilik", "yearly", "0.2"),
-                ("/kvkk", "yearly", "0.2")
+                ("/kvkk", "yearly", "0.2"),
+                ("/cerez-politikasi", "yearly", "0.2")
             };
 
             var root = new XElement(Ns + "urlset",

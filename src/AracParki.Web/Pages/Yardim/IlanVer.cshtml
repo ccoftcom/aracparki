@@ -1,0 +1,113 @@
+@page "/yardim/ilan-ver"
+@using System.Text.Json
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "Nasıl İlan Verilir? | Ücretsiz İş Makinesi İlanı";
+    ViewData["Description"] = "Araç Parkı’nda ücretsiz satılık veya kiralık iş makinesi ilanı nasıl verilir? Hesap, telefon doğrulama, fotoğraf ve moderasyon adımları.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/yardim/ilan-ver");
+    ViewData["OgTitle"] = "Nasıl İlan Verilir? | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Yardım merkezi", "/yardim"),
+        new BreadcrumbItem("Nasıl ilan verilir", "/yardim/ilan-ver"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+    ViewData["JsonLd"] = JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "HowTo",
+        ["name"] = "Araç Parkı’nda nasıl ilan verilir?",
+        ["description"] = ViewData["Description"],
+        ["step"] = new object[]
+        {
+            HowToStep(1, "Hesap oluşturun veya giriş yapın", "Kayıt veya giriş ile devam edin."),
+            HowToStep(2, "Telefonunuzu doğrulayın", "İlan yayınlamak için WhatsApp ile telefon doğrulaması gerekir."),
+            HowToStep(3, "İlan ver sihirbazını açın", "Kategori, marka/model ve özellikleri seçin."),
+            HowToStep(4, "Fotoğraf yükleyin", "Net ve gerçek fotoğraflar yükleyin; dış URL kabul edilmez."),
+            HowToStep(5, "İncelemeye gönderin", "Moderasyon sonrası ilan yayınlanır; durumu İlanlarım’dan izleyin.")
+        }
+    });
+
+    static Dictionary<string, object?> HowToStep(int pos, string name, string text) => new()
+    {
+        ["@type"] = "HowToStep",
+        ["position"] = pos,
+        ["name"] = name,
+        ["text"] = text
+    };
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article legal-article--wide container">
+    <header class="legal-hero">
+      <p class="legal-eyebrow">Yardım · Rehber</p>
+      <h1>Ücretsiz ilanınızı adım adım yayınlayın</h1>
+      <p class="legal-lead">
+        Satılık veya kiralık iş makinesi ilanınızı birkaç dakikada hazırlayın.
+        Net fotoğraf ve doğru teknik bilgiler, daha hızlı onay ve daha fazla alıcı ilgisi demektir.
+      </p>
+      <div class="legal-hero-actions">
+        <a class="btn btn-machine" href="/ilan-ver">İlan vermeye başla</a>
+        <a class="btn btn-ghost" href="/ilan-kurallari">İlan kurallarını oku</a>
+      </div>
+    </header>
+
+    <ol class="legal-steps">
+      <li>
+        <strong>Hesap oluşturun veya giriş yapın</strong>
+        <span><a href="/kayit">Kayıt</a> olun veya <a href="/giris">giriş</a> yapın.</span>
+      </li>
+      <li>
+        <strong>Telefonunuzu doğrulayın</strong>
+        <span>İlan yayınlamak için WhatsApp ile telefon doğrulaması zorunludur.</span>
+      </li>
+      <li>
+        <strong>İlan ver sihirbazını açın</strong>
+        <span>
+          <a href="/ilan-ver">Ücretsiz İlan Ver</a> ile kategori, marka/model, konum ve
+          özelliklerinizi seçin.
+        </span>
+      </li>
+      <li>
+        <strong>Fotoğraf yükleyin</strong>
+        <span>
+          Makineyi net gösteren gerçek fotoğraflar kullanın. Dış URL ile görsel eklenmez;
+          yükleme zorunludur.
+        </span>
+      </li>
+      <li>
+        <strong>İncelemeye gönderin</strong>
+        <span>
+          İlan moderasyona düşer; onaylanınca yayınlanır. Durumu
+          <a href="/ilanlarim">İlanlarım</a>’dan izleyin.
+        </span>
+      </li>
+    </ol>
+
+    <h2>Daha etkili ilan için</h2>
+    <ul class="legal-check">
+      <li>Doğru kategori ve dürüst durum / çalışma saati bilgisi kullanın</li>
+      <li>Fiyatı net yazın; kiralıksa birim ve operatör bilgisini belirtin</li>
+      <li>Seri no ve teknik özellikleri mümkün olduğunca doldurun</li>
+      <li><a href="/ilan-kurallari">İlan kuralları</a>na uyun; aksi halde red edilebilir</li>
+    </ul>
+
+    <div class="legal-cta-band">
+      <div>
+        <strong>Hazırsanız başlayın</strong>
+        <p>Ücretsiz ilan sihirbazı sizi adım adım yönlendirir.</p>
+      </div>
+      <a class="btn btn-machine" href="/ilan-ver">Ücretsiz ilan ver</a>
+    </div>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/yardim">Yardım merkezi</a>
+      <a href="/ilan-kurallari">İlan kuralları</a>
+      <a href="/iletisim">İletişim</a>
+    </nav>
+  </article>
+</main>

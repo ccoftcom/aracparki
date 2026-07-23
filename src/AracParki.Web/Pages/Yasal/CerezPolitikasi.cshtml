@@ -1,0 +1,74 @@
+@page "/cerez-politikasi"
+@inject SiteUrls SiteUrls
+@{
+    ViewData["PageKey"] = "legal";
+    ViewData["Title"] = "Çerez Politikası | Araç Parkı";
+    ViewData["Description"] = "Araç Parkı çerez politikası: zorunlu, işlevsel ve analitik çerezlerin kullanımı, yönetimi ve kişisel verilerle ilişkisi.";
+    ViewData["CanonicalUrl"] = SiteUrls.Absolute("/cerez-politikasi");
+    ViewData["OgTitle"] = "Çerez Politikası | Araç Parkı";
+    var crumbs = Breadcrumbs.Create(
+        new BreadcrumbItem("Anasayfa", "/"),
+        new BreadcrumbItem("Çerez politikası", "/cerez-politikasi"));
+    Breadcrumbs.Set(ViewData, SiteUrls, crumbs);
+}
+
+@section CrumbBar {
+  <partial name="Shared/Partials/_SiteBreadcrumb" model="crumbs" />
+}
+
+<main class="legal-page" id="main">
+  <article class="legal-article container">
+    <header class="legal-hero legal-hero--compact">
+      <p class="legal-eyebrow">Yasal · Gizlilik</p>
+      <h1>Çerez politikası</h1>
+      <p class="legal-meta">Son güncelleme: 23 Temmuz 2026</p>
+      <p class="legal-lead">
+        Bu metin, aracparki.com’da kullanılan çerez ve benzeri teknolojileri açıklar.
+        Kişisel veriler için <a href="/gizlilik">gizlilik bildirimi</a> ve
+        <a href="/kvkk">KVKK aydınlatma</a> metnine bakın.
+      </p>
+    </header>
+
+    <h2>Çerez nedir?</h2>
+    <p>
+      Çerezler, siteyi ziyaret ettiğinizde tarayıcınıza kaydedilen küçük metin dosyalarıdır.
+      Oturum sürekliliği, güvenlik ve temel performans için kullanılırlar.
+    </p>
+
+    <h2>Kullandığımız çerez türleri</h2>
+    <ul>
+      <li>
+        <strong>Zorunlu:</strong> giriş oturumu, antiforgery (güvenlik) ve sitenin çalışması
+        için gerekli tercihler.
+      </li>
+      <li>
+        <strong>İşlevsel:</strong> taslak ilan veya arayüz tercihi gibi deneyimi iyileştiren
+        kayıtlar (varsa).
+      </li>
+      <li>
+        <strong>Analitik:</strong> trafik ve hata ölçümü için sınırlı analitik
+        (yapılandırıldığında). Pazarlama / reklam çerezleri şu an aktif değildir.
+      </li>
+    </ul>
+
+    <h2>Yönetim</h2>
+    <p>
+      Tarayıcı ayarlarından çerezleri silebilir veya engelleyebilirsiniz. Zorunlu çerezler
+      engellenirse giriş ve form güvenliği çalışmayabilir. Ayrıntılı tercih paneli ileride
+      sunulacaktır.
+    </p>
+
+    <h2>İletişim</h2>
+    <p>
+      Çerezler hakkında sorularınız için
+      <a href="mailto:destek@aracparki.com?subject=@Uri.EscapeDataString("Çerez politikası")">destek@aracparki.com</a>
+      veya <a href="/iletisim">iletişim</a> sayfası.
+    </p>
+
+    <nav class="legal-related" aria-label="İlgili sayfalar">
+      <a href="/gizlilik">Gizlilik</a>
+      <a href="/kvkk">KVKK</a>
+      <a href="/kullanim-kosullari">Kullanım koşulları</a>
+    </nav>
+  </article>
+</main>
