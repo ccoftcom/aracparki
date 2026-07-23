@@ -200,33 +200,56 @@
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-reveal-phone]");
     if (!btn) return;
-    e.preventDefault();
     if (!(btn instanceof HTMLElement)) return;
 
-    const adNo = btn.getAttribute("data-reveal-phone");
-    if (!adNo) return;
-
-    const setExpanded = (open) => {
-      document.querySelectorAll("[data-reveal-phone]").forEach((el) => {
-        if (!(el instanceof HTMLElement)) return;
-        el.setAttribute("aria-expanded", open ? "true" : "false");
-        const showLabel = el.getAttribute("data-label-show") || "Telefonu Göster";
-        const hideLabel = el.getAttribute("data-label-hide") || "Telefonu Gizle";
-        const lab = el.querySelector("[data-reveal-phone-label]");
-        if (lab) lab.textContent = open ? hideLabel : showLabel;
-      });
-      document.querySelectorAll("[data-phone-slot]").forEach((slot) => {
-        if (slot instanceof HTMLElement) slot.hidden = !open;
-      });
-    };
-
-    // Already fetched — toggle only (no toast).
+    // Already revealed — let <a href="tel:…"> dial (no toggle / hide).
     if (btn.dataset.phoneReady === "1") {
-      setExpanded(btn.getAttribute("aria-expanded") !== "true");
       return;
     }
 
-    btn.disabled = true;
+    e.preventDefault();
+
+    const adNo = btn.getAttribute("data-reveal-phone");
+    if (!adNo) return;
+    if (btn.getAttribute("aria-busy") === "true") return;
+
+    const idleLabel = btn.getAttribute("data-label-show") || "Telefonu Göster";
+    const loadingLabel = btn.getAttribute("data-label-loading") || "Alınıyor…";
+
+    const setBusy = (busy) => {
+      document.querySelectorAll("[data-reveal-phone]").forEach((el) => {
+        if (!(el instanceof HTMLElement)) return;
+        el.setAttribute("aria-busy", busy ? "true" : "false");
+        el.classList.toggle("is-loading", busy);
+        if (el instanceof HTMLButtonElement) el.disabled = busy;
+        const lab = el.querySelector("[data-reveal-phone-label]");
+        if (lab) lab.textContent = busy ? loadingLabel : idleLabel;
+      });
+    };
+
+    const applyPhone = (display, tel) => {
+      document.querySelectorAll("[data-reveal-phone]").forEach((el) => {
+        if (!(el instanceof HTMLElement)) return;
+        el.dataset.phoneReady = "1";
+        el.setAttribute("aria-expanded", "true");
+        el.setAttribute("aria-busy", "false");
+        el.removeAttribute("aria-disabled");
+        el.removeAttribute("role");
+        el.classList.remove("is-loading");
+        el.classList.add("is-revealed");
+        if (el instanceof HTMLButtonElement) el.disabled = false;
+
+        const lab = el.querySelector("[data-reveal-phone-label]");
+        if (lab) lab.textContent = display;
+
+        if (el instanceof HTMLAnchorElement) {
+          el.href = `tel:${tel}`;
+          el.setAttribute("aria-label", `Ara: ${display}`);
+        }
+      });
+    };
+
+    setBusy(true);
     try {
       const token = document.querySelector('meta[name="request-verification-token"]')?.getAttribute("content") || "";
       const res = await fetch(`/ilan/${encodeURIComponent(adNo)}/telefon`, {
@@ -238,14 +261,17 @@
       });
       if (res.status === 400) {
         toast("İstek doğrulanamadı. Sayfayı yenileyip tekrar deneyin.");
+        setBusy(false);
         return;
       }
       if (res.status === 429) {
         toast("Çok fazla deneme. Bir dakika sonra tekrar deneyin.");
+        setBusy(false);
         return;
       }
       if (!res.ok) {
         toast("Telefon alınamadı.");
+        setBusy(false);
         return;
       }
       const data = await res.json();
@@ -253,28 +279,14 @@
       const tel = String(data?.tel || "").trim().replace(/\s/g, "");
       if (!display || !tel) {
         toast("Telefon alınamadı.");
+        setBusy(false);
         return;
       }
 
-      document.querySelectorAll("[data-phone-slot]").forEach((slot) => {
-        if (!(slot instanceof HTMLElement)) return;
-        const link = slot.matches("a[data-phone-link]")
-          ? slot
-          : slot.querySelector("a[data-phone-link]");
-        if (link instanceof HTMLAnchorElement) {
-          link.href = `tel:${tel}`;
-          link.textContent = display;
-        }
-      });
-
-      document.querySelectorAll("[data-reveal-phone]").forEach((el) => {
-        if (el instanceof HTMLElement) el.dataset.phoneReady = "1";
-      });
-      setExpanded(true);
+      applyPhone(display, tel);
     } catch {
       toast("Telefon alınamadı.");
-    } finally {
-      btn.disabled = false;
+      setBusy(false);
     }
   });
 

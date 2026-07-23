@@ -516,19 +516,16 @@
             @if (!isPreview)
             {
               <div class="seller-actions">
-                <button type="button"
-                        class="btn btn-dark btn-block"
-                        data-reveal-phone="@listing.AdNo"
-                        data-label-show="Telefonu Göster"
-                        data-label-hide="Telefonu Gizle"
-                        aria-expanded="false"
-                        aria-controls="listing-phone-slot">
+                <a class="btn btn-dark btn-block"
+                   href="#"
+                   role="button"
+                   data-reveal-phone="@listing.AdNo"
+                   data-label-show="Telefonu Göster"
+                   data-label-loading="Alınıyor…"
+                   aria-expanded="false">
                   <ap-icon name="phone" size="18" />
                   <span data-reveal-phone-label>Telefonu Göster</span>
-                </button>
-                <span id="listing-phone-slot" data-phone-slot hidden>
-                  <a class="btn btn-ghost btn-block" data-phone-link href="#">Ara</a>
-                </span>
+                </a>
                 <button type="button" class="btn btn-machine btn-block" data-toast="Teklif talebi alındı">
                   <ap-icon name="message-circle" size="18" />
                   <span>Teklif Al</span>
@@ -654,21 +651,15 @@
   {
     <div class="mobile-cta" id="mobile-cta" aria-label="Hızlı işlemler">
       <div class="mobile-cta-price">@priceText</div>
-      <button type="button"
-              class="btn btn-dark btn-sm"
-              data-reveal-phone="@listing.AdNo"
-              data-label-show="Telefon"
-              data-label-hide="Gizle"
-              aria-expanded="false"
-              aria-controls="listing-phone-slot-mobile">
-        <span data-reveal-phone-label>Telefon</span>
-      </button>
-      <a id="listing-phone-slot-mobile"
-         class="btn btn-ghost btn-sm"
-         data-phone-slot
-         data-phone-link
+      <a class="btn btn-dark btn-sm"
          href="#"
-         hidden>Ara</a>
+         role="button"
+         data-reveal-phone="@listing.AdNo"
+         data-label-show="Telefon"
+         data-label-loading="Alınıyor…"
+         aria-expanded="false">
+        <span data-reveal-phone-label>Telefon</span>
+      </a>
       <button type="button" class="btn btn-machine btn-sm" data-toast="Teklif talebi alındı">
         Teklif Al
       </button>
