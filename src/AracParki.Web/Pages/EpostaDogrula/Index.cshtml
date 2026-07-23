@@ -26,9 +26,19 @@
       {
         <h1 class="auth-title" id="auth-title">E-postanı onayla</h1>
         <p class="auth-lead">Hesabını etkinleştirmek için aşağıdaki butona tıkla.</p>
-        <form method="post" asp-page-handler="Confirm" class="auth-form">
+        <form method="post" asp-page-handler="Confirm" class="auth-form"
+              x-data="authForm"
+              @@submit="onSubmit"
+              :aria-busy="formBusyAria">
           <input type="hidden" name="Token" value="@Model.Token" />
-          <button class="btn btn-machine btn-block auth-submit" type="submit">Hesabımı onayla</button>
+          <button class="btn btn-machine btn-block auth-submit"
+                  type="submit"
+                  x-ref="submit"
+                  data-label-idle="Hesabımı onayla"
+                  data-label-loading="Onaylanıyor…"
+                  :aria-busy="busyAria"
+                  :class="submitClass"
+                  x-text="submitLabel">Hesabımı onayla</button>
         </form>
       }
       else if (Model.ResendSubmitted)
@@ -46,8 +56,18 @@
         <p class="auth-lead">@Model.FormError</p>
         @if (User.Identity?.IsAuthenticated == true && !AuthCookie.IsEmailConfirmed(User))
         {
-          <form method="post" asp-page-handler="Resend" class="auth-form">
-            <button class="btn btn-machine btn-block auth-submit" type="submit">Yeni onay maili gönder</button>
+          <form method="post" asp-page-handler="Resend" class="auth-form"
+                x-data="authForm"
+                @@submit="onSubmit"
+                :aria-busy="formBusyAria">
+            <button class="btn btn-machine btn-block auth-submit"
+                    type="submit"
+                    x-ref="submit"
+                    data-label-idle="Yeni onay maili gönder"
+                    data-label-loading="Gönderiliyor…"
+                    :aria-busy="busyAria"
+                    :class="submitClass"
+                    x-text="submitLabel">Yeni onay maili gönder</button>
           </form>
         }
         else
@@ -62,8 +82,18 @@
           <strong>@User.FindFirst(ClaimTypes.Email)?.Value</strong>
           adresine onay maili gönderebilirsin — tekrar yazmana gerek yok.
         </p>
-        <form method="post" asp-page-handler="Resend" class="auth-form">
-          <button class="btn btn-machine btn-block auth-submit" type="submit">Onay maili gönder</button>
+        <form method="post" asp-page-handler="Resend" class="auth-form"
+              x-data="authForm"
+              @@submit="onSubmit"
+              :aria-busy="formBusyAria">
+          <button class="btn btn-machine btn-block auth-submit"
+                  type="submit"
+                  x-ref="submit"
+                  data-label-idle="Onay maili gönder"
+                  data-label-loading="Gönderiliyor…"
+                  :aria-busy="busyAria"
+                  :class="submitClass"
+                  x-text="submitLabel">Onay maili gönder</button>
         </form>
         <p class="auth-switch"><a href="/">Şimdilik geç</a></p>
       }

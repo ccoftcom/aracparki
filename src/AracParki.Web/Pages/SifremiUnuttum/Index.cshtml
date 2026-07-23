@@ -9,7 +9,7 @@
       </a>
     </header>
 
-    <section class="auth-card" aria-labelledby="auth-title">
+    <section class="auth-card" aria-labelledby="auth-title" x-data="authForm">
       @if (Model.Submitted)
       {
         <h1 class="auth-title" id="auth-title">E-postanı kontrol et</h1>
@@ -29,14 +29,23 @@
           <div class="auth-alert" role="alert">@Model.FormError</div>
         }
 
-        <form method="post" class="auth-form" novalidate>
+        <form method="post" class="auth-form" novalidate
+              @@submit="onSubmit"
+              :aria-busy="formBusyAria">
           <div class="auth-field">
             <label asp-for="Input.Email"></label>
             <input asp-for="Input.Email" type="email" autocomplete="email" inputmode="email" autofocus />
             <span asp-validation-for="Input.Email" class="auth-error"></span>
           </div>
           <partial name="Shared/_TurnstileWidget" />
-          <button class="btn btn-machine btn-block auth-submit" type="submit">Bağlantı gönder</button>
+          <button class="btn btn-machine btn-block auth-submit"
+                  type="submit"
+                  x-ref="submit"
+                  data-label-idle="Bağlantı gönder"
+                  data-label-loading="Gönderiliyor…"
+                  :aria-busy="busyAria"
+                  :class="submitClass"
+                  x-text="submitLabel">Bağlantı gönder</button>
         </form>
 
         <p class="auth-switch">

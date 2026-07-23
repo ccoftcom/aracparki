@@ -649,6 +649,19 @@
 
     Alpine.data("authForm", () => ({
       showPassword: false,
+      submitting: false,
+      idleLabel: "Devam et",
+      loadingLabel: "Gönderiliyor…",
+
+      init() {
+        const btn = this.$refs.submit;
+        if (!(btn instanceof HTMLButtonElement)) return;
+        const idle = btn.getAttribute("data-label-idle") || btn.textContent.trim();
+        const loading = btn.getAttribute("data-label-loading");
+        if (idle) this.idleLabel = idle;
+        if (loading) this.loadingLabel = loading;
+      },
+
       get passwordType() {
         return this.showPassword ? "text" : "password";
       },
@@ -661,8 +674,33 @@
       get showEyeOff() {
         return this.showPassword;
       },
+      get submitDisabled() {
+        return this.submitting;
+      },
+      get busyAria() {
+        return this.submitting ? "true" : "false";
+      },
+      get formBusyAria() {
+        return this.submitting ? "true" : "false";
+      },
+      get submitClass() {
+        return this.submitting ? "is-loading" : "";
+      },
+      get submitLabel() {
+        return this.submitting ? this.loadingLabel : this.idleLabel;
+      },
+
       togglePassword() {
         this.showPassword = !this.showPassword;
+      },
+
+      onSubmit(event) {
+        if (this.submitting) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        this.submitting = true;
       },
     }));
 

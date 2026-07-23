@@ -371,6 +371,17 @@
   font-weight: 800;
 }
 
+.auth-form[aria-busy="true"] {
+  cursor: wait;
+}
+
+.auth-form[aria-busy="true"] .auth-field input,
+.auth-form[aria-busy="true"] .auth-check,
+.auth-form[aria-busy="true"] .auth-password-toggle {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
 .auth-trust {
   margin: 0;
   text-align: center;
