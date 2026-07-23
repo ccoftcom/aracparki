@@ -40,7 +40,8 @@ body[data-page="detail"] .page-detail {
 }
 
 .list-crumb-bar:has(.bc-has-menu:hover),
-.list-crumb-bar:has(.bc-has-menu:focus-within) {
+.list-crumb-bar:has(.bc-has-menu:focus-within),
+.list-crumb-bar:has(.list-crumb-compare:focus-within) {
   z-index: 60;
 }
 
@@ -314,6 +315,236 @@ body[data-page="detail"] .page-detail {
 .list-crumb-utils a:hover {
   color: #039;
   text-decoration: underline;
+}
+
+.list-crumb-compare {
+  position: relative;
+}
+
+.list-crumb-compare-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #039;
+  font: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.list-crumb-compare-trigger:hover {
+  text-decoration: underline;
+}
+
+.list-crumb-compare-trigger .ap-icon {
+  flex-shrink: 0;
+}
+
+.list-crumb-compare-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  width: min(320px, calc(100vw - 24px));
+  padding: 0;
+  border: 1px solid #cfcfcf;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  text-align: left;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.compare-pop-head {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #e6e6e6;
+  color: #333;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.compare-pop-current {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.compare-pop-current[hidden] {
+  display: none;
+}
+
+.compare-pop-current-media {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  background: #f3f3f3;
+}
+
+.compare-pop-current-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.compare-pop-current-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(45deg, transparent 46%, #ccc 46%, #ccc 54%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, #ccc 46%, #ccc 54%, transparent 54%),
+    #eee;
+  background-size: 14px 14px, 14px 14px, auto;
+  background-position: center;
+}
+
+.compare-pop-current-placeholder[hidden] {
+  display: none;
+}
+
+.compare-pop-current-body {
+  min-width: 0;
+}
+
+.compare-pop-current-text {
+  margin: 0 0 6px;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.compare-pop-current-add {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #039;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.compare-pop-current-add:hover {
+  text-decoration: underline;
+}
+
+.compare-pop-list {
+  display: grid;
+}
+
+.compare-pop-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.compare-pop-item-media {
+  display: block;
+  width: 56px;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  background: #f3f3f3;
+}
+
+.compare-pop-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.compare-pop-item-body {
+  min-width: 0;
+}
+
+.compare-pop-item-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #333;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-decoration: none;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.compare-pop-item-title:hover {
+  color: #039;
+  text-decoration: underline;
+}
+
+.compare-pop-item-price {
+  margin-top: 4px;
+  color: var(--signal, #c00);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.compare-pop-item-remove {
+  width: 22px;
+  height: 22px;
+  margin: -2px -4px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #888;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.compare-pop-item-remove:hover {
+  color: #333;
+}
+
+.compare-pop-empty {
+  margin: 0;
+  padding: 14px 12px;
+  border-bottom: 1px solid #e6e6e6;
+  color: #777;
+  font-size: 12px;
+  text-align: center;
+}
+
+.compare-pop-empty[hidden] {
+  display: none;
+}
+
+.compare-pop-foot {
+  padding: 10px 12px 12px;
+  text-align: center;
+}
+
+.compare-pop-go {
+  color: #039;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.compare-pop-go:hover {
+  text-decoration: underline;
+}
+
+.compare-pop-go.is-disabled {
+  color: #999;
+  cursor: default;
+  text-decoration: none;
 }
 
 @media (min-width: 980px) {

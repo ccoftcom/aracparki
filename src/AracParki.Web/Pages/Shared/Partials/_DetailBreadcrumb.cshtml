@@ -18,6 +18,24 @@
         .ToArray();
     var crumbCaret = $"<span class=\"bc-caret\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-caret-right", 12)}{Lucide.Svg("chevron-down", "ap-icon bc-caret-down", 12)}</span>";
     var crumbSep = $"<span class=\"bc-sep\" aria-hidden=\"true\">{Lucide.Svg("chevron-right", "ap-icon bc-sep-icon", 12)}</span>";
+
+    var isPreview = listing.Status != ListingStatus.Published;
+    var isExpiredLive = listing.Status == ListingStatus.Published
+        && listing.ExpiresAt is DateTimeOffset exp
+        && exp <= DateTimeOffset.UtcNow;
+    if (!isPreview && !isExpiredLive)
+    {
+        var cover = !string.IsNullOrWhiteSpace(listing.CoverImageUrl)
+            ? listing.CoverImageUrl
+            : (listing.ImageUrls.Count > 0 ? listing.ImageUrls[0] : "/assets/logo/icon-512.png");
+        ViewData["CompareCurrentAdNo"] = listing.AdNo;
+        ViewData["CompareCurrentTitle"] = listing.Title;
+        ViewData["CompareCurrentThumb"] = ListingImageUrlVariants.WithVariant(cover, ListingImageVariants.Thumb);
+        ViewData["CompareCurrentPrice"] = Formatters.Price(
+            listing.Price,
+            listing.PrimaryIntent == ListingIntent.Kiralik ? listing.PriceUnit : null,
+            listing.Currency);
+    }
 }
 <div id="site-crumb-bar" class="list-crumb-bar">
   <div class="list-crumb-inner">

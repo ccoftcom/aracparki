@@ -250,7 +250,86 @@ public sealed class ListingRepository(
                 new { ListingId = row.Id },
                 cancellationToken: cancellationToken))).AsList();
 
-        return new ListingDetailDto
+        return MapDetail(row, images, attachments);
+    }
+
+    public async Task<IReadOnlyList<ListingDetailDto>> GetPublishedByAdNosAsync(
+        IReadOnlyList<string> adNos,
+        CancellationToken cancellationToken)
+    {
+        if (adNos.Count == 0)
+        {
+            return [];
+        }
+
+        var unique = adNos
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Select(a => a.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .ToArray();
+        if (unique.Length == 0)
+        {
+            return [];
+        }
+
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+
+        var rows = (await connection.QueryAsync<ListingDetailRow>(
+            new CommandDefinition(
+                sql.Get("Listings/GetPublishedByAdNos.sql"),
+                new { AdNos = unique },
+                cancellationToken: cancellationToken))).AsList();
+
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var listingIds = rows.Select(r => r.Id).ToArray();
+        var attachmentRows = (await connection.QueryAsync<AttachmentByListingRow>(
+            new CommandDefinition(
+                sql.Get("Listings/GetAttachmentsByListingIds.sql"),
+                new { ListingIds = listingIds },
+                cancellationToken: cancellationToken))).AsList();
+
+        var attachmentsByListing = attachmentRows
+            .GroupBy(a => a.ListingId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<AttachmentItemDto>)g
+                    .Select(a => new AttachmentItemDto { Id = a.Id, Name = a.Name, Slug = a.Slug })
+                    .ToArray());
+
+        var result = new List<ListingDetailDto>(rows.Count);
+        foreach (var row in rows)
+        {
+            var cover = row.CoverImageUrl ?? "";
+            var images = string.IsNullOrWhiteSpace(cover)
+                ? Array.Empty<string>()
+                : new[] { cover };
+            attachmentsByListing.TryGetValue(row.Id, out var attachments);
+            result.Add(MapDetail(row, images, attachments ?? []));
+        }
+
+        return result;
+    }
+
+    public async Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken)
+    {
+        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<string?>(
+            new CommandDefinition(
+                sql.Get("Listings/GetPhone.sql"),
+                new { AdNo = adNo },
+                cancellationToken: cancellationToken));
+    }
+
+    private static ListingDetailDto MapDetail(
+        ListingDetailRow row,
+        IReadOnlyList<string> images,
+        IReadOnlyList<AttachmentItemDto> attachments) =>
+        new()
         {
             Id = row.Id,
             AdNo = row.AdNo,
@@ -302,16 +381,13 @@ public sealed class ListingRepository(
             SubmittedAt = row.SubmittedAt,
             OwnerAccountId = row.OwnerAccountId
         };
-    }
 
-    public async Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken)
+    private sealed class AttachmentByListingRow
     {
-        await using var connection = (System.Data.Common.DbConnection)await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        return await connection.ExecuteScalarAsync<string?>(
-            new CommandDefinition(
-                sql.Get("Listings/GetPhone.sql"),
-                new { AdNo = adNo },
-                cancellationToken: cancellationToken));
+        public long ListingId { get; init; }
+        public int Id { get; init; }
+        public required string Name { get; init; }
+        public required string Slug { get; init; }
     }
 
     private static string ResolveSearchSql(string sort) => sort switch

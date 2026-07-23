@@ -11,9 +11,26 @@ public static class ListingRoutes
     public const string Home = "/";
     public const string List = "/ilanlar";
     public const string DetailPrefix = "/ilan";
+    public const string Compare = "/karsilastir";
     public const string SpecQueryPrefix = "oz_";
 
     public static string Detail(string adNo) => $"{DetailPrefix}/{Uri.EscapeDataString(adNo)}";
+
+    public static string CompareUrl(IEnumerable<string> adNos)
+    {
+        var list = adNos
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Select(a => a.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(4)
+            .ToArray();
+        if (list.Length == 0)
+        {
+            return Compare;
+        }
+
+        return QueryHelpers.AddQueryString(Compare, "ilanlar", string.Join(",", list));
+    }
 
     public static string Dealer(string slug) => $"/satici/{Uri.EscapeDataString(slug)}";
 

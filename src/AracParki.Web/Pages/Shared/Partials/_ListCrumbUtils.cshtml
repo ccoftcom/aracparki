@@ -17,10 +17,64 @@
 
     var favoritesLabel = favorites > 0 ? $"Favori İlanlarım ({favorites})" : "Favori İlanlarım";
     var searchesLabel = savedSearches > 0 ? $"Favori Aramalarım ({savedSearches})" : "Favori Aramalarım";
+
+    var currentAdNo = ViewData["CompareCurrentAdNo"] as string ?? "";
+    var currentTitle = ViewData["CompareCurrentTitle"] as string ?? "";
+    var currentThumb = ViewData["CompareCurrentThumb"] as string ?? "";
+    var currentPrice = ViewData["CompareCurrentPrice"] as string ?? "";
 }
 <ul class="list-crumb-utils" aria-label="Hızlı bağlantılar">
   <li><a href="/favorilerim">@favoritesLabel</a></li>
   <li><a href="/kayitli-aramalar">@searchesLabel</a></li>
   <li><a href="/panel">Size Özel İlanlar</a></li>
-  <li><a href="/favorilerim" title="Karşılaştırma yakında">Karşılaştır</a></li>
+  <li class="list-crumb-compare"
+      x-data="listingCompareCrumb"
+      data-compare-adno="@currentAdNo"
+      data-compare-title="@currentTitle"
+      data-compare-thumb="@currentThumb"
+      data-compare-price="@currentPrice"
+      @@keydown.escape.window="close"
+      @@click.outside="close">
+    <button type="button"
+            class="list-crumb-compare-trigger"
+            x-ref="trigger"
+            @@click="toggle"
+            :aria-expanded="openAria"
+            aria-haspopup="dialog"
+            aria-controls="compare-popover">
+      <ap-icon name="layout-grid" size="12" class="ap-icon" aria-hidden="true" />
+      <span x-text="label">Karşılaştır</span>
+    </button>
+    <div id="compare-popover"
+         class="list-crumb-compare-panel"
+         role="dialog"
+         aria-label="Karşılaştır"
+         x-ref="panel"
+         x-show="open"
+         x-cloak>
+      <div class="compare-pop-head">Karşılaştır</div>
+      <div class="compare-pop-current" x-ref="currentOffer" hidden>
+        <div class="compare-pop-current-media" aria-hidden="true">
+          <img x-ref="currentThumb" src="" alt="" width="48" height="48" hidden />
+          <span class="compare-pop-current-placeholder" x-ref="currentPlaceholder"></span>
+        </div>
+        <div class="compare-pop-current-body">
+          <p class="compare-pop-current-text">Görüntülemekte olduğunuz ilanı listeye eklemek ister misiniz?</p>
+          <button type="button"
+                  class="compare-pop-current-add"
+                  @@click="addCurrent">
+            Karşılaştırma Listesine Ekle
+          </button>
+        </div>
+      </div>
+      <div class="compare-pop-list" x-ref="list"></div>
+      <p class="compare-pop-empty" x-ref="empty" hidden>Karşılaştırma listeniz boş.</p>
+      <div class="compare-pop-foot">
+        <a class="compare-pop-go"
+           href="/karsilastir"
+           x-ref="goLink"
+           @@click="goCompare">Karşılaştır</a>
+      </div>
+    </div>
+  </li>
 </ul>

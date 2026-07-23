@@ -10,6 +10,12 @@ public interface IListingQuery
         string adNo,
         ListingAccessContext access,
         CancellationToken cancellationToken);
+
+    /// <summary>Published, non-expired listings by AdNo (order not guaranteed).</summary>
+    Task<IReadOnlyList<ListingDetailDto>> GetPublishedByAdNosAsync(
+        IReadOnlyList<string> adNos,
+        CancellationToken cancellationToken);
+
     Task<string?> GetPhoneByAdNoAsync(string adNo, CancellationToken cancellationToken);
     Task<IReadOnlyList<ListingCardDto>> GetFeaturedAsync(ListingSearchQuery query, int take, CancellationToken cancellationToken);
     Task<IReadOnlyList<ListingCardDto>> GetByAccountIdAsync(long accountId, int take, CancellationToken cancellationToken);

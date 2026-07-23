@@ -387,6 +387,271 @@
   }, true);
 
   document.addEventListener("alpine:init", () => {
+    const COMPARE_KEY = "ap.compare.v1";
+    const COMPARE_MAX = 4;
+
+    const readCompareItems = () => {
+      try {
+        const raw = localStorage.getItem(COMPARE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter((x) => x && typeof x.adNo === "string" && x.adNo)
+          .slice(0, COMPARE_MAX)
+          .map((x) => ({
+            adNo: String(x.adNo).toUpperCase(),
+            title: String(x.title || x.adNo),
+            thumb: String(x.thumb || ""),
+            price: String(x.price || ""),
+          }));
+      } catch {
+        return [];
+      }
+    };
+
+    const writeCompareItems = (items) => {
+      try {
+        localStorage.setItem(COMPARE_KEY, JSON.stringify(items.slice(0, COMPARE_MAX)));
+      } catch {
+        /* ignore quota */
+      }
+    };
+
+    const compareUrlFromItems = (items) => {
+      if (!items.length) return "/karsilastir";
+      return "/karsilastir?ilanlar=" + encodeURIComponent(items.map((x) => x.adNo).join(","));
+    };
+
+    Alpine.store("listingCompare", {
+      items: readCompareItems(),
+      max: COMPARE_MAX,
+      get count() {
+        return this.items.length;
+      },
+      get compareUrl() {
+        return compareUrlFromItems(this.items);
+      },
+      has(adNo) {
+        const key = String(adNo || "").toUpperCase();
+        return this.items.some((x) => x.adNo === key);
+      },
+      add(payload) {
+        const adNo = String(payload?.adNo || "").toUpperCase();
+        if (!adNo) return { ok: false, reason: "invalid" };
+        if (this.items.some((x) => x.adNo === adNo)) {
+          return { ok: true, reason: "exists" };
+        }
+        if (this.items.length >= this.max) {
+          return { ok: false, reason: "max" };
+        }
+        this.items = [
+          ...this.items,
+          {
+            adNo,
+            title: String(payload?.title || adNo),
+            thumb: String(payload?.thumb || ""),
+            price: String(payload?.price || ""),
+          },
+        ];
+        writeCompareItems(this.items);
+        return { ok: true, reason: "added" };
+      },
+      remove(adNo) {
+        const key = String(adNo || "").toUpperCase();
+        this.items = this.items.filter((x) => x.adNo !== key);
+        writeCompareItems(this.items);
+      },
+      clear() {
+        this.items = [];
+        writeCompareItems(this.items);
+      },
+      syncFromAdNos(adNos, metaByAdNo) {
+        const next = [];
+        const list = Array.isArray(adNos) ? adNos : [];
+        for (const raw of list) {
+          const adNo = String(raw || "").toUpperCase();
+          if (!adNo) continue;
+          const existing = this.items.find((x) => x.adNo === adNo);
+          const meta = metaByAdNo && metaByAdNo[adNo];
+          next.push({
+            adNo,
+            title: (meta && meta.title) || (existing && existing.title) || adNo,
+            thumb: (meta && meta.thumb) || (existing && existing.thumb) || "",
+            price: (meta && meta.price) || (existing && existing.price) || "",
+          });
+          if (next.length >= this.max) break;
+        }
+        this.items = next;
+        writeCompareItems(this.items);
+      },
+    });
+
+    Alpine.data("listingCompareCrumb", () => ({
+      open: false,
+      get openAria() {
+        return this.open ? "true" : "false";
+      },
+      get label() {
+        const n = this.$store.listingCompare.count;
+        return n > 0 ? "Karşılaştır (" + n + ")" : "Karşılaştır";
+      },
+      get currentAdNo() {
+        return (this.$el.getAttribute("data-compare-adno") || "").toUpperCase();
+      },
+      toggle() {
+        this.open = !this.open;
+        if (this.open) this.$nextTick(() => this.render());
+      },
+      close() {
+        this.open = false;
+      },
+      addCurrent() {
+        const adNo = this.currentAdNo;
+        if (!adNo) return;
+        const result = this.$store.listingCompare.add({
+          adNo,
+          title: this.$el.getAttribute("data-compare-title") || "",
+          thumb: this.$el.getAttribute("data-compare-thumb") || "",
+          price: this.$el.getAttribute("data-compare-price") || "",
+        });
+        if (!result.ok && result.reason === "max") {
+          toast("En fazla 4 ilan karşılaştırabilirsin.");
+        }
+        this.render();
+      },
+      goCompare(event) {
+        const link = this.$refs.goLink;
+        if (link) link.setAttribute("href", this.$store.listingCompare.compareUrl);
+        if (this.$store.listingCompare.count < 2) {
+          event.preventDefault();
+          toast("Karşılaştırmak için en az 2 ilan ekleyin.");
+        }
+      },
+      init() {
+        this.$watch("$store.listingCompare.items", () => {
+          if (this.open) this.render();
+        });
+        this.render();
+      },
+      render() {
+        const store = this.$store.listingCompare;
+        const offer = this.$refs.currentOffer;
+        const empty = this.$refs.empty;
+        const list = this.$refs.list;
+        const go = this.$refs.goLink;
+        const adNo = this.currentAdNo;
+        const showOffer = !!adNo && !store.has(adNo);
+
+        if (offer) {
+          offer.hidden = !showOffer;
+          if (showOffer) {
+            const thumbUrl = this.$el.getAttribute("data-compare-thumb") || "";
+            const img = this.$refs.currentThumb;
+            const ph = this.$refs.currentPlaceholder;
+            if (img) {
+              if (thumbUrl) {
+                img.src = thumbUrl;
+                img.hidden = false;
+                if (ph) ph.hidden = true;
+              } else {
+                img.hidden = true;
+                if (ph) ph.hidden = false;
+              }
+            }
+          }
+        }
+
+        if (go) {
+          go.setAttribute("href", store.compareUrl);
+          go.classList.toggle("is-disabled", store.count < 2);
+        }
+
+        if (!list) return;
+        list.replaceChildren();
+        for (const item of store.items) {
+          const row = document.createElement("div");
+          row.className = "compare-pop-item";
+
+          const media = document.createElement("a");
+          media.className = "compare-pop-item-media";
+          media.href = "/ilan/" + encodeURIComponent(item.adNo);
+          if (item.thumb) {
+            const img = document.createElement("img");
+            img.src = item.thumb;
+            img.alt = "";
+            img.width = 56;
+            img.height = 42;
+            img.loading = "lazy";
+            media.appendChild(img);
+          }
+          row.appendChild(media);
+
+          const body = document.createElement("div");
+          body.className = "compare-pop-item-body";
+          const title = document.createElement("a");
+          title.className = "compare-pop-item-title";
+          title.href = "/ilan/" + encodeURIComponent(item.adNo);
+          title.textContent = item.title;
+          title.title = item.title;
+          body.appendChild(title);
+          if (item.price) {
+            const price = document.createElement("div");
+            price.className = "compare-pop-item-price";
+            price.textContent = item.price;
+            body.appendChild(price);
+          }
+          row.appendChild(body);
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "compare-pop-item-remove";
+          remove.setAttribute("aria-label", item.adNo + " kaldır");
+          remove.textContent = "×";
+          remove.addEventListener("click", () => store.remove(item.adNo));
+          row.appendChild(remove);
+
+          list.appendChild(row);
+        }
+
+        if (empty) {
+          empty.hidden = store.count > 0 || showOffer;
+        }
+      },
+    }));
+
+    Alpine.data("listingComparePage", () => ({
+      shareLabel: "Linki kopyala",
+      toggleDiffOnly(event) {
+        const on = !!(event && event.target && event.target.checked);
+        document.body.classList.toggle("compare-diff-only", on);
+      },
+      async copyLink() {
+        const btn = this.$el.querySelector("[data-share-url]");
+        const path = btn ? btn.getAttribute("data-share-url") : "/karsilastir";
+        const url = new URL(path || "/karsilastir", window.location.origin).toString();
+        try {
+          await navigator.clipboard.writeText(url);
+          this.shareLabel = "Kopyalandı";
+          setTimeout(() => {
+            this.shareLabel = "Linki kopyala";
+          }, 1800);
+        } catch {
+          this.shareLabel = "Kopyalanamadı";
+          setTimeout(() => {
+            this.shareLabel = "Linki kopyala";
+          }, 1800);
+        }
+      },
+      init() {
+        const raw = this.$el.getAttribute("data-compare-adnos") || "";
+        const cols = raw.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+        if (cols.length) {
+          this.$store.listingCompare.syncFromAdNos(cols, null);
+        }
+      },
+    }));
+
     Alpine.data("siteChrome", () => ({
       navOpen: false,
       searchOpen: false,

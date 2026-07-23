@@ -1,0 +1,143 @@
+@page "/karsilastir"
+@model AracParki.Web.Pages.Karsilastir.IndexModel
+@using AracParki.Application.Listings
+@using AracParki.Application.Listings.Services
+@{
+    var matrix = Model.Matrix;
+    var columns = matrix.Columns;
+    var colCount = columns.Count;
+    var canCompare = colCount >= 2;
+    var shareUrl = canCompare
+        ? ListingRoutes.CompareUrl(columns.Select(c => c.AdNo))
+        : ListingRoutes.Compare;
+}
+
+<main class="container page-compare" id="main"
+      x-data="listingComparePage"
+      data-compare-adnos="@(string.Join(",", columns.Select(c => c.AdNo)))">
+  <header class="compare-head">
+    <div class="compare-head-copy">
+      <h1 class="compare-title">İlan karşılaştırma</h1>
+      @if (canCompare)
+      {
+        <p class="compare-lead">@colCount ilan yan yana. Farkları vurgula veya linki paylaş.</p>
+      }
+      else if (colCount == 1)
+      {
+        <p class="compare-lead">Karşılaştırma için en az 2 ilan gerekli. Listeden bir ilan daha ekle.</p>
+      }
+      else
+      {
+        <p class="compare-lead">En fazla @ListingCompareService.MaxListings ilan seçip fiyat, yıl, saat ve teknik özellikleri karşılaştır.</p>
+      }
+    </div>
+
+    @if (canCompare)
+    {
+      <div class="compare-toolbar" role="toolbar" aria-label="Karşılaştırma araçları">
+        <label class="compare-diff-toggle">
+          <input type="checkbox"
+                 @@change="toggleDiffOnly" />
+          <span>Sadece farklar</span>
+        </label>
+        <button type="button"
+                class="btn btn-ghost btn-sm"
+                data-share-url="@shareUrl"
+                @@click="copyLink"
+                x-text="shareLabel">Linki kopyala</button>
+        <a class="btn btn-ghost btn-sm" href="@ListingRoutes.List">İlanlara dön</a>
+      </div>
+    }
+  </header>
+
+  @if (matrix.MissingAdNos.Count > 0)
+  {
+    <p class="compare-notice" role="status">
+      Bazı ilanlar yayında değil veya bulunamadı:
+      @string.Join(", ", matrix.MissingAdNos)
+    </p>
+  }
+
+  @if (!canCompare)
+  {
+    <section class="compare-empty" aria-labelledby="compare-empty-title">
+      <h2 id="compare-empty-title" class="sr-only">Karşılaştırma boş</h2>
+      @if (colCount == 1)
+      {
+        var only = columns[0];
+        <article class="compare-empty-card">
+          <img src="@ListingImageUrlVariants.WithVariant(only.CoverImageUrl, ListingImageVariants.Card)"
+               alt=""
+               width="320"
+               height="220"
+               loading="lazy" />
+          <div>
+            <strong>@only.Title</strong>
+            <p>@only.PriceText</p>
+            <a class="btn btn-machine" href="@ListingRoutes.List">İlan ekle</a>
+          </div>
+        </article>
+      }
+      else
+      {
+        <p>Henüz karşılaştırılacak ilan yok.</p>
+        <a class="btn btn-machine" href="@ListingRoutes.List">İlanlara göz at</a>
+      }
+    </section>
+  }
+  else
+  {
+    <div class="compare-table-wrap">
+      <table class="compare-table" aria-label="İlan karşılaştırma tablosu">
+        <thead>
+          <tr>
+            <th scope="col" class="compare-sticky-col compare-corner">Özellik</th>
+            @foreach (var col in columns)
+            {
+              var thumb = ListingImageUrlVariants.WithVariant(col.CoverImageUrl, ListingImageVariants.Thumb);
+              var removeNos = columns.Where(c => c.AdNo != col.AdNo).Select(c => c.AdNo).ToArray();
+              var removeUrl = ListingRoutes.CompareUrl(removeNos);
+              <th scope="col" class="compare-product">
+                <div class="compare-product-card">
+                  <a class="compare-product-media" href="@col.DetailUrl">
+                    <img src="@thumb" alt="" width="160" height="110" loading="lazy" decoding="async" />
+                  </a>
+                  <a class="compare-product-title" href="@col.DetailUrl">@col.Title</a>
+                  <p class="compare-product-price">@col.PriceText</p>
+                  <p class="compare-product-meta">@col.Brand @col.ModelName · @col.AdNo</p>
+                  <div class="compare-product-actions">
+                    <a class="btn btn-dark btn-sm" href="@col.DetailUrl">İlanı aç</a>
+                    @if (removeNos.Length >= 1)
+                    {
+                      <a class="btn btn-ghost btn-sm" href="@removeUrl" title="Karşılaştırmadan çıkar" aria-label="@col.AdNo karşılaştırmadan çıkar">Kaldır</a>
+                    }
+                  </div>
+                </div>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var compareSection in matrix.Sections)
+          {
+            <tr class="compare-section-row">
+              <th scope="rowgroup" class="compare-sticky-col" colspan="@(colCount + 1)">@compareSection.Title</th>
+            </tr>
+            @foreach (var row in compareSection.Rows)
+            {
+              <tr class="compare-data-row @(row.IsDifferent ? "is-diff" : "is-same")"
+                  data-compare-row
+                  data-diff="@(row.IsDifferent ? "1" : "0")">
+                <th scope="row" class="compare-sticky-col">@row.Label</th>
+                @for (var i = 0; i < row.Values.Count; i++)
+                {
+                  <td>@row.Values[i]</td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>

@@ -1,4 +1,3 @@
-@using AracParki.Application.Listings
 @using AracParki.Application.Listings.Dtos
 @model ListingCardDto
 @{
@@ -13,7 +12,7 @@
         (ListingImageVariants.Card, 480),
         (ListingImageVariants.Md, 768));
 }
-<article class="listing-card" data-id="@Model.Id">
+<article class="listing-card" data-id="@Model.Id" data-adno="@Model.AdNo">
   <a class="listing-card-link" href="@href">
     <div class="listing-media">
       <span class="@badgeClass">@badgeText</span>

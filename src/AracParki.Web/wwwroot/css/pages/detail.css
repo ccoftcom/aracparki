@@ -1448,7 +1448,7 @@ a.detail-util {
 
 @media (min-width: 1100px) {
   .detail-tech-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
@@ -1513,31 +1513,6 @@ a.detail-util {
 
 .detail-desc a:hover {
   color: var(--ink);
-}
-
-.detail-similar {
-  width: 100%;
-  min-width: 0;
-}
-
-.detail-similar-head {
-  margin-bottom: 14px;
-  display: grid;
-  gap: 4px;
-}
-
-.detail-similar h2 {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
-.detail-similar-lead {
-  margin: 0;
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .mobile-cta {

@@ -137,6 +137,20 @@
         <link rel="stylesheet" href="~/css/components/aside.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/pages/home.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
+    }
+    else if (pageKey is "detail")
+    {
+        <link rel="stylesheet" href="~/css/components/breadcrumb.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/detail.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/lib/lightgallery/lightgallery-bundle.min.css" asp-append-version="true" />
+    }
+    else if (pageKey is "compare")
+    {
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
     }
     else if (pageKey is "list")
     {
@@ -144,13 +158,7 @@
         <link rel="stylesheet" href="~/css/components/aside.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/pages/list.css" asp-append-version="true" />
-    }
-    else if (pageKey is "detail")
-    {
-        <link rel="stylesheet" href="~/css/components/breadcrumb.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/css/pages/detail.css" asp-append-version="true" />
-        <link rel="stylesheet" href="~/lib/lightgallery/lightgallery-bundle.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
     }
     else if (pageKey is "auth")
     {
@@ -170,6 +178,7 @@
         <link rel="stylesheet" href="~/css/pages/account.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/components/badges.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
         @if (needDetailGallery)
         {
             <link rel="stylesheet" href="~/css/pages/detail.css" asp-append-version="true" />
@@ -184,6 +193,7 @@
     {
         <link rel="stylesheet" href="~/css/components/cards.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/pages/dealer.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/pages/compare.css" asp-append-version="true" />
     }
     else if (pageKey is "legal")
     {

@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<ListingSearchQueryValidator>();
         services.AddSingleton<ListingImageUrlPolicy>();
         services.AddScoped<ListingService>();
+        services.AddScoped<ListingCompareService>();
         services.AddScoped<ListingCommandService>();
         services.AddScoped<ListingModerationService>();
         services.AddScoped<ListingReportService>();

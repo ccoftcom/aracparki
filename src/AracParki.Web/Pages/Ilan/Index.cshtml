@@ -627,23 +627,20 @@
       <h2 class="detail-section-title" id="desc-title">Açıklama</h2>
       <div class="detail-desc">@Html.Raw(ListingDescriptionHtml.ToSafeDisplayHtml(listing.Description))</div>
     </section>
-  </div>
 
-  @if (Model.Similar.Count > 0)
-  {
-    <section class="detail-similar" aria-labelledby="similar-title">
-      <div class="detail-similar-head">
-        <h2 id="similar-title">Benzer ilanlar</h2>
-        <p class="detail-similar-lead">Aynı kategori ve benzer özelliklerdeki diğer ilanlar</p>
-      </div>
-      <div class="listing-grid">
-        @foreach (var card in Model.Similar)
-        {
-          <partial name="Shared/Partials/_ListingCard" model="card" />
-        }
-      </div>
-    </section>
-  }
+    @if (Model.Similar.Count > 0)
+    {
+      <section class="detail-section" aria-labelledby="similar-title">
+        <h2 class="detail-section-title" id="similar-title">Benzer ilanlar</h2>
+        <div class="listing-grid">
+          @foreach (var card in Model.Similar)
+          {
+            <partial name="Shared/Partials/_ListingCard" model="card" />
+          }
+        </div>
+      </section>
+    }
+  </div>
 
   </div>
 
