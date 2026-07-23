@@ -319,7 +319,7 @@
     </section>
 
     <aside class="detail-aside" aria-label="İşlemler ve satıcı">
-      <div class="detail-aside-stack sticky-box">
+      <div class="detail-aside-stack">
         <div class="detail-utils" role="group" aria-label="İlan işlemleri">
           @if (!isPreview && !isExpiredLive)
           {
@@ -454,12 +454,27 @@
           </a>
 
           <aside class="detail-ad-slot" aria-label="Reklam alanı">
-            <span class="detail-ad-slot-kicker">Reklam alanı</span>
-            <strong class="detail-ad-slot-title">Bu alana reklam verebilirsiniz</strong>
-            <p class="detail-ad-slot-text">
-              İlan detayını inceleyen alıcılara markanızı veya stoğunuzu gösterin.
-              Sponsorlu görünürlük için bizimle iletişime geçin.
-            </p>
+            <div class="detail-ad-slot-head">
+              <span class="detail-ad-slot-kicker">Sponsorlu alan</span>
+              <strong class="detail-ad-slot-title">Markanızı burada gösterin</strong>
+              <p class="detail-ad-slot-text">
+                Alıcı karar anında, ilan detayını incelerken görünür olun.
+              </p>
+            </div>
+            <ul class="detail-ad-slot-points">
+              <li>
+                <ap-icon name="search" size="14" class="ap-icon" aria-hidden="true" />
+                <span>Yüksek niyetli iş makinesi alıcıları</span>
+              </li>
+              <li>
+                <ap-icon name="eye" size="14" class="ap-icon" aria-hidden="true" />
+                <span>Karar anına yakın, dikkat çeken konum</span>
+              </li>
+              <li>
+                <ap-icon name="building-2" size="14" class="ap-icon" aria-hidden="true" />
+                <span>Bayi, stok ve B2B hizmetler için uygun</span>
+              </li>
+            </ul>
             <a class="btn btn-ghost btn-sm detail-ad-slot-cta" href="/reklam">
               <ap-icon name="mail" size="14" class="ap-icon" aria-hidden="true" />
               <span>Reklam teklifi alın</span>

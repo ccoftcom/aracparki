@@ -689,12 +689,19 @@ a.detail-util {
 /* Right column: utils + seller */
 .detail-aside {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-aside-stack {
   display: grid;
   gap: 10px;
-  align-content: start;
+  grid-template-rows: auto minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
 }
 
 .detail-aside .detail-utils {
@@ -705,7 +712,9 @@ a.detail-util {
 .detail-seller {
   display: grid;
   gap: 10px;
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
 }
 
 .seller-card {
@@ -884,14 +893,22 @@ a.detail-util {
   line-height: 1.45;
 }
 
-/* Reklam placeholder — güvenlik kutusuyla aynı kolon hizası */
+/* Reklam paneli — sol kolon yüksekliğini içerik + spacing ile doldurur */
 .detail-ad-slot {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-self: stretch;
+  min-height: 0;
+  padding: 16px;
   border: 1px dashed var(--line-strong);
   background: var(--surface-2);
   color: inherit;
+}
+
+.detail-ad-slot-head {
+  display: grid;
+  gap: 8px;
 }
 
 .detail-ad-slot-kicker {
@@ -905,7 +922,7 @@ a.detail-util {
 
 .detail-ad-slot-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--ink);
   line-height: 1.25;
@@ -919,12 +936,42 @@ a.detail-util {
   line-height: 1.45;
 }
 
+.detail-ad-slot-points {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 12px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.detail-ad-slot-points li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.detail-ad-slot-points .ap-icon {
+  margin-top: 1px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
 .detail-ad-slot-cta {
-  justify-self: start;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  margin-top: 2px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: auto;
   text-decoration: none;
 }
 
@@ -1130,11 +1177,6 @@ a.detail-util {
   .detail-review-gallery .gallery-main-wrap {
     aspect-ratio: auto;
     min-height: 280px;
-  }
-
-  .sticky-box {
-    position: sticky;
-    top: calc(env(safe-area-inset-top, 0px) + var(--header-h) + 16px);
   }
 }
 
